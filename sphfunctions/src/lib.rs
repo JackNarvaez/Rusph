@@ -249,7 +249,7 @@ pub fn thermal_energy(rho:f64, p:f64, gamma:f64) -> f64 {
 
 
 pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p_b: f64, omeg_a: f64, omeg_b: f64, grad_ha: f64, grad_hb: f64) -> Vec<f64> {
-    let acc = p_a/(omeg_a*particle_a.rho*particle_a.rho)*grad_ha - p_b/(omeg_b*particle_b.rho*particle_b.rho) * grad_hb;
+    let acc = p_a/(omeg_a*particle_a.rho*particle_a.rho)*grad_ha + p_b/(omeg_b*particle_b.rho*particle_b.rho) * grad_hb;
     vec![-acc*(particle_a.x - particle_b.x), -acc*(particle_a.y - particle_b.y)]
 }
 
