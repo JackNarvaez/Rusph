@@ -16,19 +16,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         process::exit(1);
     }
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 1.0; // initial time
-    let dt :f64 = 0.04; // time step
+    let tf:f64 = 3.2; // initial time
+    let dt :f64 = 0.004; // time step
     let t_iter :u32 = ((tf-t0)/dt) as u32; // time steps
     println!("{}", t_iter);
     let eta :f64 = 1.2; // dimensionless constant related to the ratio of smoothing length
-    let sigma :f64 = 1.0/PI; // 
     let d = 3; // Dimension of the system
     let k:f64 = 0.1; // Pressure constant
     let gamma:f64 = 1.0;  // Polytropic index
     let m:f64 = 2.0; // Star's mass
     let r:f64 = 0.75; // Star's radius
-    let nu:f64 = 1.0; // Viscocity parameter
+    let nu:f64 = 1.0; // 1.0Viscocity parameter
     let lmbda = sphfunctions::coeff_static_grav_potential(k, gamma, m, r);
+    let sigma :f64 = 1.0/(PI*0.01); // 
 
     for tt in 0..t_iter {
         sphfunctions::smoothing_length(&mut particles, eta, sphfunctions::cubic_kernel, sphfunctions::dwdq_cubic_kernel, sigma, d, 1e-03, 100);
