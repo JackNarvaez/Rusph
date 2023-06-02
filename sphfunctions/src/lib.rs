@@ -179,9 +179,10 @@ pub fn f_iter(particle_a: &Particle, neigh_particles: & Vec<Particle>, h: f64, e
     let rho_kernel = density_kernel(particle_a, neigh_particles, h, sigma, d, f);
     let rho_h = density_by_smoothing_length(particle_a.m, h, eta, d);
     let f_h = rho_h - rho_kernel;
-    println!("{} {}", f_h, h);
+    //println!("{} {}", f_h, h);
     let omeg = omega(particle_a, neigh_particles, h, rho_kernel, dwdh, f, dfdq, sigma, d);
-    let df = -(d as f64)*rho_h*omeg/ h;
+    let df = -(d
+         as f64)*rho_h*omeg/ h;
     (f_h, df)
 }
 
@@ -259,11 +260,12 @@ pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64,
             let p_j = eos(particles[jj].rho, k, gamma);
             let omeg_j = omega(&particles[jj], particles, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
-            let grad_hi = dfdq(r_ij/particles[ii].h)/(r_ij*particles[ii].h);
-            let grad_hj = dfdq(r_ij/particles[jj].h)/(r_ij*particles[jj].h);
+            let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
+            let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
             //println!("{}   {}   {}   {}   {}   {}   {}", ii, jj, p_j, omeg_j, r_ij, grad_hi, grad_hj);
             // Acceleration
             let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj);
+            //let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, 1., 1., grad_hi, grad_hi);
             // Thermal change
             let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
                          +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
