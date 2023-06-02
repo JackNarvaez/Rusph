@@ -125,46 +125,37 @@ pub fn euclidean_norm(p1: &Particle, p2: &Particle) -> f64 {
 
 
 // Kernel
-pub fn cubic_kernel(q:f64, sigma:f64) -> f64 {
-    let mut w:f64 = 0.;
-    //let sigma = 10./(7.*PI);
+pub fn f_cubic_kernel(q:f64) -> f64 {
+    let mut f:f64 = 0.;
     if q < 1. {
-        w = 1. - 1.5*q*q + 0.75*q*q*q;
+        f = 1. - 1.5*q*q + 0.75*q*q*q;
     } else if q < 2.{
-        w = 0.25*(2.-q).powi(3);
+        f = 0.25*(2.-q).powi(3);
     }
-    w*sigma
+    f
 }
 
-pub fn dwdq_cubic_kernel(q:f64, sigma:f64) -> f64 {
-    let mut dw:f64 = 0.;
-    //let sigma = 10./(7.*PI);
+pub fn dfdq_cubic_kernel(q:f64) -> f64 {
+    let mut df:f64 = 0.;
     if q < 1. {
-        dw = (2.25*q-3.)*q;
+        df = (2.25*q-3.)*q;
     } else if q < 2.{
-        dw = -3.*(0.25*q*q-q+1.);
+        df = -3.*(0.25*q*q-q+1.);
     }
-    dw * sigma
+    df
 }
 
-pub fn dwdh(q: f64, w: fn(f64, f64) -> f64, dw: fn(f64, f64) -> f64, sigma:f64, d:i32) -> f64 {
-    d as f64 *w(q, sigma)+q*dw(q, sigma)
+pub fn dwdh(q: f64, f: fn(f64) -> f64, df: fn(f64) -> f64, d:i32) -> f64 {
+    (d as f64) *f(q) + q*df(q)
 }
 
-// Density Approximations
-pub fn density_local(m:f64, pos:f64, h:f64, w: fn(f64, f64) -> f64, sigma:f64) -> f64{
-    let q = pos/h;
-    let rho = m * w(q, sigma);
-    rho
-}
-
-pub fn density_kernel(particle_a: &Particle, neigh_particles: & Vec<Particle>, h: f64, sigma:f64) -> f64 {
+pub fn density_kernel(particle_a: &Particle, neigh_particles: & Vec<Particle>, h: f64, sigma:f64, d:i32, f: fn(f64)->f64) -> f64 {
     let mut rho :f64 = 0.0;
     for ii in 0..neigh_particles.len(){
         let r = euclidean_norm(&particle_a, &neigh_particles[ii]);
-        rho += density_local((&neigh_particles[ii]).m, r, h, cubic_kernel, sigma);
+        rho += f(r/h);
     }
-    rho
+    rho * &particle_a.m * sigma / h.powi(d)
 }
 
 pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64, d:i32) -> f64{
@@ -173,39 +164,39 @@ pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64, d:i32) -> f64{
 }
 
 // Iterations
-pub fn omega(particle_a: &Particle, neigh_particles: & Vec<Particle>, h: f64, rho: f64, dwdh_: fn(f64, fn(f64, f64) -> f64, fn(f64, f64) -> f64, f64, i32) -> f64, w: fn(f64, f64) -> f64, dwdq: fn(f64, f64) -> f64, sigma: f64, d:i32) -> f64{
+pub fn omega(particle_a: &Particle, neigh_particles: & Vec<Particle>, h: f64, rho: f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32) -> f64{
     let n = neigh_particles.len();
     let mut omeg :f64 = 0.0;
-    for ii in 0..n{
+    for ii in 0..n {
         let q = euclidean_norm(&particle_a, &neigh_particles[ii])/h;
-        let k = dwdh_(q, w, dwdq, sigma, d);
-        omeg -= (&neigh_particles[ii]).m * k;
+        omeg -= dwdh_(q, f, dfdq, d);
     }
-    omeg *= sigma/(h.powi(d)*rho*d as f64);
+    omeg *= &particle_a.m*sigma/(h.powi(d)*rho*(d as f64));
     omeg + 1.
 }
 
-pub fn f_iter(particle_a: &Particle, neigh_particles: & Vec<Particle>, h: f64, eta:f64, w: fn(f64, f64) -> f64, dwdq: fn(f64, f64) -> f64, sigma:f64, d:i32) -> (f64 , f64) {
-    let rho_kernel = density_kernel(particle_a, neigh_particles, h, sigma);
+pub fn f_iter(particle_a: &Particle, neigh_particles: & Vec<Particle>, h: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32) -> (f64 , f64) {
+    let rho_kernel = density_kernel(particle_a, neigh_particles, h, sigma, d, f);
     let rho_h = density_by_smoothing_length(particle_a.m, h, eta, d);
-    let f = rho_h - rho_kernel;
-    let omeg = omega(particle_a, neigh_particles, h, rho_kernel, dwdh, w, dwdq, sigma, d);
+    let f_h = rho_h - rho_kernel;
+    println!("{} {}", f_h, h);
+    let omeg = omega(particle_a, neigh_particles, h, rho_kernel, dwdh, f, dfdq, sigma, d);
     let df = -(d as f64)*rho_h*omeg/ h;
-    (f, df)
+    (f_h, df)
 }
 
-fn nr_iter(particle_a: &Particle, neigh_particles: & Vec<Particle>, h_old: f64, eta:f64, w: fn(f64, f64) -> f64, dwdq: fn(f64, f64) -> f64, sigma:f64, d:i32) -> f64 {
-    let (f, df) = f_iter(particle_a, neigh_particles, h_old, eta, w, dwdq, sigma, d);
+fn nr_iter(particle_a: &Particle, neigh_particles: & Vec<Particle>, h_old: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32) -> f64 {
+    let (f, df) = f_iter(particle_a, neigh_particles, h_old, eta, f, dfdq, sigma, d);
     (h_old - f / df).abs()
 }
 
-pub fn newton_raphson(particle_a: &Particle, particles: & Vec<Particle>, h_guess: f64, eta:f64, w: fn(f64, f64) -> f64, dwdq: fn(f64, f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32) -> f64 {
+pub fn newton_raphson(particle_a: &Particle, particles: & Vec<Particle>, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32) -> f64 {
     let mut h_new :f64 = 0.0;
     let mut h_old :f64 = h_guess;
     let mut i : u32 = 1;
     while i <= it {
         // Look for neighboring particles
-        h_new = nr_iter(particle_a, particles, h_old, eta, w, dwdq, sigma, d);
+        h_new = nr_iter(particle_a, particles, h_old, eta, f, dfdq, sigma, d);
         if (h_new - h_old).abs() <=  tol {
             i = it + 2;
         } else{
@@ -220,10 +211,10 @@ pub fn newton_raphson(particle_a: &Particle, particles: & Vec<Particle>, h_guess
     }
 }
 
-pub fn smoothing_length(particles: &mut Vec<Particle>, eta:f64, w: fn(f64, f64) -> f64, dwdq: fn(f64, f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32){
+pub fn smoothing_length(particles: &mut Vec<Particle>, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32){
     for ii in 0..particles.len(){
         // Look for neighboring particles
-        particles[ii].h = newton_raphson(&particles[ii], particles, particles[ii].h, eta, w, dwdq, sigma, d, tol, it);
+        particles[ii].h = newton_raphson(&particles[ii], particles, particles[ii].h, eta, f, dfdq, sigma, d, tol, it);
     }
 }
 
@@ -257,22 +248,22 @@ pub fn body_forces_toy_star(x: f64, y: f64, vx: f64, vy: f64, nu: f64, lmbda: f6
     vec![-nu * vx - lmbda*x, -nu * vy - lmbda*y]  
 }
 
-pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64, f64) -> f64, fn(f64, f64) -> f64, f64, i32) -> f64, w: fn(f64, f64) -> f64, dwdq: fn(f64, f64) -> f64, nu:f64, lmbda:f64, sigma: f64, d:i32){
+pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, nu:f64, lmbda:f64, sigma: f64, d:i32){
     let n = particles.len();
-    for ii in 0..n {
+    for ii in 0..(n) {
         let p_i = eos(particles[ii].rho, k, gamma);
-        let omeg_i = omega(&particles[ii], particles, particles[ii].h, particles[ii].rho, dwdh_, w, dwdq, sigma, d);
+        let omeg_i = omega(&particles[ii], particles, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
         let mut dudt = 0.0;
-        for jj in ii+1..n {
+        //println!("{} {} {}", ii, p_i, particles[ii].h);
+        for jj in (ii+1)..n {
             let p_j = eos(particles[jj].rho, k, gamma);
-            let omeg_j = omega(&particles[jj], particles, particles[jj].h, particles[jj].rho, dwdh_, w, dwdq, sigma, d);
+            let omeg_j = omega(&particles[jj], particles, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
-            let grad_hi = dwdq(r_ij/particles[ii].h, sigma)/(r_ij*particles[ii].h);
-            let grad_hj = dwdq(r_ij/particles[jj].h, sigma)/(r_ij*particles[jj].h);
-
+            let grad_hi = dfdq(r_ij/particles[ii].h)/(r_ij*particles[ii].h);
+            let grad_hj = dfdq(r_ij/particles[jj].h)/(r_ij*particles[jj].h);
+            //println!("{}   {}   {}   {}   {}   {}   {}", ii, jj, p_j, omeg_j, r_ij, grad_hi, grad_hj);
             // Acceleration
             let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj);
-
             // Thermal change
             let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
                          +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
