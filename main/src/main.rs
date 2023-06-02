@@ -16,12 +16,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         process::exit(1);
     }
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 3.2; // initial time
+    let tf:f64 = 0.004; // initial time
     let dt :f64 = 0.004; // time step
     let t_iter :u32 = ((tf-t0)/dt) as u32; // time steps
     println!("{}", t_iter);
     let eta :f64 = 1.2; // dimensionless constant related to the ratio of smoothing length
-    let d = 3; // Dimension of the system
+    let d = 2; // Dimension of the system
     let k:f64 = 0.1; // Pressure constant
     let gamma:f64 = 1.0;  // Polytropic index
     let m:f64 = 2.0; // Star's mass
@@ -31,10 +31,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let sigma :f64 = 1.0/(PI*0.01); // 
 
     for tt in 0..t_iter {
-        sphfunctions::smoothing_length(&mut particles, eta, sphfunctions::cubic_kernel, sphfunctions::dwdq_cubic_kernel, sigma, d, 1e-03, 100);
-        sphfunctions::accelerations(&mut particles, sphfunctions::eos_polytropic, k, gamma, sphfunctions::dwdh, sphfunctions::cubic_kernel, sphfunctions::dwdq_cubic_kernel, nu, lmbda, sigma, d);
+        sphfunctions::smoothing_length(&mut particles, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d, 1e-03, 100);
+        sphfunctions::accelerations(&mut particles, sphfunctions::eos_polytropic, k, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, nu, lmbda, sigma, d);
+        for ii in 0..particles.len(){
+            println!("{} {}", ii, particles[ii].h);
+        }
         for ii in 0..particles.len(){
             sphfunctions::euler_integrator(&mut particles[ii], dt);
+            //println!("{} {} {} {} {} {}", particles[ii].x, particles[ii].y, particles[ii].vx, particles[ii].vy, particles[ii].ax, particles[ii].ay);
         }
         println!{"{}", tt};
     }
