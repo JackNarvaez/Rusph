@@ -17,7 +17,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let t0:f64 = 0.0; // initial time
     let tf:f64 = 1.; // initial time
-    let dt :f64 = 0.0005; // time step
+    let dt :f64 = 0.004; // time step
     let t_iter :u32 = ((tf-t0)/dt) as u32; // time steps
     println!("{}", t_iter);
     let eta :f64 = 1.2; // dimensionless constant related to the ratio of smoothing length
@@ -28,14 +28,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let r:f64 = 0.75; // Star's radius
     let nu:f64 = 1.0; // 1.0Viscocity parameter
     let lmbda = sphfunctions::coeff_static_grav_potential(k, gamma, m, r);
-    let sigma :f64 = 1.0/(PI); // 
+    let sigma :f64 = 10.0/(7.*PI); // 
 
     for tt in 0..t_iter {
         sphfunctions::smoothing_length(&mut particles, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d, 1e-03, 100);
         sphfunctions::accelerations(&mut particles, sphfunctions::eos_polytropic, k, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, nu, lmbda, sigma, d);
         for ii in 0..particles.len(){
             sphfunctions::euler_integrator(&mut particles[ii], dt);
-            //println!("{} {} {} {} {} {}", particles[ii].x, particles[ii].y, particles[ii].vx, particles[ii].vy, particles[ii].ax, particles[ii].ay);
         }
         println!{"{}", tt};
     }
