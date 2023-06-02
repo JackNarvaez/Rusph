@@ -1,5 +1,6 @@
 use std::{
     error::Error,
+    f64,
 };
 
 use rand::{thread_rng, Rng};
@@ -125,6 +126,8 @@ pub fn euclidean_norm(p1: &Particle, p2: &Particle) -> f64 {
 
 
 // Kernel
+
+// Cubic Kernel
 pub fn f_cubic_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
     if q < 1. {
@@ -143,6 +146,24 @@ pub fn dfdq_cubic_kernel(q:f64) -> f64 {
         df = -3.*(0.25*q*q-q+1.);
     }
     df
+}
+
+
+// Gaussian Kernel
+pub fn f_gaussian_kernel(q:f64) -> f64 {
+    let mut f:f64 = 0.;
+    if q < 2. {
+        f = (-q*q).exp();
+    }
+    f
+}
+
+pub fn dfdq_gaussian_kernel(q:f64) -> f64 {
+    let mut f:f64 = 0.;
+    if q < 2. {
+        f = -2.0*q*(-q*q).exp();
+    }
+    f
 }
 
 pub fn dwdh(q: f64, f: fn(f64) -> f64, df: fn(f64) -> f64, d:i32) -> f64 {
