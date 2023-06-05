@@ -14,6 +14,7 @@ pub struct Particle {
 	pub x: f64,
     pub y: f64,
     pub h: f64,
+    pub dh: f64,
     pub rho: f64,
     pub vx: f64,
     pub vy: f64,
@@ -30,6 +31,7 @@ impl Default for Particle {
             x: 0.,
             y: 0.,
             h: 0.1,
+            dh: 0.0,
             rho: 1.0,
             vx: 0.0,
             vy: 0.0,
@@ -99,23 +101,10 @@ pub fn read_data(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dy
 
 
 // Basic vector functions
-pub fn sust_vec(vec1: & Vec<f64>, vec2: & Vec<f64>) -> Vec<f64> {
-    vec1.into_iter().zip(vec2).map(|(a, b)| a - b).collect()
-}
-
-pub fn rel_distance(p1: &Particle, p2: &Particle) -> Vec<f64> {
-    vec![p1.x - p2.x, p1.y - p2.y]
-}
-
 pub fn euclidean_norm(p1: &Particle, p2: &Particle) -> f64 {
-    let vec = [p1.x - p2.x, p1.y - p2.y];
-    let mut sum :f64 = 0.0;
-    for x in vec.iter() {
-        sum += x*x;
-    }
+    let sum :f64 = (p1.x - p2.x)*(p1.x - p2.x) + (p1.y - p2.y)*(p1.y - p2.y);
     sum.sqrt()
 }
-
 
 // Kernel
 
@@ -224,13 +213,14 @@ pub fn newton_raphson(particle_a: &Particle, particles: & Vec<Particle>, h_guess
     }
 }
 
-pub fn smoothing_length(particles: &mut Vec<Particle>, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32){
+pub fn smoothing_length(particles: &mut Vec<Particle>, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64){
     for ii in 0..particles.len(){
         // Look for neighboring particles
-        let h_new = newton_raphson(&particles[ii], particles, particles[ii].h, eta, f, dfdq, sigma, d, tol, it);
+        let h_new = newton_raphson(&particles[ii], particles, particles[ii].h+dt*particles[ii].dh, eta, f, dfdq, sigma, d, tol, it);
         if h_new != 0.0 {
             particles[ii].h = h_new;
         }
+        particles[ii].rho = density_kernel(&particles[ii], &particles, particles[ii].h, sigma, d, f);
     }
 }
 
@@ -255,11 +245,15 @@ pub fn thermal_energy(rho:f64, p:f64, gamma:f64) -> f64 {
 }
 
 
-pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p_b: f64, omeg_a: f64, omeg_b: f64, grad_ha: f64, grad_hb: f64) -> Vec<f64> {
-    let acc = p_a/(omeg_a*particle_a.rho*particle_a.rho)*grad_ha + p_b/(omeg_b*particle_b.rho*particle_b.rho) * grad_hb;
+// Dynamic Equations
+
+// --- Force due to the gradient of pressure ---
+pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p_b: f64, omeg_a: f64, omeg_b: f64, grad_ha: f64, grad_hb: f64, art_visc: f64) -> Vec<f64> {
+    let acc = p_a/(omeg_a*particle_a.rho*particle_a.rho)*grad_ha + p_b/(omeg_b*particle_b.rho*particle_b.rho) * grad_hb + art_visc;
     vec![-acc*(particle_a.x - particle_b.x), -acc*(particle_a.y - particle_b.y)]
 }
 
+// --- Body Forces ---
 pub fn body_forces_toy_star(x: f64, y: f64, vx: f64, vy: f64, nu: f64, lmbda: f64) -> Vec<f64> {
     vec![-nu * vx - lmbda*x, -nu * vy - lmbda*y]  
 }
@@ -267,25 +261,34 @@ pub fn body_forces_toy_star(x: f64, y: f64, vx: f64, vy: f64, nu: f64, lmbda: f6
 pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, nu:f64, lmbda:f64, sigma: f64, d:i32){
     let n = particles.len();
     for ii in 0..n {
-        particles[ii].ax = 0.;
-        particles[ii].ay = 0.;
-    }
-    for ii in 0..n {
         let p_i = eos(particles[ii].rho, k, gamma);
         let omeg_i = omega(&particles[ii], particles, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
-        let mut dudt = 0.0;
         for jj in (ii+1)..n {
             let p_j = eos(particles[jj].rho, k, gamma);
             let omeg_j = omega(&particles[jj], particles, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
             let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
             let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
-            // Acceleration
-            let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj);
-            // Thermal change
+
+            // Divergence of velocity
             let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
                          +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
-            dudt += particles[jj].m*grad_hi*dot_r_v;
+            
+            // Artificial viscosity
+            let alpha :f64 = 1.0;
+            let eps :f64 = 0.01;
+            let h_mean = 0.5*(particles[ii].h+particles[jj].h);
+            let nu_visc = alpha*2.0*h_mean/(particles[ii].rho+particles[jj].rho);
+            let mut art_visc = 0.0;
+            if dot_r_v < 0.0 {
+                art_visc = -nu_visc*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
+            }
+
+            // Acceleration
+            let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);
+            
+            
+            particles[ii].dh += grad_hi*dot_r_v;
 
             particles[ii].ax += particles[jj].m *f_ij[0];
             particles[ii].ay += particles[jj].m *f_ij[1];
@@ -295,10 +298,16 @@ pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64,
         let body_forces = body_forces_toy_star(particles[ii].x, particles[ii].y, particles[ii].vx, particles[ii].vy, nu, lmbda);
         particles[ii].ax += body_forces[0];
         particles[ii].ay += body_forces[1];
-        particles[ii].du = p_i / (omeg_i*particles[ii].h*particles[ii].h) *dudt;
+
+        // Thermal change
+        particles[ii].du = particles[ii].m*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * particles[ii].dh;
+        // Smoothing length change
+        particles[ii].dh *= -particles[ii].m * particles[ii].h/ (omeg_i*particles[ii].rho*d as f64);
     }
 }
 
+
+// Time integrator
 pub fn euler_integrator(particle: &mut Particle, dt: f64) {
     particle.x += dt * particle.vx;
     particle.y += dt * particle.vy;
