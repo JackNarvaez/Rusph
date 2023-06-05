@@ -272,7 +272,7 @@ pub fn body_forces_toy_star(x: f64, y: f64, vx: f64, vy: f64, nu: f64, lmbda: f6
 
 pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, nu:f64, lmbda:f64, sigma: f64, d:i32){
     let n = particles.len();
-    for ii in 0..(n) {
+    for ii in 0..n {
         let p_i = eos(particles[ii].rho, k, gamma);
         let omeg_i = omega(&particles[ii], particles, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
         let mut dudt = 0.0;
