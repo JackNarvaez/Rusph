@@ -16,7 +16,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         process::exit(1);
     }
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 0.5; // initial time
+    let tf:f64 = 16.5; // initial time
     let dt :f64 = 0.004; // time step
     let t_iter :u32 = ((tf-t0)/dt) as u32; // time steps
     println!("{}", t_iter);
@@ -29,11 +29,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let nu:f64 = 1.0; // 1.0Viscocity parameter
     let lmbda = sphfunctions::coeff_static_grav_potential(k, gamma, m, r);
     let sigma :f64 = 10.0/(7.*PI); // 
+
     for tt in 0..t_iter {
         sphfunctions::smoothing_length(&mut particles, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d, 1e-03, 100);
         sphfunctions::accelerations(&mut particles, sphfunctions::eos_polytropic, k, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, nu, lmbda, sigma, d);
         for ii in 0..particles.len(){
             sphfunctions::euler_integrator(&mut particles[ii], dt);
+            particles[ii].rho = sphfunctions::density_kernel(&particles[ii], &particles, particles[ii].h, sigma, d, sphfunctions::f_cubic_kernel);
             //println!("{} {} {} {} {} {} {} {}", ii, particles[ii].x, particles[ii].y, particles[ii].vx, particles[ii].vy, particles[ii].ax, particles[ii].ay, particles[ii].h);
         }
         println!{"{}", tt};

@@ -13,15 +13,12 @@ pub struct Particle {
 	pub m: f64,
 	pub x: f64,
     pub y: f64,
-    //pub z: f64,
     pub h: f64,
     pub rho: f64,
     pub vx: f64,
     pub vy: f64,
-    //pub vz: f64,
     pub ax: f64,
     pub ay: f64,
-    //pub az: f64,
     pub u: f64,
     pub du: f64,
 }
@@ -32,15 +29,12 @@ impl Default for Particle {
             m: 1.,
             x: 0.,
             y: 0.,
-            //z: 0.,
             h: 0.1,
             rho: 1.0,
             vx: 0.0,
             vy: 0.0,
-            //vz: 0.0,
             ax: 0.0,
             ay: 0.0,
-            //az: 0.0,
             u: 0.0,
             du: 0.0,
         }
@@ -65,8 +59,6 @@ pub fn init_square(path: &str, n: u32, m:f64, rho:f64)-> Result<(), Box<dyn Erro
 
 pub fn init_random_circle(path: &str, n:u32, r:f64, m:f64, rho:f64, h:f64, x0:f64, y0:f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
-    //let mut g = rand::seed_from_f64(seed);
-
     let mut rng = thread_rng();
     wtr.write_record(&["m", "x", "y", "h", "rho"])?;
     for _ii in 0..n{
@@ -116,7 +108,7 @@ pub fn rel_distance(p1: &Particle, p2: &Particle) -> Vec<f64> {
 }
 
 pub fn euclidean_norm(p1: &Particle, p2: &Particle) -> f64 {
-    let vec = rel_distance(p1, p2);
+    let vec = [p1.x - p2.x, p1.y - p2.y];
     let mut sum :f64 = 0.0;
     for x in vec.iter() {
         sum += x*x;
@@ -202,8 +194,7 @@ pub fn f_iter(particle_a: &Particle, neigh_particles: & Vec<Particle>, h: f64, e
     let f_h = rho_h - rho_kernel;
     //println!("{} {}", f_h, h);
     let omeg = omega(particle_a, neigh_particles, h, rho_kernel, dwdh, f, dfdq, sigma, d);
-    let df = -(d
-         as f64)*rho_h*omeg/ h;
+    let df = -(d as f64)*rho_h*omeg/ h;
     (f_h, df)
 }
 
@@ -236,7 +227,10 @@ pub fn newton_raphson(particle_a: &Particle, particles: & Vec<Particle>, h_guess
 pub fn smoothing_length(particles: &mut Vec<Particle>, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32){
     for ii in 0..particles.len(){
         // Look for neighboring particles
-        particles[ii].h = newton_raphson(&particles[ii], particles, particles[ii].h, eta, f, dfdq, sigma, d, tol, it);
+        let h_new = newton_raphson(&particles[ii], particles, particles[ii].h, eta, f, dfdq, sigma, d, tol, it);
+        if h_new != 0.0 {
+            particles[ii].h = h_new;
+        }
     }
 }
 
@@ -273,20 +267,21 @@ pub fn body_forces_toy_star(x: f64, y: f64, vx: f64, vy: f64, nu: f64, lmbda: f6
 pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, nu:f64, lmbda:f64, sigma: f64, d:i32){
     let n = particles.len();
     for ii in 0..n {
+        particles[ii].ax = 0.;
+        particles[ii].ay = 0.;
+    }
+    for ii in 0..n {
         let p_i = eos(particles[ii].rho, k, gamma);
         let omeg_i = omega(&particles[ii], particles, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
         let mut dudt = 0.0;
-        //println!("{} {} {}", ii, p_i, particles[ii].h);
         for jj in (ii+1)..n {
             let p_j = eos(particles[jj].rho, k, gamma);
             let omeg_j = omega(&particles[jj], particles, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
             let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
             let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
-            //println!("{}   {}   {}   {}   {}   {}   {}", ii, jj, p_j, omeg_j, r_ij, grad_hi, grad_hj);
             // Acceleration
             let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj);
-            //let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, 1., 1., grad_hi, grad_hi);
             // Thermal change
             let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
                          +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
