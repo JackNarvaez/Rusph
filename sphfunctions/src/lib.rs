@@ -45,21 +45,35 @@ impl Default for Particle {
 
 
 // Write data
-pub fn init_square(path: &str, n: u32, m:f64, rho:f64)-> Result<(), Box<dyn Error>>{
+pub fn init_square(path: &str, n: u32, m:f64, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
-    let h:f64 = 1./n as f64;
-    let offset = 0.5 / n as f64;
+    let dx = (w*l / n as f64).sqrt();
+    let nx :i64 = (w/dx) as i64;
+    let ny :i64 = (l/dx) as i64;
     wtr.write_record(&["m", "x", "y", "h", "rho"])?;
-    for ii in 0..n{
-        for jj in 0..n{
-            wtr.write_record(&[m.to_string(), (ii as f64 / n as f64 + offset).to_string(), (jj as f64 / n as f64 + offset).to_string(), h.to_string(), rho.to_string()])?;
+    for jj in 0..ny{
+        for ii in 0..nx{
+            wtr.write_record(&[m.to_string(), (dx*ii as f64).to_string(), (dx*jj as f64).to_string(), h.to_string(), rho.to_string()])?;
         }
     }
     wtr.flush()?;
     Ok(())
 }
 
-pub fn init_random_circle(path: &str, n:u32, r:f64, m:f64, rho:f64, h:f64, x0:f64, y0:f64)-> Result<(), Box<dyn Error>>{
+pub fn init_random_square(path: &str, n: u32, m:f64, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
+    let mut wtr = Writer::from_path(path)?;
+    let mut rng = thread_rng();
+    wtr.write_record(&["m", "x", "y", "h", "rho"])?;
+    for _ii in 0..n{
+        let x = rng.gen_range(0.0f64, w);
+        let y = rng.gen_range(0.0f64, l);
+        wtr.write_record(&[m.to_string(), x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
+    }
+    wtr.flush()?;
+    Ok(())
+}
+
+pub fn init_random_circle(path: &str, n: u32, r:f64, m:f64, rho:f64, h:f64, x0:f64, y0:f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     let mut rng = thread_rng();
     wtr.write_record(&["m", "x", "y", "h", "rho"])?;
@@ -181,8 +195,8 @@ pub fn f_iter(particle_a: &Particle, neigh_particles: & Vec<Particle>, h: f64, e
     let rho_kernel = density_kernel(particle_a, neigh_particles, h, sigma, d, f);
     let rho_h = density_by_smoothing_length(particle_a.m, h, eta, d);
     let f_h = rho_h - rho_kernel;
-    //println!("{} {}", f_h, h);
     let omeg = omega(particle_a, neigh_particles, h, rho_kernel, dwdh, f, dfdq, sigma, d);
+    //println!("{} = {} - {}    {} {}", f_h, rho_h, rho_kernel, h, omeg);
     let df = -(d as f64)*rho_h*omeg/ h;
     (f_h, df)
 }
@@ -254,11 +268,12 @@ pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p
 }
 
 // --- Body Forces ---
-pub fn body_forces_toy_star(x: f64, y: f64, vx: f64, vy: f64, nu: f64, lmbda: f64) -> Vec<f64> {
-    vec![-nu * vx - lmbda*x, -nu * vy - lmbda*y]  
+pub fn body_forces_toy_star(particle: &mut Particle, nu: f64, lmbda: f64) {
+    particle.ax -= nu * particle.vx + lmbda*particle.x;
+    particle.ay -= nu * particle.vy + lmbda*particle.y; 
 }
 
-pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, nu:f64, lmbda:f64, sigma: f64, d:i32){
+pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32){
     let n = particles.len();
     for ii in 0..n {
         let p_i = eos(particles[ii].rho, k, gamma);
@@ -283,11 +298,8 @@ pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64,
             if dot_r_v < 0.0 {
                 art_visc = -nu_visc*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
             }
-
             // Acceleration
             let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);
-            
-            
             particles[ii].dh += grad_hi*dot_r_v;
 
             particles[ii].ax += particles[jj].m *f_ij[0];
@@ -295,9 +307,6 @@ pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64,
             particles[jj].ax -= particles[ii].m *f_ij[0];
             particles[jj].ay -= particles[ii].m *f_ij[1];
         }
-        let body_forces = body_forces_toy_star(particles[ii].x, particles[ii].y, particles[ii].vx, particles[ii].vy, nu, lmbda);
-        particles[ii].ax += body_forces[0];
-        particles[ii].ay += body_forces[1];
 
         // Thermal change
         particles[ii].du = particles[ii].m*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * particles[ii].dh;
@@ -314,4 +323,21 @@ pub fn euler_integrator(particle: &mut Particle, dt: f64) {
     particle.vx += dt * particle.ax;
     particle.vy += dt * particle.ay;
     particle.u += dt * particle.du;
+}
+
+// Boundary conditions
+
+// --- Periodic Boundary Conditions ---
+pub fn periodic_boundary(particle: &mut Particle, w: f64, h: f64){
+    // We assume that the domain's system is a rectangular box.
+    if particle.x > w {
+        particle.x -= w;
+    } else if particle.x < 0.0 {
+        particle.x += w;
+    }
+    if particle.y > h {
+        particle.y -= h;
+    } else if particle.y < 0.0 {
+        particle.y += h;
+    }
 }
