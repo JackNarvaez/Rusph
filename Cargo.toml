@@ -1,6 +1,7 @@
 [workspace]
 
 members = [
-    "main",
+    "toy_star",
+    "ideal_gas",
     "sphfunctions",
 ]
