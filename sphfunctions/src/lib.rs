@@ -9,40 +9,9 @@ use csv::Writer;
 
 use std::f64::consts::PI;
 
-pub struct Particle {
-	pub m: f64,
-	pub x: f64,
-    pub y: f64,
-    pub h: f64,
-    pub dh: f64,
-    pub rho: f64,
-    pub vx: f64,
-    pub vy: f64,
-    pub ax: f64,
-    pub ay: f64,
-    pub u: f64,
-    pub du: f64,
-}
-
-impl Default for Particle {
-    fn default() -> Particle {
-        Particle {
-            m: 1.,
-            x: 0.,
-            y: 0.,
-            h: 0.1,
-            dh: 0.0,
-            rho: 1.0,
-            vx: 0.0,
-            vy: 0.0,
-            ax: 0.0,
-            ay: 0.0,
-            u: 0.0,
-            du: 0.0,
-        }
-    }
-}
-
+use structures::{
+    Particle,
+};
 
 // Write data
 pub fn init_square(path: &str, n: u32, m:f64, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
@@ -229,12 +198,12 @@ pub fn newton_raphson(particle_a: &Particle, particles: & Vec<Particle>, h_guess
 
 pub fn smoothing_length(particles: &mut Vec<Particle>, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64){
     for ii in 0..particles.len(){
-        // Look for neighboring particles
+        // Look for neighboring particles 
         let h_new = newton_raphson(&particles[ii], particles, particles[ii].h+dt*particles[ii].dh, eta, f, dfdq, sigma, d, tol, it);
         if h_new != 0.0 {
             particles[ii].h = h_new;
         }
-        particles[ii].rho = density_kernel(&particles[ii], &particles, particles[ii].h, sigma, d, f);
+        particles[ii].rho = density_kernel(&particles[ii], particles, particles[ii].h, sigma, d, f);
     }
 }
 

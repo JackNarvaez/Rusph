@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 sphfunctions = { path = "../sphfunctions" }
+structures = { path = "../structures" }

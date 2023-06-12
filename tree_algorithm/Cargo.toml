@@ -7,4 +7,4 @@ edition = "2021"
 
 [dependencies]
 csv = "1.1"
-sphfunctions = { path = "../sphfunctions" }
+structures = { path = "../structures" }

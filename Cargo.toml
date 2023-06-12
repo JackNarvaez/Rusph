@@ -6,4 +6,5 @@ members = [
     "sphfunctions",
     "tree_algorithm",
     "find_neighbors",
+    "structures",
 ]

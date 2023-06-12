@@ -5,12 +5,16 @@ use std::{
 
 use sphfunctions;
 
+use structures::{
+    Particle,
+};
+
 use std::f64::consts::PI;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let path_source = "./Data/initial_distribution/toy_star_2D.csv";
     let path_result = "./Data/results/toy_star_2D.csv";
-    let mut particles :Vec<sphfunctions::Particle> = Vec::new();
+    let mut particles :Vec<Particle> = Vec::new();
     if let Err(err) = sphfunctions::read_data(path_source, &mut particles) {
         println!("{}", err);
         process::exit(1);

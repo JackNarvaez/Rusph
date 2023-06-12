@@ -4,12 +4,17 @@ use std::{
 };
 
 use sphfunctions;
+
 use tree_algorithm::{
-    Node,
     BuildTree,
     FindNeighbors,
     save_tree,
-    save_neighbors,
+    save_neighbors
+};
+
+use structures::{
+    Particle,
+    Node,
 };
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -26,7 +31,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{}", err);
         process::exit(1);
     }
-    let mut particles :Vec<sphfunctions::Particle> = Vec::new();
+    let mut particles :Vec<Particle> = Vec::new();
     if let Err(err) = sphfunctions::read_data(path, &mut particles) {
         println!("{}", err);
         process::exit(1);

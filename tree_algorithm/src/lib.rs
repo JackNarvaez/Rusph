@@ -6,38 +6,10 @@ use std::{
 
 use csv::Writer;
 
-use sphfunctions;
-
-#[derive(Debug)]
-pub struct Node {
-	pub xmin: f64,
-    pub ymin: f64,
-    pub side: f64,
-    pub id: u32,
-    pub depth: u32,
-    pub n: u32,
-    pub branches: u32,
-    pub leave: bool,
-    pub children: Vec<Node>,
-    pub particles: Vec<usize>,
-}
-
-impl Default for Node {
-    fn default() -> Node {
-        Node {
-            xmin: 0.0,
-            ymin: 0.0,
-            side: 1.,
-            id: 0,
-            depth: 0,
-            n: 0,
-            branches: 0,
-            leave: false,
-            children: Vec::new(),
-            particles: Vec::new(),
-        }
-    }
-}
+use structures::{
+    Particle,
+    Node,
+};
 
 pub trait BuildTree {
 
@@ -55,7 +27,7 @@ pub trait BuildTree {
 
     fn distribution_ratio(&self, limit: u32, b: u32) -> f64;
 
-    fn build_tree(&mut self, k: u32, s: u32, alpha: f64, beta: f64, particles: & Vec<sphfunctions::Particle>);
+    fn build_tree(&mut self, k: u32, s: u32, alpha: f64, beta: f64, particles: & Vec<Particle>);
 }
 
 impl BuildTree for Node {
@@ -106,7 +78,7 @@ impl BuildTree for Node {
         r / (b.pow(self.depth) as f64)
     }
 
-    fn build_tree(&mut self, k: u32, s: u32, alpha: f64, beta: f64, particles: & Vec<sphfunctions::Particle>) {
+    fn build_tree(&mut self, k: u32, s: u32, alpha: f64, beta: f64, particles: & Vec<Particle>) {
         let mut redistribution :bool = true;
         let smallest_cell = 1.0e-2;
         let mut b = self.branching_factor(k as f64, s as f64);
@@ -143,7 +115,7 @@ pub trait FindNeighbors {
 
     fn children_in_range(&self, xmin: u32, xmax: u32, ymin: u32, ymax:u32, b:u32) -> Vec<usize>;
 
-    fn find_neighbors(&mut self, p: usize, k: f64, s: u32, particles: & Vec<sphfunctions::Particle>, neighbors_of_p: &mut Vec<usize>);
+    fn find_neighbors(& self, p: usize, k: f64, s: u32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>);
 }
 
 impl FindNeighbors for Node {
@@ -169,14 +141,14 @@ impl FindNeighbors for Node {
         neighbors
     }
 
-    fn find_neighbors(&mut self, p: usize, k: f64, s: u32, particles: & Vec<sphfunctions::Particle>, neighbors_of_p: &mut Vec<usize>) {
+    fn find_neighbors(& self, p: usize, k: f64, s: u32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>) {
         let b = (self.branches as f64).powf(1./k) as u32;
         let (x_min, x_max, y_min, y_max) = self.range_neigh(particles[p].x, particles[p].y, particles[p].h, b as f64);
         let neighbors = self.children_in_range(x_min, x_max, y_min, y_max, b);
         for ii in neighbors {
             if self.children[ii].n <= s {
                 for q in &self.children[ii].particles {
-                    if sphfunctions::euclidean_norm(&particles[p], &particles[*q]) <= 2.0*particles[p].h {
+                    if euclidean_norm(&particles[p], &particles[*q]) <= 2.0*particles[p].h {
                         neighbors_of_p.push(*q);
                     }
                 }
@@ -212,4 +184,9 @@ pub fn save_neighbors(path: &str, p: usize, neighbors: & Vec<usize>){
     for ii in neighbors {
         wtr.write_record(&[ii.to_string()]).expect("Couldn't write data");
     }
+}
+
+pub fn euclidean_norm(p1: &Particle, p2: &Particle) -> f64 {
+    let sum :f64 = (p1.x - p2.x)*(p1.x - p2.x) + (p1.y - p2.y)*(p1.y - p2.y);
+    sum.sqrt()
 }

@@ -8,3 +8,5 @@ edition = "2021"
 [dependencies]
 csv = "1.1"
 rand = "0.3"
+structures = { path = "../structures" }
+tree_algorithm = { path = "../tree_algorithm" }
