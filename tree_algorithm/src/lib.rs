@@ -53,7 +53,7 @@ pub trait BuildTree {
 
     fn delete_particles(&mut self);
 
-    fn distribution_ratio(&self, limit: u32) -> f64;
+    fn distribution_ratio(&self, limit: u32, b: u32) -> f64;
 
     fn build_tree(&mut self, k: u32, s: u32, alpha: f64, beta: f64, particles: & Vec<sphfunctions::Particle>);
 }
@@ -83,28 +83,27 @@ impl BuildTree for Node {
 
     fn create_sub_cells(&mut self, b: u32) {
         let dx = self.side / b as f64;
-        println!("dx  {} {}", dx, self.id);
         for ii in 0..self.branches {
             self.children.push(self.create_child(ii, b, dx));
         }
     }
 
     fn delete_sub_cells(&mut self) {
-        self.children.clear();// = Vec::new();
+        self.children.clear();
     }
 
     fn delete_particles(&mut self) {
-        self.particles.clear();//= Vec::new();
+        self.particles.clear();
     }
 
-    fn distribution_ratio(&self, limit: u32) -> f64 {
+    fn distribution_ratio(&self, limit: u32, b:u32) -> f64 {
         let mut r :f64 = 0.0;
         for child in &self.children{
             if child.n <= limit {
                 r += 1.0;
             }
         }
-        r / self.branches as f64
+        r / (b.pow(self.depth) as f64)
     }
 
     fn build_tree(&mut self, k: u32, s: u32, alpha: f64, beta: f64, particles: & Vec<sphfunctions::Particle>) {
@@ -113,7 +112,6 @@ impl BuildTree for Node {
         let mut b = self.branching_factor(k as f64, s as f64);
         while redistribution {
             self.branches = b.pow(k);
-            println!("{} {} {}",self.depth, b, self.side);
             self.create_sub_cells(b);
             for p in &self.particles {
                 let x_p = ((particles[*p].x - self.xmin) / self.side * b as f64).floor();
@@ -121,15 +119,11 @@ impl BuildTree for Node {
                 let j :usize = (x_p + y_p*b as f64) as usize;
                 add_particle(&mut self.children[j], *p);
             }
-            let r = self.distribution_ratio((alpha * s as f64) as u32);
-            println!("{}", r);
-            if r < beta {
+            let r = self.distribution_ratio((alpha * s as f64) as u32, b);
+            if r >= beta {
                 b = b/2;
-                //println!("{} {}", self.id, self.n);
                 self.delete_sub_cells();
-                //println!("Children  {}  {:?}", self.depth, self.children)
             } else {
-                //println!("yep {} {}", self.side, self.branches);
                 self.delete_particles();
                 redistribution = false;
             }
@@ -144,6 +138,55 @@ impl BuildTree for Node {
     }
 }
 
+pub trait FindNeighbors {
+    fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: f64) -> (u32, u32, u32, u32);
+
+    fn children_in_range(&self, xmin: u32, xmax: u32, ymin: u32, ymax:u32, b:u32) -> Vec<usize>;
+
+    fn find_neighbors(&mut self, p: usize, k: f64, s: u32, particles: & Vec<sphfunctions::Particle>, neighbors_of_p: &mut Vec<usize>);
+}
+
+impl FindNeighbors for Node {
+
+    fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: f64) -> (u32, u32, u32, u32){
+        let factor : f64 =  b/self.side;
+        let x_min = (((x_p - 2.0*h) - self.xmin) * factor).floor() as u32;
+        let x_max = (((x_p + 2.0*h) - self.xmin) * factor).floor() as u32;
+        let y_min = (((y_p - 2.0*h) - self.ymin) * factor).floor() as u32;
+        let y_max = (((y_p + 2.0*h) - self.ymin) * factor).floor() as u32;
+        (x_min, x_max, y_min, y_max)
+    }
+
+    fn children_in_range(&self, xmin: u32, xmax: u32, ymin: u32, ymax:u32, b:u32) -> Vec<usize>{
+        let mut neighbors : Vec<usize> = Vec::new();
+        for child in &self.children{
+            if (child.id%b >= xmin) && (child.id/b >= ymin) {
+                if (child.id%b <= xmax) && (child.id/b <= ymax) {
+                    neighbors.push(child.id as usize);
+                }
+            }
+        }
+        neighbors
+    }
+
+    fn find_neighbors(&mut self, p: usize, k: f64, s: u32, particles: & Vec<sphfunctions::Particle>, neighbors_of_p: &mut Vec<usize>) {
+        let b = (self.branches as f64).powf(1./k) as u32;
+        let (x_min, x_max, y_min, y_max) = self.range_neigh(particles[p].x, particles[p].y, particles[p].h, b as f64);
+        let neighbors = self.children_in_range(x_min, x_max, y_min, y_max, b);
+        for ii in neighbors {
+            if self.children[ii].n <= s {
+                for q in &self.children[ii].particles {
+                    if sphfunctions::euclidean_norm(&particles[p], &particles[*q]) <= 2.0*particles[p].h {
+                        neighbors_of_p.push(*q);
+                    }
+                }
+            } else {
+                self.children[ii].find_neighbors(p, k, s, particles, neighbors_of_p);
+            }
+        }
+    }
+}
+
 fn add_particle(cell: &mut Node, i: usize) {
     cell.particles.push(i);
     cell.n += 1;
@@ -151,13 +194,22 @@ fn add_particle(cell: &mut Node, i: usize) {
 
 pub fn save_tree(path: &str, tree: & Node){
     let mut wtr = (Writer::from_path(path)).expect("REASON");
-    wtr.write_record(&["x_min", "y_min", "side", "depth", "n"]);
+    wtr.write_record(&["x_min", "y_min", "side", "depth", "n"]).expect("Couldn't write data");
     save_child(&mut wtr, tree);
 }
 
 fn save_child<W: io::Write>(wtr: &mut Writer<W>, tree: & Node){
-    wtr.write_record(&[tree.xmin.to_string(), tree.ymin.to_string(), tree.side.to_string(), tree.depth.to_string(), tree.n.to_string()]);
+    wtr.write_record(&[tree.xmin.to_string(), tree.ymin.to_string(), tree.side.to_string(), tree.depth.to_string(), tree.n.to_string()]).expect("Couldn't write data");
     for child in &tree.children{
         save_child(wtr, child);
+    }
+}
+
+pub fn save_neighbors(path: &str, p: usize, neighbors: & Vec<usize>){
+    let mut wtr = (Writer::from_path(path)).expect("REASON");
+    wtr.write_record(&["p"]).expect("Couldn't write data");
+    wtr.write_record(&[p.to_string()]).expect("Couldn't write data");
+    for ii in neighbors {
+        wtr.write_record(&[ii.to_string()]).expect("Couldn't write data");
     }
 }
