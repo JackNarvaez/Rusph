@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 1.; // initial time
+    let tf:f64 = 10.; // initial time
     let dt :f64 = 0.004; // time step
     let t_iter :u32 = ((tf-t0)/dt) as u32; // time steps
     println!("{}", t_iter);
@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut tree : Node = <Node as BuildTree>::new(particles.len() as u32, x0-2.*r, y0-2.*r, 4.*r);
 
     for tt in 0..t_iter {
-        tree.build_tree(d, s_, alpha_, beta_, &particles);
+        tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
         sphfunctions::smoothing_length(&mut particles, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_);
         sphfunctions::accelerations(&mut particles, sphfunctions::eos_polytropic, k, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_);
         for ii in 0..particles.len(){

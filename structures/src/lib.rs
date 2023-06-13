@@ -33,7 +33,6 @@ impl Default for Particle {
     }
 }
 
-#[derive(Debug)]
 pub struct Node {
 	pub xmin: f64,
     pub ymin: f64,
@@ -42,7 +41,6 @@ pub struct Node {
     pub depth: u32,
     pub n: u32,
     pub branches: u32,
-    pub leave: bool,
     pub children: Vec<Node>,
     pub particles: Vec<usize>,
 }
@@ -57,7 +55,6 @@ impl Default for Node {
             depth: 0,
             n: 0,
             branches: 0,
-            leave: false,
             children: Vec::new(),
             particles: Vec::new(),
         }

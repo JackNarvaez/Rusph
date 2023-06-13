@@ -42,7 +42,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let alpha : f64 = 0.5;
     let beta : f64 = 0.5;
     let mut root : Node = <Node as BuildTree>::new(n, x0-2.*r, y0-2.*r, 4.*r);
-    root.build_tree(k, s, alpha, beta, &particles);
+    root.build_tree(k, s, alpha, beta, &particles, 0.1*h);
     save_tree(path_tree, &root);
     let mut neighbors: Vec<usize> = Vec::new();
     let p: usize = 1;

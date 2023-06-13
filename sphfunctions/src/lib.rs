@@ -94,13 +94,13 @@ pub fn euclidean_norm(p1: &Particle, p2: &Particle) -> f64 {
     sum.sqrt()
 }
 
-// Kernel
+// Kernel function ------------
 
 // Cubic Kernel
 pub fn f_cubic_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
     if q < 1. {
-        f = 1. - 1.5*q*q + 0.75*q*q*q;
+        f = 1. - 0.75*q*q*(2.0 - q); 
     } else if q < 2.{
         f = 0.25*(2.-q).powi(3);
     }
