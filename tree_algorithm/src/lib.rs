@@ -13,7 +13,7 @@ use structures::{
 
 pub trait BuildTree {
 
-    fn new(n_p: u32) -> Node;
+    fn new(n_p: u32, x0: f64, y0: f64, l: f64) -> Node;
 
     fn branching_factor(& self, k: f64, s:f64) -> u32;
 
@@ -28,12 +28,18 @@ pub trait BuildTree {
     fn distribution_ratio(&self, limit: u32, b: u32) -> f64;
 
     fn build_tree(&mut self, k: u32, s: u32, alpha: f64, beta: f64, particles: & Vec<Particle>);
+
+    fn restart(&mut self);
 }
 
 impl BuildTree for Node {
 
-    fn new(n_p: u32) -> Node {
-        Node{n: n_p, particles: (0..n_p as usize).collect(), ..Default::default()}
+    fn new(n_p: u32, x0: f64, y0: f64, l: f64) -> Node {
+        Node{n: n_p, particles: (0..n_p as usize).collect(), 
+             xmin: x0,
+             ymin: y0,
+             side: l,
+             ..Default::default()}
     }
     fn branching_factor(& self, k: f64, s:f64) -> u32 {
         ((self.n as f64 /s).powf(1./k)).ceil() as u32
@@ -107,6 +113,13 @@ impl BuildTree for Node {
                 child.leave = true;
             }
         }
+    }
+
+    fn restart(&mut self) {
+        self.branches = 0;
+        self.leave = false;
+        self.particles = (0..self.n as usize).collect();
+        self.delete_sub_cells();
     }
 }
 
