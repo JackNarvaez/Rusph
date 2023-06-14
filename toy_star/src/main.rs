@@ -1,3 +1,5 @@
+// Toy Star system in 2D
+
 use std::{
     error::Error,
     process,
@@ -31,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let t0:f64 = 0.0; // initial time
     let tf:f64 = 10.; // initial time
     let dt :f64 = 0.004; // time step
-    let t_iter :u32 = ((tf-t0)/dt) as u32; // time steps
+    let t_iter :u32 = ((tf-t0)/dt) as u32; // time iterations
     println!("{}", t_iter);
 
     // System's parameters
@@ -43,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let r:f64 = 0.75; // Star's radius
     let x0:f64 = 0.; // Star's center
     let y0:f64 = 0.; // Star's center
-    let nu:f64 = 1.0; // 1.0Viscocity parameter
+    let nu:f64 = 1.0; // Viscocity parameter
     let lmbda = sphfunctions::coeff_static_grav_potential(k, gamma, m, r);
     let sigma :f64 = 10.0/(7.*PI); // 
 
@@ -53,6 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let beta_ : f64 = 0.5;
     let mut tree : Node = <Node as BuildTree>::new(particles.len() as u32, x0-2.*r, y0-2.*r, 4.*r);
 
+    // Main loop
     for tt in 0..t_iter {
         tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
         sphfunctions::smoothing_length(&mut particles, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_);

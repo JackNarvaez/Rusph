@@ -18,7 +18,8 @@ use structures::{
     Node,
 };
 
-// Write data
+// -------- Write data --------
+
 pub fn init_square(path: &str, n: u32, m:f64, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     let dx = (w*l / n as f64).sqrt();
@@ -74,7 +75,8 @@ pub fn save_data(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Er
     Ok(())
 }
 
-// Read data
+// -------- Read data --------
+
 pub fn read_data(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dyn Error>> {
     let mut rdr = csv::ReaderBuilder::new()
         .has_headers(true)
@@ -88,13 +90,16 @@ pub fn read_data(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dy
 }
 
 
-// Basic vector functions
+// -------- Basic vector functions --------
+
+// Euclidean distance
 pub fn euclidean_norm(p1: &Particle, p2: &Particle) -> f64 {
     let sum :f64 = (p1.x - p2.x)*(p1.x - p2.x) + (p1.y - p2.y)*(p1.y - p2.y);
     sum.sqrt()
 }
 
-// Kernel function ------------
+
+// -------- Kernel function --------
 
 // Cubic Kernel
 pub fn f_cubic_kernel(q:f64) -> f64 {
@@ -107,6 +112,7 @@ pub fn f_cubic_kernel(q:f64) -> f64 {
     f
 }
 
+// Derivative of cubic kernel
 pub fn dfdq_cubic_kernel(q:f64) -> f64 {
     let mut df:f64 = 0.;
     if q < 1. {
@@ -117,7 +123,6 @@ pub fn dfdq_cubic_kernel(q:f64) -> f64 {
     df
 }
 
-
 // Gaussian Kernel
 pub fn f_gaussian_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
@@ -127,6 +132,7 @@ pub fn f_gaussian_kernel(q:f64) -> f64 {
     f
 }
 
+// Derivative of Gaussian Kernel
 pub fn dfdq_gaussian_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
     if q < 2. {
@@ -135,10 +141,15 @@ pub fn dfdq_gaussian_kernel(q:f64) -> f64 {
     f
 }
 
+// Derivative of kernel w.r.t the smoothing length
 pub fn dwdh(q: f64, f: fn(f64) -> f64, df: fn(f64) -> f64, d:i32) -> f64 {
     (d as f64) *f(q) + q*df(q)
 }
 
+
+// -------- Kernel approximations --------
+
+// Kernel approximation of density
 pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, h: f64, sigma:f64, d:i32, f: fn(f64)->f64) -> f64 {
     let mut rho :f64 = 0.0;
     for jj in neigh_particles{
@@ -148,12 +159,13 @@ pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & V
     rho * &particles[ii].m * sigma / h.powi(d)
 }
 
+// Density calculated by smoothing function
 pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64, d:i32) -> f64{
     let vol = eta/h;
     m*vol.powi(d)
 }
 
-// Iterations
+// Omega operator
 pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, h: f64, rho: f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32) -> f64{
     let mut omeg :f64 = 0.0;
     for jj in neigh_particles {
@@ -164,6 +176,12 @@ pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>
     omeg + 1.
 }
 
+
+// -------- Root solver --------
+
+// -- Newton-Raphson iterator --
+
+// function and derivative of function
 pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, h: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32) -> (f64 , f64) {
     let rho_kernel = density_kernel(particles, ii, neigh_particles, h, sigma, d, f);
     let rho_h = density_by_smoothing_length(particles[ii].m, h, eta, d);
@@ -173,20 +191,23 @@ pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize
     (f_h, df)
 }
 
+// Calculate a new value of 'h'
 fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, h_old: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32) -> f64 {
     let (f, df) = f_iter(particles, ii, neigh_particles, h_old, eta, f, dfdq, sigma, d);
     (h_old - f / df).abs()
 }
 
+// Newton raphson solver to find the value of 'h' for particle 'ii'
 pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, tree: &Node, s_: u32) -> (f64, Vec<usize>) {
     let mut h_new :f64 = 0.0;
     let mut h_old :f64 = h_guess;
     let mut i : u32 = 1;
     let mut neighbors: Vec<usize> = Vec::new();
     while i <= it {
-        // Look for neighboring particles
+        // Searching neighboring particles
         neighbors.clear();
         tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors);
+        // Obtain h_new
         h_new = nr_iter(particles, ii, &neighbors, h_old, eta, f, dfdq, sigma, d);
         if (h_new - h_old).abs() <=  tol {
             i = it + 2;
@@ -202,29 +223,38 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, h_guess: f64, eta:f
     }
 }
 
+
+// -------- Smoothing length --------
+
+// Calculate the smoothing function for each particle in a given time.
 pub fn smoothing_length(particles: &mut Vec<Particle>, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32){
     for ii in 0..particles.len(){
-        // Look for neighboring particles 
         let (h_new, neighbors) = newton_raphson(ii, particles, particles[ii].h+dt*particles[ii].dh, eta, f, dfdq, sigma, d, tol, it, tree, s_);
         if h_new != 0.0 {
+            // If h is not found, then keep it constant in time.
             particles[ii].h = h_new;
         }
         particles[ii].rho = density_kernel(particles, ii, &neighbors, particles[ii].h, sigma, d, f);
     }
 }
 
-// Equation of state
 
-//  --- Toy Star 2D ---
+// -------- Equations of state --------
+
+// -- Toy Star 2D --
+
+// Polytropic equation
 pub fn eos_polytropic(rho:f64, k:f64, gamma:f64) -> f64 {
     k * rho.powf(1.+1./gamma)
 }
 
+// Coefficient of gravital force
 pub fn coeff_static_grav_potential(k:f64, gamma:f64, m:f64, r:f64) -> f64 {
     2.0*k/(PI.powf(1./gamma)) * (m*(1.+gamma)/(r*r)).powf(1.+1./gamma)/m
 }
 
-// --- Ideal Gases ---
+// -- Ideal Gas --
+
 pub fn eos_ideal_gas(rho:f64, k:f64, gamma:f64) -> f64 {
     k*rho.powf(gamma)
 }
@@ -234,33 +264,34 @@ pub fn thermal_energy(rho:f64, p:f64, gamma:f64) -> f64 {
 }
 
 
-// Dynamic Equations
+// -------- Dynamic Equations --------
 
-// --- Force due to the gradient of pressure ---
+// Force due to the pressure's gradient
 pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p_b: f64, omeg_a: f64, omeg_b: f64, grad_ha: f64, grad_hb: f64, art_visc: f64) -> Vec<f64> {
     let acc = p_a/(omeg_a*particle_a.rho*particle_a.rho)*grad_ha + p_b/(omeg_b*particle_b.rho*particle_b.rho) * grad_hb + art_visc;
     vec![-acc*(particle_a.x - particle_b.x), -acc*(particle_a.y - particle_b.y)]
 }
 
-// --- Body Forces ---
+// Body forces for a toy star in 2D
 pub fn body_forces_toy_star(particle: &mut Particle, nu: f64, lmbda: f64) {
     particle.ax -= nu * particle.vx + lmbda*particle.x;
     particle.ay -= nu * particle.vy + lmbda*particle.y; 
 }
 
+// Calculate acceleration for each particle in the system
 pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32){
     let n = particles.len();
-    let mut neighbors: Vec<usize> = Vec::new();
+    // Find every neighbor of every particle.
+    let mut neighbors: Vec<Vec<usize>> = vec![Vec::new(); n];
+    for ii in 0..n{
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors[ii]);
+    }
     for ii in 0..n {
-        neighbors.clear();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors);
         let p_i = eos(particles[ii].rho, k, gamma);
-        let omeg_i = omega(particles, ii, &neighbors, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
+        let omeg_i = omega(particles, ii, &neighbors[ii], particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
         for jj in (ii+1)..n {
-            neighbors.clear();
-            tree.find_neighbors(jj, d as f64, s_, particles, &mut neighbors);
             let p_j = eos(particles[jj].rho, k, gamma);
-            let omeg_j = omega(particles, jj, &neighbors, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
+            let omeg_j = omega(particles, jj, &neighbors[jj], particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
             let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
             let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
@@ -290,13 +321,16 @@ pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64,
 
         // Thermal change
         particles[ii].du = particles[ii].m*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * particles[ii].dh;
+
         // Smoothing length change
         particles[ii].dh *= -particles[ii].m * particles[ii].h/ (omeg_i*particles[ii].rho*d as f64);
     }
 }
 
 
-// Time integrator
+// -------- Time integrator --------
+
+// Euler-Raphson method
 pub fn euler_integrator(particle: &mut Particle, dt: f64) {
     particle.x += dt * particle.vx;
     particle.y += dt * particle.vy;
@@ -305,9 +339,9 @@ pub fn euler_integrator(particle: &mut Particle, dt: f64) {
     particle.u += dt * particle.du;
 }
 
-// Boundary conditions
+// -------- Boundary conditions --------
 
-// --- Periodic Boundary Conditions ---
+// Periodic Boundary Conditions
 pub fn periodic_boundary(particle: &mut Particle, w: f64, h: f64){
     // We assume that the domain's system is a rectangular box.
     if particle.x > w {

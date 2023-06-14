@@ -1,3 +1,5 @@
+// Initialize a set of particles inside a square
+
 use std::{
     error::Error,
     process,
