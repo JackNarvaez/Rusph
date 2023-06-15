@@ -32,6 +32,8 @@ pub trait BuildTree {
     fn restart(&mut self);
 }
 
+use rayon::prelude::*;
+
 impl BuildTree for Node {
 
     fn new(n_p: u32, x0: f64, y0: f64, l: f64) -> Node {
@@ -105,11 +107,16 @@ impl BuildTree for Node {
                 self.delete_particles();
             }
         }
-        for child in &mut self.children {
+        (self.children).par_iter_mut().for_each(|child| {
             if (child.n > s) && (child.side > smallest_cell) {
                 child.build_tree(k, s, alpha, beta, particles, smallest_cell);
             }
-        }
+        });
+        //for child in &mut self.children {
+        //    if (child.n > s) && (child.side > smallest_cell) {
+        //        child.build_tree(k, s, alpha, beta, particles, smallest_cell);
+        //    }
+        //}
     }
 
     fn restart(&mut self) {

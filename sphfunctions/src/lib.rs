@@ -7,6 +7,8 @@ use rand::{thread_rng, Rng};
 
 use csv::Writer;
 
+use rayon::prelude::*;
+
 use std::f64::consts::PI;
 
 use tree_algorithm::{
@@ -151,11 +153,12 @@ pub fn dwdh(q: f64, f: fn(f64) -> f64, df: fn(f64) -> f64, d:i32) -> f64 {
 
 // Kernel approximation of density
 pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, h: f64, sigma:f64, d:i32, f: fn(f64)->f64) -> f64 {
-    let mut rho :f64 = 0.0;
-    for jj in neigh_particles{
-        let r = euclidean_norm(&particles[ii], &particles[*jj]);
-        rho += f(r/h);
-    }
+    let rho :f64 = neigh_particles.par_iter().map(|jj| f(euclidean_norm(&particles[ii], &particles[*jj])/h)).sum();
+    //let mut rho :f64 = 0.0;
+    //for jj in neigh_particles{
+    //    let r = euclidean_norm(&particles[ii], &particles[*jj]);
+    //    rho += f(r/h);
+    //}
     rho * &particles[ii].m * sigma / h.powi(d)
 }
 
@@ -167,6 +170,8 @@ pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64, d:i32) -> f64{
 
 // Omega operator
 pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, h: f64, rho: f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32) -> f64{
+    //let omeg :f64 = neigh_particles.par_iter().map(|jj| dwdh_(euclidean_norm(&particles[ii], &particles[*jj])/h, f, dfdq, d)).sum();
+    //-&particles[ii].m*sigma/(h.powi(d)*rho*(d as f64))*omeg+1.0
     let mut omeg :f64 = 0.0;
     for jj in neigh_particles {
         let q = euclidean_norm(&particles[ii], &particles[*jj])/h;
@@ -228,6 +233,16 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, h_guess: f64, eta:f
 
 // Calculate the smoothing function for each particle in a given time.
 pub fn smoothing_length(particles: &mut Vec<Particle>, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32){
+    //particles.par_iter_mut().enumerate().for_each(|(ii, particle)|{
+    //    let (h_new, neighbors) = newton_raphson(ii, particles, (*particle).h+dt*(*particle).dh, eta, f, dfdq, sigma, d, tol, it, tree, s_);
+    //    if h_new != 0.0 {
+    //        // If h is not found, then keep it constant in time.
+    //        (*particle).h = h_new;
+    //    }
+    //    (*particle).rho = density_kernel(particles, ii, &neighbors, (*particle).h, sigma, d, f);
+    //});
+    
+    
     for ii in 0..particles.len(){
         let (h_new, neighbors) = newton_raphson(ii, particles, particles[ii].h+dt*particles[ii].dh, eta, f, dfdq, sigma, d, tol, it, tree, s_);
         if h_new != 0.0 {

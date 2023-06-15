@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let path = "./Data/tree_algorithm/set_particles.csv";
     let path_tree = "./Data/tree_algorithm/set_tree.csv";
     let path_neighbors = "./Data/tree_algorithm/set_neighbors.csv";
-    let n:u32 = 1000; // Number of Particles
+    let n:u32 = 100; // Number of Particles
     let dm:f64 = 0.1; // particle's mass
     let x0:f64 = 0.; // circle's center
     let y0:f64 = 0.; // circle's center

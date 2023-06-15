@@ -9,7 +9,7 @@ use sphfunctions;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let path = "./Data/initial_distribution/toy_star_2D.csv";
-    let n:u32 = 100; // Number of Particles
+    let n:u32 = 1000; // Number of Particles
     let m:f64 = 2.0; // Star's mass
     let r:f64 = 0.75; // Star's radius
     let rho:f64 = 1.0; // density
