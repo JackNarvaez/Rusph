@@ -112,11 +112,6 @@ impl BuildTree for Node {
                 child.build_tree(k, s, alpha, beta, particles, smallest_cell);
             }
         });
-        //for child in &mut self.children {
-        //    if (child.n > s) && (child.side > smallest_cell) {
-        //        child.build_tree(k, s, alpha, beta, particles, smallest_cell);
-        //    }
-        //}
     }
 
     fn restart(&mut self) {

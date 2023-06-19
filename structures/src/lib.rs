@@ -1,6 +1,5 @@
 #[derive(Debug)]
 pub struct Particle {
-	pub m: f64,
 	pub x: f64,
     pub y: f64,
     pub h: f64,
@@ -17,7 +16,6 @@ pub struct Particle {
 impl Default for Particle {
     fn default() -> Particle {
         Particle {
-            m: 1.,
             x: 0.,
             y: 0.,
             h: 0.1,

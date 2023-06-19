@@ -22,44 +22,44 @@ use structures::{
 
 // -------- Write data --------
 
-pub fn init_square(path: &str, n: u32, m:f64, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
+pub fn init_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     let dx = (w*l / n as f64).sqrt();
     let nx :i64 = (w/dx) as i64;
     let ny :i64 = (l/dx) as i64;
-    wtr.write_record(&["m", "x", "y", "h", "rho"])?;
+    wtr.write_record(&["x", "y", "h", "rho"])?;
     for jj in 0..ny{
         for ii in 0..nx{
-            wtr.write_record(&[m.to_string(), (dx*ii as f64).to_string(), (dx*jj as f64).to_string(), h.to_string(), rho.to_string()])?;
+            wtr.write_record(&[(dx*ii as f64).to_string(), (dx*jj as f64).to_string(), h.to_string(), rho.to_string()])?;
         }
     }
     wtr.flush()?;
     Ok(())
 }
 
-pub fn init_random_square(path: &str, n: u32, m:f64, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
+pub fn init_random_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     let mut rng = thread_rng();
-    wtr.write_record(&["m", "x", "y", "h", "rho"])?;
+    wtr.write_record(&["x", "y", "h", "rho"])?;
     for _ii in 0..n{
         let x = rng.gen_range(0.0f64, w);
         let y = rng.gen_range(0.0f64, l);
-        wtr.write_record(&[m.to_string(), x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
+        wtr.write_record(&[x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
     }
     wtr.flush()?;
     Ok(())
 }
 
-pub fn init_random_circle(path: &str, n: u32, r:f64, m:f64, rho:f64, h:f64, x0:f64, y0:f64)-> Result<(), Box<dyn Error>>{
+pub fn init_random_circle(path: &str, n: u32, r:f64, rho:f64, h:f64, x0:f64, y0:f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     let mut rng = thread_rng();
-    wtr.write_record(&["m", "x", "y", "h", "rho"])?;
+    wtr.write_record(&["x", "y", "h", "rho"])?;
     for _ii in 0..n{
         let r_i = r*(rng.gen_range(0.0f64, 1.0f64)).sqrt();
         let theta_i = 2.0*PI*rng.gen_range(0.0f64, 1.0f64);
         let x = r_i*theta_i.cos() + x0;
         let y = r_i*theta_i.sin() + y0;
-        wtr.write_record(&[m.to_string(), x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
+        wtr.write_record(&[x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
     }
     wtr.flush()?;
     Ok(())
@@ -67,9 +67,9 @@ pub fn init_random_circle(path: &str, n: u32, r:f64, m:f64, rho:f64, h:f64, x0:f
 
 pub fn save_data(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
-    wtr.write_record(&["m", "x", "y", "vx", "vy", "u", "h", "rho"])?;
+    wtr.write_record(&["x", "y", "vx", "vy", "u", "h", "rho"])?;
     for ii in 0..particles.len() {
-        wtr.write_record(&[particles[ii].m.to_string(), particles[ii].x.to_string(), particles[ii].y.to_string(),
+        wtr.write_record(&[particles[ii].x.to_string(), particles[ii].y.to_string(),
                            particles[ii].vx.to_string(), particles[ii].vy.to_string(),
                            particles[ii].u.to_string(), particles[ii].h.to_string(), particles[ii].rho.to_string()])?;
     }
@@ -85,8 +85,9 @@ pub fn read_data(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dy
         .from_path(path)?;
     for result in rdr.records() {
         let record = result?;
-        particles.push(Particle{m:(&record[0]).parse::<f64>().unwrap(), x:(&record[1]).parse::<f64>().unwrap(), y:(&record[2]).parse::<f64>().unwrap(),
-                                h:(&record[3]).parse::<f64>().unwrap(), rho:(&record[4]).parse::<f64>().unwrap(), ..Default::default()});
+        particles.push(Particle{x:(&record[1]).parse::<f64>().unwrap(), y:(&record[2]).parse::<f64>().unwrap(),
+                                h:(&record[3]).parse::<f64>().unwrap(), rho:(&record[4]).parse::<f64>().unwrap(),
+                                ..Default::default()});
     }
     Ok(())
 }
@@ -152,14 +153,14 @@ pub fn dwdh(q: f64, f: fn(f64) -> f64, df: fn(f64) -> f64, d:i32) -> f64 {
 // -------- Kernel approximations --------
 
 // Kernel approximation of density
-pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, h: f64, sigma:f64, d:i32, f: fn(f64)->f64) -> f64 {
-    let rho :f64 = neigh_particles.par_iter().map(|jj| f(euclidean_norm(&particles[ii], &particles[*jj])/h)).sum();
-    //let mut rho :f64 = 0.0;
-    //for jj in neigh_particles{
-    //    let r = euclidean_norm(&particles[ii], &particles[*jj]);
-    //    rho += f(r/h);
-    //}
-    rho * &particles[ii].m * sigma / h.powi(d)
+pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, sigma:f64, d:i32, f: fn(f64)->f64) -> f64 {
+    let mut rho :f64 = 0.0;
+    for jj in neigh_particles{
+        let r = euclidean_norm(&particles[ii], &particles[*jj]);
+        rho += f(r/h);
+    }
+    rho * dm * sigma / h.powi(d)
+    //let rho :f64 = neigh_particles.par_iter().map(|jj| f(euclidean_norm(&particles[ii], &particles[*jj])/h)).sum(); // Parallel calculation
 }
 
 // Density calculated by smoothing function
@@ -169,15 +170,13 @@ pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64, d:i32) -> f64{
 }
 
 // Omega operator
-pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, h: f64, rho: f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32) -> f64{
-    //let omeg :f64 = neigh_particles.par_iter().map(|jj| dwdh_(euclidean_norm(&particles[ii], &particles[*jj])/h, f, dfdq, d)).sum();
-    //-&particles[ii].m*sigma/(h.powi(d)*rho*(d as f64))*omeg+1.0
+pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, rho: f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32) -> f64{
     let mut omeg :f64 = 0.0;
     for jj in neigh_particles {
         let q = euclidean_norm(&particles[ii], &particles[*jj])/h;
         omeg -= dwdh_(q, f, dfdq, d);
     }
-    omeg *= &particles[ii].m*sigma/(h.powi(d)*rho*(d as f64));
+    omeg *= dm*sigma/(h.powi(d)*rho*(d as f64));
     omeg + 1.
 }
 
@@ -187,23 +186,23 @@ pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>
 // -- Newton-Raphson iterator --
 
 // function and derivative of function
-pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, h: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32) -> (f64 , f64) {
-    let rho_kernel = density_kernel(particles, ii, neigh_particles, h, sigma, d, f);
-    let rho_h = density_by_smoothing_length(particles[ii].m, h, eta, d);
+pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32) -> (f64 , f64) {
+    let rho_kernel = density_kernel(particles, ii, neigh_particles, dm, h, sigma, d, f);
+    let rho_h = density_by_smoothing_length(dm, h, eta, d);
     let f_h = rho_h - rho_kernel;
-    let omeg = omega(particles, ii, neigh_particles, h, rho_kernel, dwdh, f, dfdq, sigma, d);
+    let omeg = omega(particles, ii, neigh_particles, dm, h, rho_kernel, dwdh, f, dfdq, sigma, d);
     let df = -(d as f64)*rho_h*omeg/ h;
     (f_h, df)
 }
 
 // Calculate a new value of 'h'
-fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, h_old: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32) -> f64 {
-    let (f, df) = f_iter(particles, ii, neigh_particles, h_old, eta, f, dfdq, sigma, d);
+fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h_old: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32) -> f64 {
+    let (f, df) = f_iter(particles, ii, neigh_particles, dm, h_old, eta, f, dfdq, sigma, d);
     (h_old - f / df).abs()
 }
 
 // Newton raphson solver to find the value of 'h' for particle 'ii'
-pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, tree: &Node, s_: u32) -> (f64, Vec<usize>) {
+pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, tree: &Node, s_: u32) -> (f64, Vec<usize>) {
     let mut h_new :f64 = 0.0;
     let mut h_old :f64 = h_guess;
     let mut i : u32 = 1;
@@ -213,7 +212,7 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, h_guess: f64, eta:f
         neighbors.clear();
         tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors);
         // Obtain h_new
-        h_new = nr_iter(particles, ii, &neighbors, h_old, eta, f, dfdq, sigma, d);
+        h_new = nr_iter(particles, ii, &neighbors, dm, h_old, eta, f, dfdq, sigma, d);
         if (h_new - h_old).abs() <=  tol {
             i = it + 2;
         } else{
@@ -232,7 +231,15 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, h_guess: f64, eta:f
 // -------- Smoothing length --------
 
 // Calculate the smoothing function for each particle in a given time.
-pub fn smoothing_length(particles: &mut Vec<Particle>, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32){
+pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32, n: usize) -> Vec<(f64, f64)>{
+    (0..n).into_par_iter().map(|ii: usize| {
+        let (mut h_new, neighbors) = newton_raphson(ii, particles, dm, particles[ii].h+dt*particles[ii].dh, eta, f, dfdq, sigma, d, tol, it, tree, s_);
+        if h_new == 0.0 {
+            // If h is not found, then keep it constant in time.
+            h_new = particles[ii].h;
+        }
+        return (h_new, density_kernel(particles, ii, &neighbors, dm, h_new, sigma, d, f));
+    }).collect()
     //particles.par_iter_mut().enumerate().for_each(|(ii, particle)|{
     //    let (h_new, neighbors) = newton_raphson(ii, particles, (*particle).h+dt*(*particle).dh, eta, f, dfdq, sigma, d, tol, it, tree, s_);
     //    if h_new != 0.0 {
@@ -241,16 +248,6 @@ pub fn smoothing_length(particles: &mut Vec<Particle>, eta:f64, f: fn(f64) -> f6
     //    }
     //    (*particle).rho = density_kernel(particles, ii, &neighbors, (*particle).h, sigma, d, f);
     //});
-    
-    
-    for ii in 0..particles.len(){
-        let (h_new, neighbors) = newton_raphson(ii, particles, particles[ii].h+dt*particles[ii].dh, eta, f, dfdq, sigma, d, tol, it, tree, s_);
-        if h_new != 0.0 {
-            // If h is not found, then keep it constant in time.
-            particles[ii].h = h_new;
-        }
-        particles[ii].rho = density_kernel(particles, ii, &neighbors, particles[ii].h, sigma, d, f);
-    }
 }
 
 
@@ -294,19 +291,21 @@ pub fn body_forces_toy_star(particle: &mut Particle, nu: f64, lmbda: f64) {
 }
 
 // Calculate acceleration for each particle in the system
-pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32){
-    let n = particles.len();
+pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32, n: usize){
     // Find every neighbor of every particle.
-    let mut neighbors: Vec<Vec<usize>> = vec![Vec::new(); n];
-    for ii in 0..n{
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors[ii]);
-    }
+    let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
+        let mut neighbors: Vec<usize> = Vec::new();
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors);
+        return neighbors;
+    }).collect();
+
+    let mut accelerations : Vec<(f64, f64, f64, f64)> = vec![(0.0, 0.0, 0.0, 0.0); n]; 
     for ii in 0..n {
         let p_i = eos(particles[ii].rho, k, gamma);
-        let omeg_i = omega(particles, ii, &neighbors[ii], particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
+        let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
         for jj in (ii+1)..n {
             let p_j = eos(particles[jj].rho, k, gamma);
-            let omeg_j = omega(particles, jj, &neighbors[jj], particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
+            let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
             let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
             let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
@@ -324,21 +323,29 @@ pub fn accelerations(particles: &mut Vec<Particle>, eos: fn(f64, f64, f64)->f64,
             if dot_r_v < 0.0 {
                 art_visc = -nu_visc*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
             }
+
             // Acceleration
             let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);
-            particles[ii].dh += grad_hi*dot_r_v;
+            
+            accelerations[ii].3 += grad_hi*dot_r_v;
 
-            particles[ii].ax += particles[jj].m *f_ij[0];
-            particles[ii].ay += particles[jj].m *f_ij[1];
-            particles[jj].ax -= particles[ii].m *f_ij[0];
-            particles[jj].ay -= particles[ii].m *f_ij[1];
+            accelerations[ii].0 += dm *f_ij[0];
+            accelerations[ii].1 += dm *f_ij[1];
+            accelerations[jj].0 -= dm *f_ij[0];
+            accelerations[jj].1 -= dm *f_ij[1];
         }
 
         // Thermal change
-        particles[ii].du = particles[ii].m*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * particles[ii].dh;
+        accelerations[ii].2 = dm*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * particles[ii].dh;
 
         // Smoothing length change
-        particles[ii].dh *= -particles[ii].m * particles[ii].h/ (omeg_i*particles[ii].rho*d as f64);
+        accelerations[ii].3 *= -dm * particles[ii].h/ (omeg_i*particles[ii].rho*d as f64);
+    };
+    for ii in 0..n {
+        particles[ii].ax = accelerations[ii].0;
+        particles[ii].ay = accelerations[ii].1;
+        particles[ii].du = accelerations[ii].2;
+        particles[ii].dh = accelerations[ii].3;
     }
 }
 

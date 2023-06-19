@@ -34,15 +34,16 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 0.1; // initial time
+    let tf:f64 = 10.; // initial time
     let dt :f64 = 0.004; // time step
     let t_iter :u32 = ((tf-t0)/dt) as u32; // time iterations
+    let n : usize = particles.len(); // Number of particles 
     println!("{}", t_iter);
 
     // System's parameters
     let eta :f64 = 1.2; // dimensionless constant related to the ratio of smoothing length
     let d = 2; // Dimension of the system
-    let k:f64 = 0.1; // Pressure constant
+    let k:f64 = 0.05; // Pressure constant
     let gamma:f64 = 1.0;  // Polytropic index
     let m:f64 = 2.0; // Star's mass
     let r:f64 = 0.75; // Star's radius
@@ -50,24 +51,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0:f64 = 0.; // Star's center
     let nu:f64 = 1.0; // Viscocity parameter
     let lmbda = sphfunctions::coeff_static_grav_potential(k, gamma, m, r);
-    let sigma :f64 = 10.0/(7.*PI); // 
+    let sigma :f64 = 10.0/(7.*PI); //  Normalization's constant of kernel
+    let dm:f64 = m/n as f64; // mass of each particle
 
     // Tree's parameters
     let s_ : u32 = 10;
     let alpha_ : f64 = 0.5;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(particles.len() as u32, x0-2.*r, y0-2.*r, 4.*r);
+    let mut tree : Node = <Node as BuildTree>::new(n as u32, x0-2.*r, y0-2.*r, 4.*r);
 
     // Main loop
     let start = Instant::now();
     for tt in 0..t_iter {
         tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
-        sphfunctions::smoothing_length(&mut particles, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_);
-        sphfunctions::accelerations(&mut particles, sphfunctions::eos_polytropic, k, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_);
+        let iter_values: Vec<(f64, f64)> = sphfunctions::smoothing_length(&mut particles, dm, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_, n);
+        for ii in 0..n{
+            particles[ii].h = iter_values[ii].0;
+            particles[ii].rho = iter_values[ii].1;
+        }
+
+        sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_polytropic, k, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_, n);
+        
         particles.par_iter_mut().for_each(|particle|{
             sphfunctions::body_forces_toy_star(particle, nu, lmbda);
             sphfunctions::euler_integrator(particle, dt);
-
             // Initialize variables to zero
             particle.ax = 0.;
             particle.ay = 0.;
