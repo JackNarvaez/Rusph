@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 0.6; // initial time
+    let tf:f64 = 0.1; // initial time
     let dt :f64 = 0.004; // time step
     let t_iter :u32 = ((tf-t0)/dt) as u32; // time steps
     let n : usize = particles.len(); // Number of particles 

@@ -85,8 +85,8 @@ pub fn read_data(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dy
         .from_path(path)?;
     for result in rdr.records() {
         let record = result?;
-        particles.push(Particle{x:(&record[1]).parse::<f64>().unwrap(), y:(&record[2]).parse::<f64>().unwrap(),
-                                h:(&record[3]).parse::<f64>().unwrap(), rho:(&record[4]).parse::<f64>().unwrap(),
+        particles.push(Particle{x:(&record[0]).parse::<f64>().unwrap(), y:(&record[1]).parse::<f64>().unwrap(),
+                                h:(&record[2]).parse::<f64>().unwrap(), rho:(&record[3]).parse::<f64>().unwrap(),
                                 ..Default::default()});
     }
     Ok(())

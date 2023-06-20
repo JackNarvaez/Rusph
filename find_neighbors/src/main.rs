@@ -41,7 +41,6 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{}", err);
         process::exit(1);
     }
-    println!("Hi");
     // Tree parameters
     let k : u32 = 2;
     let s : u32 = 10;
