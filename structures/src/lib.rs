@@ -58,3 +58,8 @@ impl Default for Node {
         }
     }
 }
+
+#[derive(Copy, Clone)]
+pub struct Pointer(pub *mut Particle);
+unsafe impl Send for Pointer {}
+unsafe impl Sync for Pointer {}

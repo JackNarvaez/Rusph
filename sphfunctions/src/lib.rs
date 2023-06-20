@@ -18,6 +18,7 @@ use tree_algorithm::{
 use structures::{
     Particle,
     Node,
+    Pointer,
 };
 
 // -------- Write data --------
@@ -231,23 +232,16 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
 // -------- Smoothing length --------
 
 // Calculate the smoothing function for each particle in a given time.
-pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32, n: usize) -> Vec<(f64, f64)>{
-    (0..n).into_par_iter().map(|ii: usize| {
-        let (mut h_new, neighbors) = newton_raphson(ii, particles, dm, particles[ii].h+dt*particles[ii].dh, eta, f, dfdq, sigma, d, tol, it, tree, s_);
-        if h_new == 0.0 {
+pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32, n: usize, ptr : Pointer){
+    (0..n).into_par_iter().for_each(move |ii| {
+        let (h_new, neighbors) = newton_raphson(ii, particles, dm, particles[ii].h+dt*particles[ii].dh, eta, f, dfdq, sigma, d, tol, it, tree, s_);
+        let particle = unsafe { &mut *{ptr}.0.add(ii)};
+        if h_new != 0.0 {
             // If h is not found, then keep it constant in time.
-            h_new = particles[ii].h;
+            particle.h = h_new;
         }
-        return (h_new, density_kernel(particles, ii, &neighbors, dm, h_new, sigma, d, f));
-    }).collect()
-    //particles.par_iter_mut().enumerate().for_each(|(ii, particle)|{
-    //    let (h_new, neighbors) = newton_raphson(ii, particles, (*particle).h+dt*(*particle).dh, eta, f, dfdq, sigma, d, tol, it, tree, s_);
-    //    if h_new != 0.0 {
-    //        // If h is not found, then keep it constant in time.
-    //        (*particle).h = h_new;
-    //    }
-    //    (*particle).rho = density_kernel(particles, ii, &neighbors, (*particle).h, sigma, d, f);
-    //});
+        particle.rho = density_kernel(particles, ii, &neighbors, dm, particle.h, sigma, d, f);
+    });
 }
 
 
@@ -291,7 +285,7 @@ pub fn body_forces_toy_star(particle: &mut Particle, nu: f64, lmbda: f64) {
 }
 
 // Calculate acceleration for each particle in the system
-pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32, n: usize){
+pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer){
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
@@ -299,10 +293,11 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
         return neighbors;
     }).collect();
 
-    let mut accelerations : Vec<(f64, f64, f64, f64)> = vec![(0.0, 0.0, 0.0, 0.0); n]; 
-    for ii in 0..n {
+    (0..n).into_par_iter().for_each(move |ii| {
         let p_i = eos(particles[ii].rho, k, gamma);
         let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
+        // Pointer to iith-particle
+        let particle_i = unsafe { &mut *{ptr}.0.add(ii)};
         for jj in (ii+1)..n {
             let p_j = eos(particles[jj].rho, k, gamma);
             let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
@@ -324,31 +319,80 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 art_visc = -nu_visc*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
             }
 
+            // Pointer to jjth-particle
+            let particle_j = unsafe { &mut *{ptr}.0.add(jj)};
+
             // Acceleration
             let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);
+            particle_i.ax += dm *f_ij[0];
+            particle_i.ay += dm *f_ij[1];
+            particle_j.ax -= dm *f_ij[0];
+            particle_j.ay -= dm *f_ij[1];
             
-            accelerations[ii].3 += grad_hi*dot_r_v;
-
-            accelerations[ii].0 += dm *f_ij[0];
-            accelerations[ii].1 += dm *f_ij[1];
-            accelerations[jj].0 -= dm *f_ij[0];
-            accelerations[jj].1 -= dm *f_ij[1];
+            // Smoothing length change
+            let div_vel :f64 = grad_hi*dot_r_v;
+            particle_i.dh += particles[ii].h*div_vel/(d as f64);
+            particle_j.dh += particles[jj].h*div_vel/(d as f64);
+            
+            // Thermal change
+            particle_i.du = dm*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * div_vel;
+            particle_j.du = dm*p_j / (omeg_j*particles[jj].rho*particles[jj].rho) * div_vel;
         }
-
-        // Thermal change
-        accelerations[ii].2 = dm*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * particles[ii].dh;
-
-        // Smoothing length change
-        accelerations[ii].3 *= -dm * particles[ii].h/ (omeg_i*particles[ii].rho*d as f64);
-    };
-    for ii in 0..n {
-        particles[ii].ax = accelerations[ii].0;
-        particles[ii].ay = accelerations[ii].1;
-        particles[ii].du = accelerations[ii].2;
-        particles[ii].dh = accelerations[ii].3;
-    }
+    });
 }
 
+
+// // Calculate acceleration for each particle in the system
+// pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32, n: usize, , ptr : Pointer){
+//     // Find every neighbor of every particle.
+//     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
+//         let mut neighbors: Vec<usize> = Vec::new();
+//         tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors);
+//         return neighbors;
+//     }).collect();
+
+//     for ii in 0..n {
+//         let p_i = eos(particles[ii].rho, k, gamma);
+//         let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
+//         for jj in (ii+1)..n {
+//             let p_j = eos(particles[jj].rho, k, gamma);
+//             let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
+//             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
+//             let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
+//             let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
+
+//             // Divergence of velocity
+//             let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
+//                          +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
+            
+//             // Artificial viscosity
+//             let alpha :f64 = 1.0;
+//             let eps :f64 = 0.01;
+//             let h_mean = 0.5*(particles[ii].h+particles[jj].h);
+//             let nu_visc = alpha*2.0*h_mean/(particles[ii].rho+particles[jj].rho);
+//             let mut art_visc = 0.0;
+//             if dot_r_v < 0.0 {
+//                 art_visc = -nu_visc*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
+//             }
+
+//             // Acceleration
+//             let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);
+//             particles[ii].ax += dm *f_ij[0];
+//             particles[ii].ay += dm *f_ij[1];
+//             particles[jj].ax -= dm *f_ij[0];
+//             particles[jj].ay -= dm *f_ij[1];
+            
+//             // Smoothing length change
+//             let div_vel :f64 = grad_hi*dot_r_v;
+//             particles[ii].dh += particles[ii].h*div_vel/(d as f64);
+//             particles[jj].dh += particles[jj].h*div_vel/(d as f64);
+            
+//             // Thermal change
+//             particles[ii].du = dm*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * div_vel;
+//             particles[jj].du = dm*p_j / (omeg_j*particles[jj].rho*particles[jj].rho) * div_vel;
+//         }
+//     };
+// }
 
 // -------- Time integrator --------
 
