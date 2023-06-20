@@ -66,11 +66,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now();
     for tt in 0..t_iter {
         tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
-
         sphfunctions::smoothing_length(&mut particles, dm, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_, n, particles_ptr);
-
         sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_polytropic, k, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_, n, particles_ptr);
-
         particles.par_iter_mut().for_each(|particle|{
             sphfunctions::body_forces_toy_star(particle, nu, lmbda);
             sphfunctions::euler_integrator(particle, dt);

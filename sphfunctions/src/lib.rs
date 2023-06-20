@@ -341,59 +341,6 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
     });
 }
 
-
-// // Calculate acceleration for each particle in the system
-// pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32, n: usize, , ptr : Pointer){
-//     // Find every neighbor of every particle.
-//     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
-//         let mut neighbors: Vec<usize> = Vec::new();
-//         tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors);
-//         return neighbors;
-//     }).collect();
-
-//     for ii in 0..n {
-//         let p_i = eos(particles[ii].rho, k, gamma);
-//         let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
-//         for jj in (ii+1)..n {
-//             let p_j = eos(particles[jj].rho, k, gamma);
-//             let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
-//             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
-//             let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
-//             let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
-
-//             // Divergence of velocity
-//             let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
-//                          +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
-            
-//             // Artificial viscosity
-//             let alpha :f64 = 1.0;
-//             let eps :f64 = 0.01;
-//             let h_mean = 0.5*(particles[ii].h+particles[jj].h);
-//             let nu_visc = alpha*2.0*h_mean/(particles[ii].rho+particles[jj].rho);
-//             let mut art_visc = 0.0;
-//             if dot_r_v < 0.0 {
-//                 art_visc = -nu_visc*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
-//             }
-
-//             // Acceleration
-//             let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);
-//             particles[ii].ax += dm *f_ij[0];
-//             particles[ii].ay += dm *f_ij[1];
-//             particles[jj].ax -= dm *f_ij[0];
-//             particles[jj].ay -= dm *f_ij[1];
-            
-//             // Smoothing length change
-//             let div_vel :f64 = grad_hi*dot_r_v;
-//             particles[ii].dh += particles[ii].h*div_vel/(d as f64);
-//             particles[jj].dh += particles[jj].h*div_vel/(d as f64);
-            
-//             // Thermal change
-//             particles[ii].du = dm*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * div_vel;
-//             particles[jj].du = dm*p_j / (omeg_j*particles[jj].rho*particles[jj].rho) * div_vel;
-//         }
-//     };
-// }
-
 // -------- Time integrator --------
 
 // Euler-Raphson method
