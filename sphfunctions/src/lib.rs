@@ -259,6 +259,12 @@ pub fn coeff_static_grav_potential(k:f64, gamma:f64, m:f64, r:f64) -> f64 {
     2.0*k/(PI.powf(1./gamma)) * (m*(1.+gamma)/(r*r)).powf(1.+1./gamma)/m
 }
 
+// Sound speed for the Polytropic equation
+pub fn sound_speed_polytropic(rho:f64, p:f64, gamma:f64) -> f64 {
+    // gamma = sqrt(1+1/n)
+    gamma * (p/rho).sqrt()
+}
+
 // -- Ideal Gas --
 
 pub fn eos_ideal_gas(rho:f64, k:f64, gamma:f64) -> f64 {
@@ -285,7 +291,7 @@ pub fn body_forces_toy_star(particle: &mut Particle, nu: f64, lmbda: f64) {
 }
 
 // Calculate acceleration for each particle in the system
-pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, k:f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer){
+pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, k:f64, gamma:f64, gamma_cs:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer){
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
@@ -295,11 +301,13 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
 
     (0..n).into_par_iter().for_each(move |ii| {
         let p_i = eos(particles[ii].rho, k, gamma);
+        let cs_i = cs(particles[ii].rho, p_i, gamma_cs);
         let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
         // Pointer to iith-particle
         let particle_i = unsafe { &mut *{ptr}.0.add(ii)};
         for jj in (ii+1)..n {
             let p_j = eos(particles[jj].rho, k, gamma);
+            let cs_j = cs(particles[jj].rho, p_j, gamma_cs);
             let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
             let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
@@ -308,16 +316,21 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
             // Divergence of velocity
             let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
                          +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
-            
+
             // Artificial viscosity
             let alpha :f64 = 1.0;
+            let beta :f64 = 2.0;
             let eps :f64 = 0.01;
-            let h_mean = 0.5*(particles[ii].h+particles[jj].h);
-            let nu_visc = alpha*2.0*h_mean/(particles[ii].rho+particles[jj].rho);
+
             let mut art_visc = 0.0;
             if dot_r_v < 0.0 {
-                art_visc = -nu_visc*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
+                let cs_mean :f64 = 0.5*(cs_i+cs_j);
+                let h_mean :f64 = 0.5*(particles[ii].h+particles[jj].h);
+                let rho_mean :f64 = 0.5*(particles[ii].rho+particles[jj].rho);
+                let nu_visc :f64 = h_mean*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
+                art_visc = (-alpha*cs_mean+beta*nu_visc)*nu_visc/rho_mean;
             }
+
 
             // Pointer to jjth-particle
             let particle_j = unsafe { &mut *{ptr}.0.add(jj)};
@@ -331,8 +344,8 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
             
             // Smoothing length change
             let div_vel :f64 = grad_hi*dot_r_v;
-            particle_i.dh += particles[ii].h*div_vel/(d as f64);
-            particle_j.dh += particles[jj].h*div_vel/(d as f64);
+            particle_i.dh += dm*particles[ii].h*div_vel/(d as f64);
+            particle_j.dh += dm*particles[jj].h*div_vel/(d as f64);
             
             // Thermal change
             particle_i.du = dm*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * div_vel;

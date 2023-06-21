@@ -47,7 +47,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let d = 2; // Dimension of the system
     let k:f64 = 0.1; // Pressure constant
     let gamma:f64 = 5./3.;  // Polytropic index
-    let sigma :f64 = 10.0/(7.*PI); // 
+    let gamma_cs :f64 = (1.+1./gamma).sqrt(); // Constant to calculate the sound speed
+    let sigma :f64 = 10.0/(7.*PI); // Normalization's constant of kernel
     let w :f64 = 1.; // width
     let l :f64 = 1.; // large
     let dm :f64 = 1.; // Particles' mass
@@ -65,7 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for tt in 0..t_iter {
         tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
         sphfunctions::smoothing_length(&mut particles, dm, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_, n, particles_ptr);
-        sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_ideal_gas, k, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_,n, particles_ptr);
+        sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_polytropic, k, gamma, gamma_cs, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_,n, particles_ptr);
         particles.par_iter_mut().for_each(|particle|{
             sphfunctions::euler_integrator(particle, dt);
             sphfunctions::periodic_boundary(particle, w, l);

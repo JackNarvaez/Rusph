@@ -47,6 +47,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let d = 2; // Dimension of the system
     let k:f64 = 0.05; // Pressure constant
     let gamma:f64 = 1.0;  // Polytropic index
+    let gamma_cs :f64 = (1.+1./gamma).sqrt(); // Constant to calculate the sound speed
     let m:f64 = 2.0; // Star's mass
     let r:f64 = 0.75; // Star's radius
     let x0:f64 = 0.; // Star's center
@@ -67,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for tt in 0..t_iter {
         tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
         sphfunctions::smoothing_length(&mut particles, dm, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_, n, particles_ptr);
-        sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_polytropic, k, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_, n, particles_ptr);
+        sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_polytropic, k, gamma, gamma_cs, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_, n, particles_ptr);
         particles.par_iter_mut().for_each(|particle|{
             sphfunctions::body_forces_toy_star(particle, nu, lmbda);
             sphfunctions::euler_integrator(particle, dt);
