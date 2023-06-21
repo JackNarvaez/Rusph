@@ -234,7 +234,7 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
 // Calculate the smoothing function for each particle in a given time.
 pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32, n: usize, ptr : Pointer){
     (0..n).into_par_iter().for_each(move |ii| {
-        let (h_new, neighbors) = newton_raphson(ii, particles, dm, particles[ii].h+dt*particles[ii].dh, eta, f, dfdq, sigma, d, tol, it, tree, s_);
+        let (h_new, neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*dm*particles[ii].divv/(d as f64)), eta, f, dfdq, sigma, d, tol, it, tree, s_);
         let particle = unsafe { &mut *{ptr}.0.add(ii)};
         if h_new != 0.0 {
             // If h is not found, then keep it constant in time.
@@ -342,10 +342,10 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
             particle_j.ax -= dm *f_ij[0];
             particle_j.ay -= dm *f_ij[1];
             
-            // Smoothing length change
+            // Divergence of v per unit of mass
             let div_vel :f64 = grad_hi*dot_r_v;
-            particle_i.dh += dm*particles[ii].h*div_vel/(d as f64);
-            particle_j.dh += dm*particles[jj].h*div_vel/(d as f64);
+            particle_i.divv += div_vel;
+            particle_j.divv += div_vel;
             
             // Thermal change
             particle_i.du = dm*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * div_vel;
@@ -380,4 +380,31 @@ pub fn periodic_boundary(particle: &mut Particle, w: f64, h: f64){
     } else if particle.y < 0.0 {
         particle.y += h;
     }
+}
+
+// -------- Timestepping Criteria --------
+
+// CFL criterion
+pub fn cfl_dt(h: f64, cs: f64, div_v:f64, alpha:f64, beta: f64) -> f64{
+    if div_v < 0. {
+        return 0.3*h / (cs + h*div_v.abs() + 1.2*(alpha*cs + beta*h*div_v.abs()));
+    } else {
+        return 0.3*h / (cs + h*div_v.abs());
+    }
+}
+
+// Force conditon
+pub fn force_dt(h: f64, a: f64, f: f64) -> f64 {
+    f*(h/a).sqrt()
+}
+
+pub fn time_step(particles: & Vec<Particle>, n: usize, gamma: f64, k: f64) -> f64{
+    let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
+        let a: f64 = particles[ii].ax*particles[ii].ax + particles[ii].ay*particles[ii].ay;
+        let cs: f64 = ((1.+1./gamma)*k*(particles[ii].h).powf(1./gamma)).sqrt();
+        let dt_a: f64 = force_dt(particles[ii].h, a, 0.3);
+        let dt_cfl: f64 = cfl_dt(particles[ii].h, cs, particles[ii].divv, 1., 2.);
+        return (dt_a).min(dt_cfl);
+    }).collect();
+    dts.iter().fold(f64::INFINITY, |a, &b| a.min(b))
 }
