@@ -276,11 +276,41 @@ pub fn thermal_energy(rho:f64, p:f64, gamma:f64) -> f64 {
 }
 
 
+// -------- Artificial Viscosity --------
+
+// Monaghan (1989): "Standard" SPH viscous term
+pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_j: f64, rho_i: f64, rho_j: f64) -> f64 {
+
+    // Mean values
+    let cs_mean :f64 = 0.5*(cs_i+cs_j);
+    let h_mean :f64 = 0.5*(h_i+h_j);
+    let rho_mean :f64 = 0.5*(rho_i+rho_j);
+
+    // Parameters
+    let alpha :f64 = 1.0;
+    let beta :f64 = 2.0;
+    let eps :f64 = 0.01;
+    let nu_visc :f64 = h_mean*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
+
+    // It's assumed dot_r_v < 0.0
+    return (-alpha*cs_mean+beta*nu_visc)*nu_visc/rho_mean;
+}
+
+// Monaghan (1997): AV by Rieman solvers
+pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, v_sig: f64, rho_i: f64, rho_j: f64) -> f64 {
+    // Parameters
+    let alpha :f64 = 1.0;
+
+    // It's assumed dot_r_v < 0.0
+    return 0.5*alpha*v_sig*dot_r_v/(r_ij*(rho_i+rho_j));
+}
+
+
 // -------- Dynamic Equations --------
 
 // Force due to the pressure's gradient
 pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p_b: f64, omeg_a: f64, omeg_b: f64, grad_ha: f64, grad_hb: f64, art_visc: f64) -> Vec<f64> {
-    let acc = p_a/(omeg_a*particle_a.rho*particle_a.rho)*grad_ha + p_b/(omeg_b*particle_b.rho*particle_b.rho) * grad_hb + art_visc;
+    let acc = p_a/(omeg_a*particle_a.rho*particle_a.rho)*grad_ha + p_b/(omeg_b*particle_b.rho*particle_b.rho) * grad_hb + 0.5*art_visc*(grad_ha+grad_hb);
     vec![-acc*(particle_a.x - particle_b.x), -acc*(particle_a.y - particle_b.y)]
 }
 
@@ -318,20 +348,10 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                          +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
 
             // Artificial viscosity
-            let alpha :f64 = 1.0;
-            let beta :f64 = 2.0;
-            let eps :f64 = 0.01;
-
             let mut art_visc = 0.0;
             if dot_r_v < 0.0 {
-                let cs_mean :f64 = 0.5*(cs_i+cs_j);
-                let h_mean :f64 = 0.5*(particles[ii].h+particles[jj].h);
-                let rho_mean :f64 = 0.5*(particles[ii].rho+particles[jj].rho);
-                let nu_visc :f64 = h_mean*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
-                art_visc = (-alpha*cs_mean+beta*nu_visc)*nu_visc/rho_mean;
+                art_visc = mon89_art_vis(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
             }
-
-
             // Pointer to jjth-particle
             let particle_j = unsafe { &mut *{ptr}.0.add(jj)};
 
@@ -384,7 +404,7 @@ pub fn periodic_boundary(particle: &mut Particle, w: f64, h: f64){
 
 // -------- Timestepping Criteria --------
 
-// CFL criterion
+// Bate at al. (1995). CFL criterion
 pub fn cfl_dt(h: f64, cs: f64, div_v:f64, alpha:f64, beta: f64) -> f64{
     if div_v < 0. {
         return 0.3*h / (cs + h*div_v.abs() + 1.2*(alpha*cs + beta*h*div_v.abs()));
@@ -393,12 +413,13 @@ pub fn cfl_dt(h: f64, cs: f64, div_v:f64, alpha:f64, beta: f64) -> f64{
     }
 }
 
-// Force conditon
+// MOnaghan (1989) Force conditon
 pub fn force_dt(h: f64, a: f64, f: f64) -> f64 {
     f*(h/a).sqrt()
 }
 
-pub fn time_step(particles: & Vec<Particle>, n: usize, gamma: f64, k: f64) -> f64{
+// Timestepping Criteria Cossins P. J. (2010)
+pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64, k: f64) -> f64{
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
         let a: f64 = particles[ii].ax*particles[ii].ax + particles[ii].ay*particles[ii].ay;
         let cs: f64 = ((1.+1./gamma)*k*(particles[ii].h).powf(1./gamma)).sqrt();
@@ -407,4 +428,31 @@ pub fn time_step(particles: & Vec<Particle>, n: usize, gamma: f64, k: f64) -> f6
         return (dt_a).min(dt_cfl);
     }).collect();
     dts.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+}
+
+// Timestepping Criteria Monaghan (1997)
+pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64, k: f64) -> f64{
+    // There are convergence problems with this method.
+    // Find them and Fix it
+    let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
+        let mut dt:f64 = 1.0;
+        let cs_i = ((1.+1./gamma)*k*(particles[ii].h).powf(1./gamma)).sqrt();
+        for jj in (ii+1)..n {
+            let cs_j = ((1.+1./gamma)*k*(particles[jj].h).powf(1./gamma)).sqrt();
+            let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
+
+            // Divergence of velocity
+            let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
+                           +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
+    
+            //let v_sig_ij = 0.5*(cs_i + cs_j - 2.*dot_r_v/r_ij).abs();
+            let v_sig_ij = 0.5*(cs_i+cs_j) + 2.*(dot_r_v/r_ij).abs();
+            let dt_new = particles[ii].h / v_sig_ij;
+            if (dt_new) < dt {
+                dt = dt_new;
+            }
+        }
+        return dt;
+    }).collect();
+    0.3 * dts.iter().fold(f64::INFINITY, |a, &b| a.min(b))
 }

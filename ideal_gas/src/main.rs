@@ -67,7 +67,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
         sphfunctions::smoothing_length(&mut particles, dm, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_, n, particles_ptr);
         sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_polytropic, k, gamma, gamma_cs, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_,n, particles_ptr);
-        dt = sphfunctions::time_step(&particles, n, gamma, k);
+        dt = sphfunctions::time_step_bale(&particles, n, gamma, k);
         particles.par_iter_mut().for_each(|particle|{
             sphfunctions::euler_integrator(particle, dt);
             sphfunctions::periodic_boundary(particle, w, l);
@@ -80,8 +80,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         tree.restart();
         t += dt;
         it += 1;
-        println!{"{}", t};
     }
+    println!("Simulation run successfully. /n Iterations: {}", it);
     if let Err(err) = sphfunctions::save_data(path_result, &particles){
         println!("{}", err);
         process::exit(1);
