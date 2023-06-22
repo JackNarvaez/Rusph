@@ -385,6 +385,7 @@ pub fn euler_integrator(particle: &mut Particle, dt: f64) {
     particle.u += dt * particle.du;
 }
 
+//pub fn leapfrog(particle: &mut Particle, dt: f64)
 // -------- Boundary conditions --------
 
 // Periodic Boundary Conditions
