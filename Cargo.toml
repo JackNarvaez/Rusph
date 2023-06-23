@@ -7,4 +7,5 @@ members = [
     "tree_algorithm",
     "find_neighbors",
     "structures",
+    "accretion_disk",
 ]

@@ -368,8 +368,8 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
             particle_j.divv += div_vel;
             
             // Thermal change
-            particle_i.du = dm*p_i / (omeg_i*particles[ii].rho*particles[ii].rho) * div_vel;
-            particle_j.du = dm*p_j / (omeg_j*particles[jj].rho*particles[jj].rho) * div_vel;
+            particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho) + art_visc) * div_vel;
+            particle_j.du += dm * (p_j / (omeg_j*particles[jj].rho*particles[jj].rho) + art_visc) * div_vel;
         }
     });
 }
