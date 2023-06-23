@@ -32,7 +32,7 @@ impl Default for Particle {
 }
 
 pub struct Node {
-	pub xmin: f64,
+    pub xmin: f64,
     pub ymin: f64,
     pub side: f64,
     pub id: u32,
@@ -63,3 +63,27 @@ impl Default for Node {
 pub struct Pointer(pub *mut Particle);
 unsafe impl Send for Pointer {}
 unsafe impl Sync for Pointer {}
+
+pub struct Star {
+    pub m: f64,
+    pub x: f64,
+    pub y: f64,
+    pub vx: f64,
+    pub vy: f64,
+    pub ax: f64,
+    pub ay: f64,
+}
+
+impl Default for Star {
+    fn default() -> Star {
+        Star {
+            m: 0.,
+            x: 0.,
+            y: 0.,
+            vx: 0.0,
+            vy: 0.0,
+            ax: 0.0,
+            ay: 0.0,
+        }
+    }
+}

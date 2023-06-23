@@ -79,7 +79,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             particle.divv = 0.;
             particle.du = 0.;
         });
-        tree.restart();
+        tree.restart(n);
         t += dt;
         it += 1;
     }

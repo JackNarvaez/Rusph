@@ -19,6 +19,7 @@ use structures::{
     Particle,
     Node,
     Pointer,
+    Star,
 };
 
 // -------- Write data --------
@@ -93,6 +94,47 @@ pub fn read_data(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dy
     Ok(())
 }
 
+
+// -------- Injecting Particles --------
+
+// Create Particle --------
+pub fn create_particle(particles: &mut Vec<Particle>, x_p: f64, y_p: f64, vx_p: f64, vy_p: f64, h_p:f64) {
+    particles.push(Particle{
+    x: x_p,
+    y: y_p,
+    vx: vx_p,
+    vy: vy_p,
+    ax: 0.,
+    ay: 0.,
+    h: h_p,
+    rho: 1.0,
+    divv: 0.0,
+    u: 0.0,
+    du: 0.0});
+}
+
+// Replace Particle --------
+pub fn replace_particle(particle: &mut Particle, x_p: f64, y_p: f64, vx_p: f64, vy_p: f64, h: f64) {
+    particle.x = x_p;
+    particle.y = y_p;
+    particle.vx = vx_p;
+    particle.vy = vy_p;
+    particle.ax = 0.;
+    particle.ay = 0.;
+    particle.h = h;
+    particle.rho = 1.0;
+    particle.divv = 0.0;
+    particle.u = 0.0;
+    particle.du = 0.0;
+}
+
+// Inject set of particles
+pub fn inject_particles(particles: &mut Vec<Particle>, x: f64, y: f64, dx: f64, n_e: usize, h:f64) {
+    let x0: f64 = x - 0.5 * dx * n_e as f64;
+    for ii in 0..n_e{
+        create_particle(particles, x0, y+ (ii as f64) * dx, 0., 0., h);
+    }
+}
 
 // -------- Basic vector functions --------
 
@@ -275,6 +317,11 @@ pub fn thermal_energy(rho:f64, p:f64, gamma:f64) -> f64 {
     p/((gamma-1.)*rho)
 }
 
+// Sound speed for the ideal gas eos
+pub fn sound_speed_ideal_gas(rho:f64, p:f64, gamma:f64) -> f64 {
+    (gamma*p/rho).sqrt()
+}
+
 
 // -------- Artificial Viscosity --------
 
@@ -318,6 +365,24 @@ pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p
 pub fn body_forces_toy_star(particle: &mut Particle, nu: f64, lmbda: f64) {
     particle.ax -= nu * particle.vx + lmbda*particle.x;
     particle.ay -= nu * particle.vy + lmbda*particle.y; 
+}
+
+// Gravitational Force due to two massive objects
+pub fn body_forces_grav_2obj(particle: &mut Particle, m1: & Star, m2: & Star, omega: f64) {
+    let x_1: f64 = particle.x - m1.x;
+    let y_1: f64 = particle.y - m1.y;
+    let x_2: f64 = particle.x - m2.x;
+    let y_2: f64 = particle.y - m2.y;
+    let mr_1: f64 = m1.m * (x_1*x_1 + y_1*y_1).powf(-1.5);
+    let mr_2: f64 = m2.m * (x_2*x_2 + y_2*y_2).powf(-1.5);
+
+    // Gravitational Force
+    particle.ax -= mr_1 * x_1  + mr_2 * x_2;
+    particle.ay -= mr_1 * y_1  + mr_2 * y_2;
+
+    // Coriolis and Centripetal Forces
+    particle.ax += omega * (omega * particle.x + 2.*particle.vy);
+    particle.ay += omega * (omega * particle.y - 2.*particle.vx);
 }
 
 // Calculate acceleration for each particle in the system

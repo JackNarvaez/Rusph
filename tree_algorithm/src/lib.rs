@@ -29,7 +29,7 @@ pub trait BuildTree {
 
     fn build_tree(&mut self, k: u32, s: u32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64);
 
-    fn restart(&mut self);
+    fn restart(&mut self, n: usize);
 }
 
 use rayon::prelude::*;
@@ -114,9 +114,9 @@ impl BuildTree for Node {
         });
     }
 
-    fn restart(&mut self) {
+    fn restart(&mut self, n: usize) {
         self.branches = 0;
-        self.particles = (0..self.n as usize).collect();
+        self.particles = (0..n).collect();
         self.delete_sub_cells();
     }
 }
