@@ -8,4 +8,5 @@ members = [
     "find_neighbors",
     "structures",
     "accretion_disk",
+    "sedov_blast_wave",
 ]

@@ -25,7 +25,7 @@ impl Default for Particle {
             divv: 0.0,
             ax: 0.0,
             ay: 0.0,
-            u: 0.0,
+            u: 1.0,
             du: 0.0,
         }
     }

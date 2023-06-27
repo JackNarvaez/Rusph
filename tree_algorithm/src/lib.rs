@@ -93,9 +93,9 @@ impl BuildTree for Node {
             self.branches = b.pow(k);
             self.create_sub_cells(b);
             for p in &self.particles {
-                let x_p = ((particles[*p].x - self.xmin) / self.side * b as f64).floor();
-                let y_p = ((particles[*p].y - self.ymin) / self.side * b as f64).floor();
-                let j :usize = (x_p + y_p * b as f64) as usize;
+                let x_p = ((particles[*p].x - self.xmin) / self.side * b as f64).floor() as u32;
+                let y_p = ((particles[*p].y - self.ymin) / self.side * b as f64).floor() as u32;
+                let j :usize = (x_p + y_p * b) as usize;
                 add_particle(&mut self.children[j], *p);
             }
             let r = self.distribution_ratio((alpha * s as f64) as u32, b);

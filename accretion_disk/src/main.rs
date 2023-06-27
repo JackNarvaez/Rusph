@@ -70,7 +70,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     // System's parameters
     let eta :f64 = 1.2; // dimensionless constant related to the ratio of smoothing length
     let d = 2; // Dimension of the system
-    let k:f64 = 0.05; // Pressure constant
     let gamma:f64 = 1.01;  // Polytropic index
 
     let sigma :f64 = 10.0/(7.*PI); //  Normalization's constant of kernel
@@ -102,8 +101,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         }
         tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
         sphfunctions::smoothing_length(&mut particles, dm, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_, nt, particles_ptr);
-        sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, k, gamma, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_, nt, particles_ptr);
-        dt = sphfunctions::time_step_bale(&particles, nt, gamma, k);
+        sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_, nt, particles_ptr);
+        dt = sphfunctions::time_step_bale(&particles, nt, gamma);
         println!("{} {}", particles.len(), dt);
         for ii in 0..nt {
             sphfunctions::body_forces_grav_2obj(&mut particles[ii], &star1, &star2, w_orb);

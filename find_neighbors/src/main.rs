@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Tree builder
     let start = Instant::now();
-    let mut root : Node = <Node as BuildTree>::new(n, x0-2.*r, y0-2.*r, 4.*r);
+    let mut root : Node = <Node as BuildTree>::new(n, -0.6, -0.6, 1.12);//new(n, x0-2.*r, y0-2.*r, 4.*r);
     root.build_tree(k, s, alpha, beta, &particles, 0.1*h);
     println!("{} s", start.elapsed().as_secs());
     save_tree(path_tree, &root);

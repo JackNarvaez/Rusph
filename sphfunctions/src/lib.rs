@@ -24,7 +24,7 @@ use structures::{
 
 // -------- Write data --------
 
-pub fn init_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
+pub fn init_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64, x0: f64, y0: f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     let dx = (w*l / n as f64).sqrt();
     let nx :i64 = (w/dx) as i64;
@@ -32,7 +32,7 @@ pub fn init_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64)-> Result<()
     wtr.write_record(&["x", "y", "h", "rho"])?;
     for jj in 0..ny{
         for ii in 0..nx{
-            wtr.write_record(&[(dx*ii as f64).to_string(), (dx*jj as f64).to_string(), h.to_string(), rho.to_string()])?;
+            wtr.write_record(&[(x0 + dx*ii as f64).to_string(), (y0 + dx*jj as f64).to_string(), h.to_string(), rho.to_string()])?;
         }
     }
     wtr.flush()?;
@@ -292,25 +292,19 @@ pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f6
 // -- Toy Star 2D --
 
 // Polytropic equation
-pub fn eos_polytropic(rho:f64, k:f64, gamma:f64) -> f64 {
-    k * rho.powf(1.+1./gamma)
+pub fn eos_polytropic(rho:f64, _k:f64, gamma:f64) -> f64 {
+    0.25 * rho.powf(gamma)
 }
 
 // Coefficient of gravital force
 pub fn coeff_static_grav_potential(k:f64, gamma:f64, m:f64, r:f64) -> f64 {
-    2.0*k/(PI.powf(1./gamma)) * (m*(1.+gamma)/(r*r)).powf(1.+1./gamma)/m
-}
-
-// Sound speed for the Polytropic equation
-pub fn sound_speed_polytropic(rho:f64, p:f64, gamma:f64) -> f64 {
-    // gamma = sqrt(1+1/n)
-    gamma * (p/rho).sqrt()
+    2.0*k/(PI.powf(gamma-1.)) * (m*(gamma/(gamma - 1.))/(r*r)).powf(gamma)/m
 }
 
 // -- Ideal Gas --
 
-pub fn eos_ideal_gas(rho:f64, k:f64, gamma:f64) -> f64 {
-    k*rho.powf(gamma)
+pub fn eos_ideal_gas(rho:f64, u:f64, gamma:f64) -> f64 {
+    (gamma-1.0)*rho*u
 }
 
 pub fn thermal_energy(rho:f64, p:f64, gamma:f64) -> f64 {
@@ -386,7 +380,7 @@ pub fn body_forces_grav_2obj(particle: &mut Particle, m1: & Star, m2: & Star, om
 }
 
 // Calculate acceleration for each particle in the system
-pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, k:f64, gamma:f64, gamma_cs:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer){
+pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer){
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
@@ -395,14 +389,14 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
     }).collect();
 
     (0..n).into_par_iter().for_each(move |ii| {
-        let p_i = eos(particles[ii].rho, k, gamma);
-        let cs_i = cs(particles[ii].rho, p_i, gamma_cs);
+        let p_i = eos(particles[ii].rho, particles[ii].u, gamma);
+        let cs_i = cs(particles[ii].rho, p_i, gamma);
         let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
         // Pointer to iith-particle
         let particle_i = unsafe { &mut *{ptr}.0.add(ii)};
         for jj in (ii+1)..n {
-            let p_j = eos(particles[jj].rho, k, gamma);
-            let cs_j = cs(particles[jj].rho, p_j, gamma_cs);
+            let p_j = eos(particles[jj].rho, particles[jj].u, gamma);
+            let cs_j = cs(particles[jj].rho, p_j, gamma);
             let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
             let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
@@ -439,6 +433,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
     });
 }
 
+
 // -------- Time integrator --------
 
 // Euler-Raphson method
@@ -454,16 +449,16 @@ pub fn euler_integrator(particle: &mut Particle, dt: f64) {
 // -------- Boundary conditions --------
 
 // Periodic Boundary Conditions
-pub fn periodic_boundary(particle: &mut Particle, w: f64, h: f64){
+pub fn periodic_boundary(particle: &mut Particle, w: f64, h: f64, x0:f64, y0: f64){
     // We assume that the domain's system is a rectangular box.
-    if particle.x > w {
+    if particle.x > (w+x0) {
         particle.x -= w;
-    } else if particle.x < 0.0 {
+    } else if particle.x < x0 {
         particle.x += w;
     }
-    if particle.y > h {
+    if particle.y > (h + y0) {
         particle.y -= h;
-    } else if particle.y < 0.0 {
+    } else if particle.y < y0 {
         particle.y += h;
     }
 }
@@ -485,10 +480,10 @@ pub fn force_dt(h: f64, a: f64, f: f64) -> f64 {
 }
 
 // Timestepping Criteria Cossins P. J. (2010)
-pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64, k: f64) -> f64{
+pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64) -> f64{
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
         let a: f64 = particles[ii].ax*particles[ii].ax + particles[ii].ay*particles[ii].ay;
-        let cs: f64 = ((1.+1./gamma)*k*(particles[ii].h).powf(1./gamma)).sqrt();
+        let cs: f64 = ((gamma)*0.25*(particles[ii].rho).powf(gamma-1.)).sqrt();
         let dt_a: f64 = force_dt(particles[ii].h, a, 0.3);
         let dt_cfl: f64 = cfl_dt(particles[ii].h, cs, particles[ii].divv, 1., 2.);
         return (dt_a).min(dt_cfl);
@@ -497,28 +492,27 @@ pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64, k: f64) 
 }
 
 // Timestepping Criteria Monaghan (1997)
-pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64, k: f64) -> f64{
+pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64) -> f64{
     // There are convergence problems with this method.
     // Find them and Fix it
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
-        let mut dt:f64 = 1.0;
-        let cs_i = ((1.+1./gamma)*k*(particles[ii].h).powf(1./gamma)).sqrt();
+        let mut v_sig:f64 = 1.0;
+        let cs_i = (gamma*0.25*(particles[ii].rho).powf(gamma - 1.)).sqrt();
         for jj in (ii+1)..n {
-            let cs_j = ((1.+1./gamma)*k*(particles[jj].h).powf(1./gamma)).sqrt();
+            let cs_j = (gamma*0.25*(particles[jj].rho).powf(gamma-1.)).sqrt();
             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
 
             // Divergence of velocity
             let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
                            +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
     
-            //let v_sig_ij = 0.5*(cs_i + cs_j - 2.*dot_r_v/r_ij).abs();
-            let v_sig_ij = 0.5*(cs_i+cs_j) + 2.*(dot_r_v/r_ij).abs();
-            let dt_new = particles[ii].h / v_sig_ij;
-            if (dt_new) < dt {
-                dt = dt_new;
+            let v_sig_ij = 0.5*(cs_i+cs_j - 2.*(dot_r_v/r_ij));
+            if (v_sig_ij) > v_sig {
+                v_sig = v_sig_ij;
             }
         }
-        return dt;
+        let dt_a: f64 = force_dt(particles[ii].h, particles[ii].ax*particles[ii].ax + particles[ii].ay*particles[ii].ay, 0.25);
+        return (dt_a).min(0.3*particles[ii].h / v_sig);
     }).collect();
-    0.3 * dts.iter().fold(f64::INFINITY, |a, &b| a.min(b))
+    dts.iter().fold(f64::INFINITY, |a, &b| a.min(b))
 }
