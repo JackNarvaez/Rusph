@@ -20,8 +20,6 @@ use structures::{
 
 use std::f64::consts::PI;
 
-use rayon::prelude::*;
-
 fn main() -> Result<(), Box<dyn Error>> {
 
     // File's information
@@ -35,20 +33,22 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 0.2; // initial time
+    let tf:f64 = 0.3; // final time
     let mut t:f64 = t0; // Time
     let n : usize = particles.len(); // Number of particles
 
     // System's parameters
     let eta :f64 = 1.2; // dimensionless constant related to the ratio of smoothing length
-    let d: u32 = 2; // Dimension of the system
+    let d: i32 = 2; // Dimension of the system
     let gamma:f64 = 5./3.;  // Polytropic index
     let sigma :f64 = 10.0/(7.*PI); // Normalization's constant of kernel
     let w :f64 = 1.; // width
     let l :f64 = 1.; // large
+    let x0 = -0.5;
+    let y0 = -0.5; 
     let dm :f64 = 1.; // Particles' mass
 
-    for ii in 0..particles.len(){
+    for ii in 0..n{
         particles[ii].vx = -0.1;
     }
 
@@ -56,25 +56,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let s_ : u32 = 10;
     let alpha_ : f64 = 0.5;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(particles.len() as u32, -0.6, -0.6, 1.2);
+    let mut tree : Node = <Node as BuildTree>::new(n as u32, x0-0.1, y0-0.1, 1.2*l);
 
     let mut dt :f64 = 0.004;
     let mut it: u32 = 0;
     while t < tf  {
-        tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
-        sphfunctions::smoothing_length(&mut particles, dm, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_, n, particles_ptr);
-        sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_,n, particles_ptr);
+        sphfunctions::euler_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
+                                                 sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
+                                                 d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
+                                                 sphfunctions::body_forces_null, 0.0, 0.0, false,
+                                                 sphfunctions::periodic_boundary, w, l, x0, y0);
         dt = sphfunctions::time_step_bale(&particles, n, gamma);
-        particles.par_iter_mut().for_each(|particle|{
-            sphfunctions::euler_integrator(particle, dt);
-            sphfunctions::periodic_boundary(particle, w, l, -0.5, -0.5);
-            // Initialize variables to zero
-            particle.ax = 0.;
-            particle.ay = 0.;
-            particle.divv = 0.;
-            particle.du = 0.;
-        });
-        tree.restart(n);
         t += dt;
         println!("{}", t);
         if (it%100)==0 {

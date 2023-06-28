@@ -20,8 +20,6 @@ use structures::{
 
 use std::f64::consts::PI;
 
-use rayon::prelude::*;
-
 fn main() -> Result<(), Box<dyn Error>> {
 
     // File's information
@@ -35,13 +33,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 15.; // initial time
+    let tf:f64 = 10.; // final time
     let mut t:f64 = t0; // Time
     let n: usize = particles.len(); // Number of particles 
 
     // System's parameters
     let eta :f64 = 1.2; // dimensionless constant related to the ratio of smoothing length
-    let d: u32 = 2; // Dimension of the system
+    let d: i32 = 2; // Dimension of the system
     let gamma:f64 = 2.0;  // Polytropic index
     let m:f64 = 2.0; // Star's mass
     let r:f64 = 0.75; // Star's radius
@@ -63,20 +61,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut dt :f64 = 0.004;
     let mut it: u32 = 0;
     while t < tf {
-        tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
-        sphfunctions::smoothing_length(&mut particles, dm, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_, n, particles_ptr);
-        sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_, n, particles_ptr);
+        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
+                                                 sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
+                                                 d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
+                                                 sphfunctions::body_forces_toy_star, nu, lmbda, true,
+                                                 sphfunctions::periodic_boundary, 4.*r, 4.*r, x0-2.*r, y0-2.*r);
         dt = sphfunctions::time_step_bale(&particles, n, gamma);
-        particles.par_iter_mut().for_each(|particle|{
-            sphfunctions::body_forces_toy_star(particle, nu, lmbda);
-            sphfunctions::euler_integrator(particle, dt);
-            // Initialize variables to zero
-            particle.ax = 0.;
-            particle.ay = 0.;
-            particle.divv = 0.;
-            particle.du = 0.;
-        });
-        tree.restart(n);
         t += dt;
         println!("{}", t);
         if (it%100) == 0 {

@@ -16,6 +16,7 @@ use std::f64::consts::PI;
 
 use tree_algorithm::{
     FindNeighbors,
+    BuildTree,
 };
 
 use structures::{
@@ -359,10 +360,16 @@ pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p
     vec![-acc*(particle_a.x - particle_b.x), -acc*(particle_a.y - particle_b.y)]
 }
 
+// No body forces
+pub fn body_forces_null(_particles: &mut Vec<Particle>, _nu: f64, _lmbda: f64) {
+}
+
 // Body forces for a toy star in 2D
-pub fn body_forces_toy_star(particle: &mut Particle, nu: f64, lmbda: f64) {
-    particle.ax -= nu * particle.vx + lmbda*particle.x;
-    particle.ay -= nu * particle.vy + lmbda*particle.y; 
+pub fn body_forces_toy_star(particles: &mut Vec<Particle>, nu: f64, lmbda: f64) {
+    particles.par_iter_mut().for_each(|particle|{
+        particle.ax -= nu * particle.vx + lmbda*particle.x;
+        particle.ay -= nu * particle.vy + lmbda*particle.y; 
+    });
 }
 
 // Gravitational Force due to two massive objects
@@ -384,7 +391,9 @@ pub fn body_forces_grav_2obj(particle: &mut Particle, m1: & Star, m2: & Star, om
 }
 
 // Calculate acceleration for each particle in the system
-pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer){
+pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
+                     dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
+                     d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer){
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
@@ -398,6 +407,12 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
         let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
         // Pointer to iith-particle
         let particle_i = unsafe { &mut *{ptr}.0.add(ii)};
+        // Initialize variables to zero
+        particle_i.ax = 0.;
+        particle_i.ay = 0.;
+        particle_i.divv = 0.;
+        particle_i.du = 0.;
+
         for jj in 0..n {
             if ii != jj {
                 let p_j = eos(particles[jj].rho, particles[jj].u, gamma);
@@ -441,32 +456,79 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
 
 
 // -------- Time integrator --------
-
-// Euler-Raphson method
-pub fn euler_integrator(particle: &mut Particle, dt: f64) {
-    particle.x += dt * particle.vx;
-    particle.y += dt * particle.vy;
-    particle.vx += dt * particle.ax;
-    particle.vy += dt * particle.ay;
-    particle.u += dt * particle.du;
+pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
+                        dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
+                        d:i32, eta: f64, tree: &mut Node, s_: u32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
+                        body_forces: fn(&mut Vec<Particle>, f64, f64), nu:f64, lmbda: f64, bf: bool,
+                        boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {
+    
+    tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, d, 1e-03, 100, dt, tree, s_, n, ptr);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr);
+    if bf {
+        body_forces(particles, nu, lmbda);
+    }
+    particles.par_iter_mut().for_each(|particle|{
+        particle.x += dt * particle.vx;
+        particle.y += dt * particle.vy;
+        particle.vx += dt * particle.ax;
+        particle.vy += dt * particle.ay;
+        particle.u += dt * particle.du;
+    });
+    boundary(particles, w, l, x0, y0);
+    tree.restart(n);
 }
 
-//pub fn leapfrog(particle: &mut Particle, dt: f64)
+// Velocity Verlet integrator
+pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
+                                  dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
+                                  d:i32, eta: f64, tree: &mut Node, s_: u32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
+                                  body_forces: fn(&mut Vec<Particle>, f64, f64), nu:f64, lmbda: f64, bf: bool,
+                                  boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {
+    
+    particles.par_iter_mut().for_each(|particle|{
+        particle.vx += 0.5*dt*particle.ax;
+        particle.vy += 0.5*dt*particle.ay;
+
+        particle.x += dt * particle.vx;
+        particle.y += dt * particle.vy;
+    });
+
+    boundary(particles, w, l, x0, y0);
+
+    tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, d, 1e-03, 100, dt, tree, s_, n, ptr);
+
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr);
+    if bf {
+        body_forces(particles, nu, lmbda);
+    }
+    particles.par_iter_mut().for_each(|particle|{
+        particle.vx += 0.5* dt * particle.ax;
+        particle.vy += 0.5* dt * particle.ay;
+        particle.u += dt * particle.du;
+    });
+    tree.restart(n);
+}
+
+
 // -------- Boundary conditions --------
 
 // Periodic Boundary Conditions
-pub fn periodic_boundary(particle: &mut Particle, w: f64, h: f64, x0:f64, y0: f64){
+pub fn periodic_boundary(particles: &mut Vec<Particle>, w: f64, h: f64, x0:f64, y0: f64){
     // We assume that the domain's system is a rectangular box.
-    if particle.x > (w+x0) {
-        particle.x -= w;
-    } else if particle.x < x0 {
-        particle.x += w;
-    }
-    if particle.y > (h + y0) {
-        particle.y -= h;
-    } else if particle.y < y0 {
-        particle.y += h;
-    }
+    particles.par_iter_mut().for_each(|particle|{
+        if particle.x > (w+x0) {
+            particle.x -= w;
+        } else if particle.x < x0 {
+            particle.x += w;
+        }
+        if particle.y > (h + y0) {
+            particle.y -= h;
+        } else if particle.y < y0 {
+            particle.y += h;
+        }
+    });
 }
 
 // -------- Timestepping Criteria --------
