@@ -3,7 +3,10 @@ use std::{
     f64,
 };
 
-use rand::{thread_rng, Rng};
+use rand::{Rng, SeedableRng};
+use rand_pcg::Pcg64;
+
+const SEED: u64 = 42;
 
 use csv::Writer;
 
@@ -40,25 +43,26 @@ pub fn init_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64, x0: f64, y0
 }
 
 pub fn init_random_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
-    let mut wtr = Writer::from_path(path)?;
-    let mut rng = thread_rng();
-    wtr.write_record(&["x", "y", "h", "rho"])?;
-    for _ii in 0..n{
-        let x = rng.gen_range(0.0f64, w);
-        let y = rng.gen_range(0.0f64, l);
-        wtr.write_record(&[x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
-    }
-    wtr.flush()?;
-    Ok(())
+   let mut wtr = Writer::from_path(path)?;
+   let mut rng = Pcg64::seed_from_u64(SEED);
+   wtr.write_record(&["x", "y", "h", "rho"])?;
+   for _ii in 0..n{
+       let x = w*rng.gen::<f64>();
+       let y = l*rng.gen::<f64>();
+       wtr.write_record(&[x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
+   }
+   wtr.flush()?;
+   Ok(())
 }
 
 pub fn init_random_circle(path: &str, n: u32, r:f64, rho:f64, h:f64, x0:f64, y0:f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
-    let mut rng = thread_rng();
+    let mut rng = Pcg64::seed_from_u64(SEED);
     wtr.write_record(&["x", "y", "h", "rho"])?;
     for _ii in 0..n{
-        let r_i = r*(rng.gen_range(0.0f64, 1.0f64)).sqrt();
-        let theta_i = 2.0*PI*rng.gen_range(0.0f64, 1.0f64);
+        let r_i = r*(rng.gen::<f64>()).sqrt();
+        let theta_i = 2.0*PI*rng.gen::<f64>();
+        println!("{} {}", r_i, theta_i);
         let x = r_i*theta_i.cos() + x0;
         let y = r_i*theta_i.sin() + y0;
         wtr.write_record(&[x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
@@ -293,7 +297,8 @@ pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f6
 
 // Polytropic equation
 pub fn eos_polytropic(rho:f64, _k:f64, gamma:f64) -> f64 {
-    0.25 * rho.powf(gamma)
+    let k: f64 = 0.25;
+    k * rho.powf(gamma)
 }
 
 // Coefficient of gravital force
@@ -304,7 +309,7 @@ pub fn coeff_static_grav_potential(k:f64, gamma:f64, m:f64, r:f64) -> f64 {
 // -- Ideal Gas --
 
 pub fn eos_ideal_gas(rho:f64, u:f64, gamma:f64) -> f64 {
-    (gamma-1.0)*rho*u
+    (gamma-1.)*rho*u
 }
 
 pub fn thermal_energy(rho:f64, p:f64, gamma:f64) -> f64 {

@@ -25,24 +25,23 @@ use rayon::prelude::*;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // File's information
-    let path_source = "./Data/initial_distribution/ideal_gas.csv";
-    let path_result = "./Data/results/ideal_gas.csv";
+    let path_source: &str = "./Data/initial_distribution/ideal_gas.csv";
     let mut particles :Vec<Particle> = Vec::new();
     if let Err(err) = sphfunctions::read_data(path_source, &mut particles) {
         println!("{}", err);
         process::exit(1);
     }
-    let particles_ptr = Pointer(particles.as_mut_ptr());
+    let particles_ptr: Pointer = Pointer(particles.as_mut_ptr());
 
     // Simulation's parameters
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 0.1; // initial time
+    let tf:f64 = 0.6; // initial time
     let mut t:f64 = t0; // Time
     let n : usize = particles.len(); // Number of particles
 
     // System's parameters
     let eta :f64 = 1.2; // dimensionless constant related to the ratio of smoothing length
-    let d = 2; // Dimension of the system
+    let d: u32 = 2; // Dimension of the system
     let gamma:f64 = 5./3.;  // Polytropic index
     let sigma :f64 = 10.0/(7.*PI); // Normalization's constant of kernel
     let w :f64 = 1.; // width
@@ -77,10 +76,17 @@ fn main() -> Result<(), Box<dyn Error>> {
         });
         tree.restart(n);
         t += dt;
+        println!("{}", t);
+        if (it%100)==0 {
+            if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/ideal_gas/") + &(it/100).to_string() + &".csv"), &particles){
+                println!("{}", err);
+                process::exit(1);
+            }
+        }
         it += 1;
     }
     println!("Simulation run successfully. /n Iterations: {}", it);
-    if let Err(err) = sphfunctions::save_data(path_result, &particles){
+    if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/ideal_gas/final.csv")), &particles){
         println!("{}", err);
         process::exit(1);
     }
