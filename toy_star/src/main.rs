@@ -35,7 +35,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 10.; // initial time
+    let tf:f64 = 15.; // initial time
     let mut t:f64 = t0; // Time
     let n: usize = particles.len(); // Number of particles 
 

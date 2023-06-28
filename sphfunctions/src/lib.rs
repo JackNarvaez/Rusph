@@ -6,7 +6,7 @@ use std::{
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 
-const SEED: u64 = 42;
+const SEED: u64 = 123;
 
 use csv::Writer;
 
@@ -62,7 +62,6 @@ pub fn init_random_circle(path: &str, n: u32, r:f64, rho:f64, h:f64, x0:f64, y0:
     for _ii in 0..n{
         let r_i = r*(rng.gen::<f64>()).sqrt();
         let theta_i = 2.0*PI*rng.gen::<f64>();
-        println!("{} {}", r_i, theta_i);
         let x = r_i*theta_i.cos() + x0;
         let y = r_i*theta_i.sin() + y0;
         wtr.write_record(&[x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
@@ -399,41 +398,43 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
         let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
         // Pointer to iith-particle
         let particle_i = unsafe { &mut *{ptr}.0.add(ii)};
-        for jj in (ii+1)..n {
-            let p_j = eos(particles[jj].rho, particles[jj].u, gamma);
-            let cs_j = cs(particles[jj].rho, p_j, gamma);
-            let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
-            let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
-            let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
-            let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
-
-            // Divergence of velocity
-            let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
-                         +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
-
-            // Artificial viscosity
-            let mut art_visc = 0.0;
-            if dot_r_v < 0.0 {
-                art_visc = mon89_art_vis(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
+        for jj in 0..n {
+            if ii != jj {
+                let p_j = eos(particles[jj].rho, particles[jj].u, gamma);
+                let cs_j = cs(particles[jj].rho, p_j, gamma);
+                let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
+                let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
+                let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
+                let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
+    
+                // Divergence of velocity
+                let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
+                             +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
+    
+                // Artificial viscosity
+                let mut art_visc = 0.0;
+                if dot_r_v < 0.0 {
+                    art_visc = mon89_art_vis(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
+                }
+                // Pointer to jjth-particle
+                // let particle_j = unsafe { &mut *{ptr}.0.add(jj)};
+    
+                // Acceleration
+                let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);
+                particle_i.ax += dm *f_ij[0];
+                particle_i.ay += dm *f_ij[1];
+                // particle_j.ax -= dm *f_ij[0];
+                // particle_j.ay -= dm *f_ij[1];
+                
+                // Divergence of v per unit of mass
+                let div_vel :f64 = grad_hi*dot_r_v;
+                particle_i.divv += div_vel;
+                // particle_j.divv += div_vel;
+                
+                // Thermal change
+                particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho) + art_visc) * div_vel;
+                // particle_j.du += dm * (p_j / (omeg_j*particles[jj].rho*particles[jj].rho) + art_visc) * div_vel;
             }
-            // Pointer to jjth-particle
-            let particle_j = unsafe { &mut *{ptr}.0.add(jj)};
-
-            // Acceleration
-            let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);
-            particle_i.ax += dm *f_ij[0];
-            particle_i.ay += dm *f_ij[1];
-            particle_j.ax -= dm *f_ij[0];
-            particle_j.ay -= dm *f_ij[1];
-            
-            // Divergence of v per unit of mass
-            let div_vel :f64 = grad_hi*dot_r_v;
-            particle_i.divv += div_vel;
-            particle_j.divv += div_vel;
-            
-            // Thermal change
-            particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho) + art_visc) * div_vel;
-            particle_j.du += dm * (p_j / (omeg_j*particles[jj].rho*particles[jj].rho) + art_visc) * div_vel;
         }
     });
 }
