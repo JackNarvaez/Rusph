@@ -43,14 +43,14 @@ pub fn init_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64, x0: f64, y0
     Ok(())
 }
 
-pub fn init_random_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64)-> Result<(), Box<dyn Error>>{
+pub fn init_random_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64, x0: f64, y0: f64)-> Result<(), Box<dyn Error>>{
    let mut wtr = Writer::from_path(path)?;
    let mut rng = Pcg64::seed_from_u64(SEED);
    wtr.write_record(&["x", "y", "h", "rho"])?;
    for _ii in 0..n{
        let x = w*rng.gen::<f64>();
        let y = l*rng.gen::<f64>();
-       wtr.write_record(&[x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
+       wtr.write_record(&[(x+x0).to_string(), (y+y0).to_string(), h.to_string(), rho.to_string()])?;
    }
    wtr.flush()?;
    Ok(())
