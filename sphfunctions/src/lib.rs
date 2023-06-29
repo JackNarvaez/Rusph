@@ -140,6 +140,7 @@ pub fn inject_particles(particles: &mut Vec<Particle>, x: f64, y: f64, dx: f64, 
     }
 }
 
+
 // -------- Basic vector functions --------
 
 // Euclidean distance
@@ -207,7 +208,6 @@ pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & V
         rho += f(r/h);
     }
     rho * dm * sigma / h.powi(d)
-    //let rho :f64 = neigh_particles.par_iter().map(|jj| f(euclidean_norm(&particles[ii], &particles[*jj])/h)).sum(); // Parallel calculation
 }
 
 // Density calculated by smoothing function
@@ -326,20 +326,22 @@ pub fn sound_speed_ideal_gas(rho:f64, p:f64, gamma:f64) -> f64 {
 
 // Monaghan (1989): "Standard" SPH viscous term
 pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_j: f64, rho_i: f64, rho_j: f64) -> f64 {
-
-    // Mean values
-    let cs_mean :f64 = 0.5*(cs_i+cs_j);
-    let h_mean :f64 = 0.5*(h_i+h_j);
-    let rho_mean :f64 = 0.5*(rho_i+rho_j);
-
-    // Parameters
-    let alpha :f64 = 1.0;
-    let beta :f64 = 2.0;
-    let eps :f64 = 0.01;
-    let nu_visc :f64 = h_mean*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
-
-    // It's assumed dot_r_v < 0.0
-    return (-alpha*cs_mean+beta*nu_visc)*nu_visc/rho_mean;
+    if dot_r_v >= 0. {
+        return 0.;
+    } else {
+        // Mean values
+        let cs_mean :f64 = 0.5*(cs_i+cs_j);
+        let h_mean :f64 = 0.5*(h_i+h_j);
+        let rho_mean :f64 = 0.5*(rho_i+rho_j);
+    
+        // Parameters
+        let alpha :f64 = 1.0;
+        let beta :f64 = 2.0;
+        let eps :f64 = 0.01;
+        let nu_visc :f64 = h_mean*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
+    
+        return (-alpha*cs_mean+beta*nu_visc)*nu_visc/rho_mean;
+    }
 }
 
 // Monaghan (1997): AV by Rieman solvers
@@ -351,14 +353,13 @@ pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _
     let v_sig:f64 = 0.5*alpha*(cs_i + cs_j - beta*dot_r_v/r_ij);
     let rho_mean :f64 = 0.5*(rho_i+rho_j);
 
-    // It's assumed dot_r_v < 0.0
     return v_sig*dot_r_v/(r_ij*rho_mean);
 }
 
 
 // -------- Dynamic Equations --------
 
-// Force due to the pressure's gradient
+// Internal forces: Due to pressure gradient and AV
 pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p_b: f64, omeg_a: f64, omeg_b: f64, grad_ha: f64, grad_hb: f64, art_visc: f64) -> Vec<f64> {
     let acc = p_a/(omeg_a*particle_a.rho*particle_a.rho)*grad_ha + p_b/(omeg_b*particle_b.rho*particle_b.rho) * grad_hb + 0.5*art_visc*(grad_ha+grad_hb);
     vec![-acc*(particle_a.x - particle_b.x), -acc*(particle_a.y - particle_b.y)]
@@ -398,6 +399,7 @@ pub fn body_forces_grav_2obj(particle: &mut Particle, m1: & Star, m2: & Star, om
 pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
                      dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
                      d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer){
+    
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
@@ -409,8 +411,10 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
         let p_i = eos(particles[ii].rho, particles[ii].u, gamma);
         let cs_i = cs(particles[ii].rho, p_i, gamma);
         let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
+        
         // Pointer to iith-particle
         let particle_i = unsafe { &mut *{ptr}.0.add(ii)};
+        
         // Initialize variables to zero
         particle_i.ax = 0.;
         particle_i.ay = 0.;
@@ -427,15 +431,12 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
                 let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
     
-                // Divergence of velocity
+                // Velocity dot position
                 let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
                              +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
     
                 // Artificial viscosity
-                let mut art_visc = 0.0;
-                if dot_r_v < 0.0 {
-                    art_visc = mon89_art_vis(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
-                }
+                let art_visc = mon89_art_vis(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
     
                 // Acceleration
                 let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);

@@ -32,15 +32,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let particles_ptr: Pointer = Pointer(particles.as_mut_ptr());
 
     // Simulation's parameters
-    let t0:f64 = 0.0; // initial time
-    let tf:f64 = 10.; // final time
+    let t0:f64 = 0.0; // Initial time
+    let tf:f64 = 10.; // Final time
     let mut t:f64 = t0; // Time
     let n: usize = particles.len(); // Number of particles 
 
-    // System's parameters
-    let eta :f64 = 1.2; // dimensionless constant related to the ratio of smoothing length
+    // System's parameters.
+    let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
     let d: i32 = 2; // Dimension of the system
-    let gamma:f64 = 2.0;  // Polytropic index
+    let gamma:f64 = 2.0;  // Gamma factor (heat capacity ratio)
     let m:f64 = 2.0; // Star's mass
     let r:f64 = 0.75; // Star's radius
     let x0:f64 = 0.; // Star's center
@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let nu:f64 = 1.0; // Viscocity parameter
     let lmbda: f64 = sphfunctions::coeff_static_grav_potential(0.25, gamma, m, r);
     let sigma :f64 = 10.0/(7.*PI); //  Normalization's constant of kernel
-    let dm:f64 = m/n as f64; // mass of each particle
+    let dm:f64 = m/n as f64; // Particles' mass
 
     // Tree's parameters
     let s_ : u32 = 10;
@@ -56,10 +56,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let beta_ : f64 = 0.5;
     let mut tree : Node = <Node as BuildTree>::new(n as u32, x0-2.*r, y0-2.*r, 4.*r);
 
+    let mut dt :f64 = 0.001;
+    let mut it: u32 = 0;
+
     // Main loop
     let start: Instant = Instant::now();
-    let mut dt :f64 = 0.004;
-    let mut it: u32 = 0;
     while t < tf {
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
                                                  sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
@@ -77,7 +78,9 @@ fn main() -> Result<(), Box<dyn Error>> {
         } 
         it += 1;
     }
-    println!("Simulation run successfully. /n Iterations: {} /n Time: {} s", it, start.elapsed().as_secs());
+    println!("Simulation run successfully.\n Time {} s.\n Iterations: {}.", start.elapsed().as_secs(), it);
+    
+    // Save final information
     if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/final.csv")), &particles){
         println!("{}", err);
         process::exit(1);

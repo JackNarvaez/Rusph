@@ -26,7 +26,6 @@ use rayon::prelude::*;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Binary stars system
-
     let star1: Star = Star{m: 4.*PI*PI, x: 0., y: 0., vx: 0., vy: 0., ax: 0., ay:0.};
     let star2: Star = Star{m: 4.*PI*PI*0.08, x: 1., y: 0., vx: 0., vy: 0., ax: 0., ay:0.};
 
@@ -47,19 +46,16 @@ fn main() -> Result<(), Box<dyn Error>> {
     let w_orb: f64 = ((star1.m + star2.m)/(a*a*a)).sqrt(); // Angular velocity
 
     // Disk's particles information
-
     let n : usize = 100; // Number of particles
 
     // Injection rate
-
     let n_e: usize = 10;
     let dl_e: f64 = 0.01*a;
     let h_ini: f64 = 0.02*a;
 
-    
     // File's information
     let path_result = "./Data/results/accretion_disk_2D.csv";
-    let mut particles :Vec<Particle> = Vec::new();
+    let mut particles: Vec<Particle> = Vec::new();
     let particles_ptr = Pointer(particles.as_mut_ptr());
 
     // Simulation's parameters
@@ -80,11 +76,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let alpha_ : f64 = 0.5;
     let beta_ : f64 = 0.5;
     
-    // Main loop
-    let start = Instant::now();
     let mut dt :f64 = 0.004;
     let mut it: u32 = 0;
     let mut nt: usize = 0;
+
+    // Main loop
+    let start = Instant::now();
     println!("{} {}", h_ini, dl_e);
     for ii in 0..5 {
         nt += n_e;
@@ -92,36 +89,33 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let mut tree : Node = <Node as BuildTree>::new(5*n_e as u32, -a, -a, 4.*a);
+
+
     while t < tf {
         sphfunctions::inject_particles(&mut particles, roche_x, roche_y, dl_e, n_e, h_ini);
         nt += n_e;
-        if let Err(err) = sphfunctions::save_data(path_result, &particles){
+        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
+                                                 sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
+                                                 d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
+                                                 sphfunctions::body_forces_null, 0.0, 0.0, true,
+                                                 sphfunctions::periodic_boundary, 1., 1., 1., 1.);
+        dt = sphfunctions::time_step_bale(&particles, n, gamma);
+        t += dt;
+        println!("{}", t);
+        if (it%100) == 0 {
+            if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/") + &(it/100).to_string() + &".csv"), &particles){
             println!("{}", err);
             process::exit(1);
+            }
         }
-        tree.build_tree(d, s_, alpha_, beta_, &particles, 1.0e-02);
-        sphfunctions::smoothing_length(&mut particles, dm, eta, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, 1e-03, 100, dt, &tree, s_, nt, particles_ptr);
-        sphfunctions::accelerations(&mut particles, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma, sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, d as i32, &tree, s_, nt, particles_ptr);
-        dt = sphfunctions::time_step_bale(&particles, nt, gamma);
-        println!("{} {}", particles.len(), dt);
-        for ii in 0..nt {
-            sphfunctions::body_forces_grav_2obj(&mut particles[ii], &star1, &star2, w_orb);
-        }
-        particles.par_iter_mut().for_each(|particle|{
-            //sphfunctions::body_forces_grav_2obj(particle, unsafe {*{star1_ptr}.0.add(0)}, unsafe { *{star2_ptr}.0.add(0)}, w_orb);
-            sphfunctions::euler_integrator(particle, dt);
-            // Initialize variables to zero
-            particle.ax = 0.;
-            particle.ay = 0.;
-            particle.divv = 0.;
-            particle.du = 0.;
-        });
-        tree.restart(nt);
-        t += dt;
         it += 1;
+        t += dt;
     }
-    println!("Simulation run successfully. /n Iterations: {} /n Time: {} s", it, start.elapsed().as_secs());
-    if let Err(err) = sphfunctions::save_data(path_result, &particles){
+
+    println!("Simulation run successfully.\n Time {} s.\n Iterations: {}.", start.elapsed().as_secs(), it);
+    
+    // Save final information
+    if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/final.csv")), &particles){
         println!("{}", err);
         process::exit(1);
     }
