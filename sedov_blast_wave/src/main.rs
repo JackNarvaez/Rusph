@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 0.5; // final time
+    let tf:f64 = 0.1; // final time
     let mut t:f64 = t0; // Time
     let n : usize = particles.len(); // Number of particles
 
@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let alpha_ : f64 = 0.5;
     let beta_ : f64 = 0.5;
     let mut tree : Node = <Node as BuildTree>::new(n as u32, -0.6, -0.6, 1.2);
-    let mut dt :f64 = 0.0004;
+    let mut dt :f64 = 0.001;
     let mut it: u32 = 0;
     while t < tf  {
         sphfunctions::euler_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
