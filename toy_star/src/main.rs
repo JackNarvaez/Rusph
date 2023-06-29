@@ -65,6 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
                                                  sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
                                                  d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
+                                                 sphfunctions::mon89_art_vis,
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
                                                  sphfunctions::periodic_boundary, 4.*r, 4.*r, x0-2.*r, y0-2.*r);
         dt = sphfunctions::time_step_bale(&particles, n, gamma);
