@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // initial time
-    let tf:f64 = 0.1; // final time
+    let tf:f64 = 0.05; // final time
     let mut t:f64 = t0; // Time
     let n : usize = particles.len(); // Number of particles
 
@@ -44,9 +44,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let sigma :f64 = 10.0/(7.*PI); // Normalization's constant of kernel
     let w :f64 = 1.; // width
     let l :f64 = 1.; // large
-    let x0: f64 = -0.5; 
+    let x0: f64 = -0.5;
     let y0: f64 = -0.5;
-    let dm :f64 = 0.01; // Particles' mass
+    let rho0: f64 = 1.0;
+    let dm :f64 = rho0*w*l/n as f64; // Particles' mass
     let h0: f64 = 2.*eta*(w*l / n as f64).sqrt();
     println!("{}", h0);
 
@@ -60,13 +61,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Tree's parameters
     let s_ : u32 = 10;
-    let alpha_ : f64 = 0.5;
+    let alpha_ : f64 = 0.05;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as u32, -0.6, -0.6, 1.2);
+    let mut tree : Node = <Node as BuildTree>::new(n as u32, x0-0.1*x0.abs(), y0-0.1*x0.abs(), l+0.2*x0.abs());
     let mut dt :f64 = 0.001;
     let mut it: u32 = 0;
     while t < tf  {
-        sphfunctions::euler_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
+        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
                                        d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
@@ -74,8 +75,8 @@ fn main() -> Result<(), Box<dyn Error>> {
         dt = sphfunctions::time_step_bale(&particles, n, gamma);
         t += dt;
         println!("{}", t);
-        if (it%100) == 0 {
-            if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/sedov_blast_wave/") + &(it/100).to_string() + &".csv"), &particles){
+        if (it%1) == 0 {
+            if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/sedov_blast_wave/") + &(it/1).to_string() + &".csv"), &particles){
                 println!("{}", err);
                 process::exit(1);
             }

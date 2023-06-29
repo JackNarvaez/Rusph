@@ -343,12 +343,16 @@ pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_
 }
 
 // Monaghan (1997): AV by Rieman solvers
-pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, v_sig: f64, rho_i: f64, rho_j: f64) -> f64 {
+pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _h_j: f64, rho_i: f64, rho_j: f64) -> f64 {
     // Parameters
-    let alpha :f64 = 1.0;
+    let alpha: f64 = 1.0;
+    let beta: f64 = 2.0;
+
+    let v_sig:f64 = 0.5*alpha*(cs_i + cs_j - beta*dot_r_v/r_ij);
+    let rho_mean :f64 = 0.5*(rho_i+rho_j);
 
     // It's assumed dot_r_v < 0.0
-    return 0.5*alpha*v_sig*dot_r_v/(r_ij*(rho_i+rho_j));
+    return v_sig*dot_r_v/(r_ij*rho_mean);
 }
 
 
@@ -413,7 +417,8 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
         particle_i.divv = 0.;
         particle_i.du = 0.;
 
-        for jj in 0..n {
+        for kk in &neighbors[ii] {
+            let jj = *kk;
             if ii != jj {
                 let p_j = eos(particles[jj].rho, particles[jj].u, gamma);
                 let cs_j = cs(particles[jj].rho, p_j, gamma);
@@ -431,24 +436,18 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 if dot_r_v < 0.0 {
                     art_visc = mon89_art_vis(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
                 }
-                // Pointer to jjth-particle
-                // let particle_j = unsafe { &mut *{ptr}.0.add(jj)};
     
                 // Acceleration
                 let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);
                 particle_i.ax += dm *f_ij[0];
                 particle_i.ay += dm *f_ij[1];
-                // particle_j.ax -= dm *f_ij[0];
-                // particle_j.ay -= dm *f_ij[1];
                 
                 // Divergence of v per unit of mass
                 let div_vel :f64 = grad_hi*dot_r_v;
                 particle_i.divv += div_vel;
-                // particle_j.divv += div_vel;
                 
                 // Thermal change
                 particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho) + art_visc) * div_vel;
-                // particle_j.du += dm * (p_j / (omeg_j*particles[jj].rho*particles[jj].rho) + art_visc) * div_vel;
             }
         }
     });
@@ -518,12 +517,12 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
 pub fn periodic_boundary(particles: &mut Vec<Particle>, w: f64, h: f64, x0:f64, y0: f64){
     // We assume that the domain's system is a rectangular box.
     particles.par_iter_mut().for_each(|particle|{
-        if particle.x > (w+x0) {
+        if particle.x >= (w+x0) {
             particle.x -= w;
         } else if particle.x < x0 {
             particle.x += w;
         }
-        if particle.y > (h + y0) {
+        if particle.y >= (h + y0) {
             particle.y -= h;
         } else if particle.y < y0 {
             particle.y += h;
