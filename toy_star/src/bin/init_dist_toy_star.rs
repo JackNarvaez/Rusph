@@ -10,7 +10,7 @@ use std::f64::consts::PI;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let path = "./Data/initial_distribution/toy_star_2D.csv";
-    let n:u32 = 100; // Number of Particles
+    let n:u32 = 200; // Number of Particles
     let r:f64 = 0.75; // Star's radius
     let m: f64 = 2.0; // Star's mass
     let rho:f64 = m/(PI*r*r); // Density

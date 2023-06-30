@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // Initial time
-    let tf:f64 = 10.; // Final time
+    let tf:f64 = 16.; // Final time
     let mut t:f64 = t0; // Time
     let n: usize = particles.len(); // Number of particles 
 
@@ -56,14 +56,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let beta_ : f64 = 0.5;
     let mut tree : Node = <Node as BuildTree>::new(n as u32, x0-2.*r, y0-2.*r, 4.*r);
 
-    let mut dt :f64 = 0.001;
-    let mut it: u32 = 0;
+    let mut dt :f64 = 0.001; // Time step
+    let mut it: u32 = 0; // Time iterations
+    let it_save: u32 = 100; // Frequency of data saving
 
     // Main loop
     let start: Instant = Instant::now();
     while t < tf {
         t += dt;
-        sphfunctions::euler_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
+        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
                                                  sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
                                                  d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                                  sphfunctions::mon89_art_vis,
@@ -71,8 +72,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                                  sphfunctions::periodic_boundary, 4.*r, 4.*r, x0-2.*r, y0-2.*r);
         dt = sphfunctions::time_step_bale(&particles, n, gamma);
         println!("{}", t);
-        if (it%100) == 0 {
-            if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/") + &(it/100).to_string() + &".csv"), &particles){
+        if (it%it_save) == 0 {
+            if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/") + &(it/it_save).to_string() + &".csv"), &particles){
                 println!("{}", err);
                 process::exit(1);
             }

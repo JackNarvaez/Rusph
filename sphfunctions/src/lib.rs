@@ -423,8 +423,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
         let cs_i = cs(particles[ii].rho, p_i, gamma);
         let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
         
-        for kk in &neighbors[ii] {
-            let jj = *kk;
+        for jj in 0..n {
             if ii != jj {
                 let p_j = eos(particles[jj].rho, particles[jj].u, gamma);
                 let cs_j = cs(particles[jj].rho, p_j, gamma);
@@ -450,7 +449,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 particle_i.divv += div_vel;
                 
                 // Thermal change
-                particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho) + art_visc) * div_vel;
+                particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho)*div_vel + 0.25*art_visc*(grad_hi+grad_hj)*dot_r_v);
             }
         }
     });
