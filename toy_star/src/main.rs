@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let x0:f64 = 0.; // Star's center
     let y0:f64 = 0.; // Star's center
     let nu:f64 = 1.0; // Viscocity parameter
-    let lmbda: f64 = sphfunctions::coeff_static_grav_potential(0.25, gamma, m, r);
+    let lmbda: f64 = sphfunctions::coeff_static_grav_potential(0.05, gamma, m, r);
     let sigma :f64 = 10.0/(7.*PI); //  Normalization's constant of kernel
     let dm:f64 = m/n as f64; // Particles' mass
 
@@ -62,14 +62,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Main loop
     let start: Instant = Instant::now();
     while t < tf {
-        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
+        t += dt;
+        sphfunctions::euler_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
                                                  sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
                                                  d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                                  sphfunctions::mon89_art_vis,
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
                                                  sphfunctions::periodic_boundary, 4.*r, 4.*r, x0-2.*r, y0-2.*r);
         dt = sphfunctions::time_step_bale(&particles, n, gamma);
-        t += dt;
         println!("{}", t);
         if (it%100) == 0 {
             if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/") + &(it/100).to_string() + &".csv"), &particles){

@@ -297,7 +297,7 @@ pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f6
 
 // Polytropic equation
 pub fn eos_polytropic(rho:f64, _k:f64, gamma:f64) -> f64 {
-    let k: f64 = 0.25;
+    let k: f64 = 0.05;
     k * rho.powf(gamma)
 }
 
@@ -326,9 +326,7 @@ pub fn sound_speed_ideal_gas(rho:f64, p:f64, gamma:f64) -> f64 {
 
 // Monaghan (1989): "Standard" SPH viscous term
 pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_j: f64, rho_i: f64, rho_j: f64) -> f64 {
-    if dot_r_v >= 0. {
-        return 0.;
-    } else {
+    if dot_r_v < 0. {
         // Mean values
         let cs_mean :f64 = 0.5*(cs_i+cs_j);
         let h_mean :f64 = 0.5*(h_i+h_j);
@@ -341,6 +339,8 @@ pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_
         let nu_visc :f64 = h_mean*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
     
         return (-alpha*cs_mean+beta*nu_visc)*nu_visc/rho_mean;
+    } else {
+        return 0.0;
     }
 }
 
@@ -409,19 +409,20 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
     }).collect();
 
     (0..n).into_par_iter().for_each(move |ii| {
-        let p_i = eos(particles[ii].rho, particles[ii].u, gamma);
-        let cs_i = cs(particles[ii].rho, p_i, gamma);
-        let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
-        
+
         // Pointer to iith-particle
         let particle_i = unsafe { &mut *{ptr}.0.add(ii)};
-        
+
         // Initialize variables to zero
         particle_i.ax = 0.;
         particle_i.ay = 0.;
         particle_i.divv = 0.;
         particle_i.du = 0.;
 
+        let p_i = eos(particles[ii].rho, particles[ii].u, gamma);
+        let cs_i = cs(particles[ii].rho, p_i, gamma);
+        let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
+        
         for kk in &neighbors[ii] {
             let jj = *kk;
             if ii != jj {
@@ -521,12 +522,12 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
 pub fn periodic_boundary(particles: &mut Vec<Particle>, w: f64, h: f64, x0:f64, y0: f64){
     // We assume that the domain's system is a rectangular box.
     particles.par_iter_mut().for_each(|particle|{
-        if particle.x >= (w+x0) {
+        if particle.x > (w+x0) {
             particle.x -= w;
         } else if particle.x < x0 {
             particle.x += w;
         }
-        if particle.y >= (h + y0) {
+        if particle.y > (h + y0) {
             particle.y -= h;
         } else if particle.y < y0 {
             particle.y += h;

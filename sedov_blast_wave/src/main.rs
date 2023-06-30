@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // Initial time
-    let tf:f64 = 0.05; // Final time
+    let tf:f64 = 0.1; // Final time
     let mut t:f64 = t0; // Time
     let n : usize = particles.len(); // Number of particles
 
@@ -66,7 +66,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let mut dt :f64 = 0.001; // Time step
     let mut it: u32 = 0; // Time iterations
-    let it_save: u32 = 1; // Frequency of data saving
+    let it_save: u32 = 100; // Frequency of data saving
 
     // Main loop
     let start = Instant::now(); // Runing time
