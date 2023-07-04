@@ -2,11 +2,12 @@
 
 members = [
     "toy_star",
-    "ideal_gas",
+    "speed_up",
     "sphfunctions",
     "tree_algorithm",
     "find_neighbors",
     "structures",
     "accretion_disk",
     "sedov_blast_wave",
+    "kelvin_helmholtz",
 ]

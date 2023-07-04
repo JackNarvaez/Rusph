@@ -279,7 +279,7 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
 
 // Calculate the smoothing function for each particle in a given time.
 pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32, n: usize, ptr : Pointer){
-    (0..n).into_par_iter().for_each(move |ii| {
+    (0..n).into_par_iter().for_each(|ii| {
         let (h_new, neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*dm*particles[ii].divv/(d as f64)), eta, f, dfdq, sigma, d, tol, it, tree, s_);
         let particle = unsafe { &mut *{ptr}.0.add(ii)};
         if h_new != 0.0 {
@@ -303,7 +303,7 @@ pub fn eos_polytropic(rho:f64, _k:f64, gamma:f64) -> f64 {
 
 // Coefficient of gravital force
 pub fn coeff_static_grav_potential(k:f64, gamma:f64, m:f64, r:f64) -> f64 {
-    2.0*k/(PI.powf(gamma-1.)) * (m*(gamma/(gamma - 1.))/(r*r)).powf(gamma)/m
+    2.0*k*PI.powf(1.-gamma) * (m*(gamma/(gamma - 1.))/(r*r)).powf(gamma)/m
 }
 
 // -- Ideal Gas --
@@ -554,7 +554,7 @@ pub fn force_dt(h: f64, a: f64, f: f64) -> f64 {
 pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64) -> f64{
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
         let a: f64 = particles[ii].ax*particles[ii].ax + particles[ii].ay*particles[ii].ay;
-        let cs: f64 = ((gamma)*0.25*(particles[ii].rho).powf(gamma-1.)).sqrt();
+        let cs: f64 = ((gamma)*0.05*(particles[ii].rho).powf(gamma-1.)).sqrt();
         let dt_a: f64 = force_dt(particles[ii].h, a, 0.3);
         let dt_cfl: f64 = cfl_dt(particles[ii].h, cs, particles[ii].divv, 1., 2.);
         return (dt_a).min(dt_cfl);

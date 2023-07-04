@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let beta_ : f64 = 0.5;
     let mut tree : Node = <Node as BuildTree>::new(n as u32, x0-2.*r, y0-2.*r, 4.*r);
 
-    let mut dt :f64 = 0.001; // Time step
+    let mut dt :f64 = 0.04; // Time step
     let mut it: u32 = 0; // Time iterations
     let it_save: u32 = 100; // Frequency of data saving
 
@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                                  sphfunctions::mon89_art_vis,
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
                                                  sphfunctions::periodic_boundary, 4.*r, 4.*r, x0-2.*r, y0-2.*r);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma);
+        //dt = sphfunctions::time_step_bale(&particles, n, gamma);
         println!("{}", t);
         if (it%it_save) == 0 {
             if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/") + &(it/it_save).to_string() + &".csv"), &particles){
