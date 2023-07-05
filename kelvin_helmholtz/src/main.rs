@@ -118,3 +118,17 @@ fn kh_conf(particles: &mut Vec<Particle>, n: usize, rfn: fn(f64, f64) -> f64, p:
         particles[ii].vy = 0.1*(2.*PI*particles[ii].x).sin();
     }
 }
+
+fn kh_init_setup(particles: &mut Vec<Particle>, nx1: usize, nx2: usize, ny1: usize, ny2: usize, w: f64, l: f64, x0: f64, y0: f64, h0: f64, rho1: f64, p:f64, gamma: f64) {
+    let dx1 = w/nx1 as f64;
+    let dx2 = w/nx2 as f64;
+    let dy1 = l/ny1 as f64;
+    let dy2 = l/ny2 as f64;
+    for ii in 0..nx {
+        for jj in 0..ny1 {
+            particles.push(Particle{x:x0+(dx1*ii as f64), y:y0+(dy1*jj as f64),
+            h:h0, rho:rho1, vx: vx1, vy: 0.0, u: p/((gamma - 1.)*particles[ii].rho);
+            ..Default::default()});
+        }
+    }
+}

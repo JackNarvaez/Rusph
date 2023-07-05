@@ -325,8 +325,8 @@ pub fn sound_speed_ideal_gas(rho:f64, p:f64, gamma:f64) -> f64 {
 // -------- Artificial Viscosity --------
 
 // Monaghan (1989): "Standard" SPH viscous term
-pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_j: f64, rho_i: f64, rho_j: f64) -> f64 {
-    if dot_r_v < 0. {
+pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_j: f64, rho_i: f64, rho_j: f64) -> (f64, f64) {
+    if dot_r_v <= 0. {
         // Mean values
         let cs_mean :f64 = 0.5*(cs_i+cs_j);
         let h_mean :f64 = 0.5*(h_i+h_j);
@@ -337,23 +337,30 @@ pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_
         let beta :f64 = 2.0;
         let eps :f64 = 0.01;
         let nu_visc :f64 = h_mean*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
+        let dvdt :f64 = (-alpha*cs_mean+beta*nu_visc)*nu_visc/rho_mean;
     
-        return (-alpha*cs_mean+beta*nu_visc)*nu_visc/rho_mean;
+        return (dvdt, dvdt);
     } else {
-        return 0.0;
+        return (0.0, 0.0);
     }
 }
 
 // Monaghan (1997): AV by Rieman solvers
-pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _h_j: f64, rho_i: f64, rho_j: f64) -> f64 {
-    // Parameters
-    let alpha: f64 = 1.0;
-    let beta: f64 = 2.0;
+pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _h_j: f64, rho_i: f64, rho_j: f64) -> (f64, f64) {
+    if dot_r_v <= 0. {
+        // Parameters
+        let alpha: f64 = 1.0;
+        let beta: f64 = 2.0;
 
-    let v_sig:f64 = 0.5*alpha*(cs_i + cs_j - beta*dot_r_v/r_ij);
-    let rho_mean :f64 = 0.5*(rho_i+rho_j);
+        let v_sig:f64 = 0.5*alpha*(cs_i + cs_j - beta*dot_r_v/r_ij);
+        let rho_mean :f64 = 0.5*(rho_i+rho_j);
+        let dvdt :f64 = -v_sig*dot_r_v/(r_ij*rho_mean);
+        let dudt :f64 = 0.5*dvdt*(dot_r_v/r_ij);
 
-    return v_sig*dot_r_v/(r_ij*rho_mean);
+        return (dvdt, dudt);
+    } else {
+        return (0.0, 0.0);
+    }
 }
 
 
@@ -399,7 +406,7 @@ pub fn body_forces_grav_2obj(particle: &mut Particle, m1: & Star, m2: & Star, om
 pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
                      dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
                      d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer,
-                     artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> f64){
+                     artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64)){
     
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
@@ -437,10 +444,10 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                              +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
     
                 // Artificial viscosity
-                let art_visc = artificial_viscosity(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
+                let (art_visc_mom, art_visc_ene) = artificial_viscosity(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
     
                 // Acceleration
-                let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc);
+                let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc_mom);
                 particle_i.ax += dm *f_ij[0];
                 particle_i.ay += dm *f_ij[1];
                 
@@ -449,7 +456,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 particle_i.divv += div_vel;
                 
                 // Thermal change
-                particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho)*div_vel + 0.25*art_visc*(grad_hi+grad_hj)*dot_r_v);
+                particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho)*div_vel + 0.25*art_visc_ene*(grad_hi+grad_hj)*dot_r_v);
             }
         }
     });
@@ -460,7 +467,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
 pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
                         dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
                         d:i32, eta: f64, tree: &mut Node, s_: u32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
-                        artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> f64,
+                        artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                         body_forces: fn(&mut Vec<Particle>, f64, f64), nu:f64, lmbda: f64, bf: bool,
                         boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {
     
@@ -485,7 +492,7 @@ pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f
 pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
                                   dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
                                   d:i32, eta: f64, tree: &mut Node, s_: u32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
-                                  artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> f64,
+                                  artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                                   body_forces: fn(&mut Vec<Particle>, f64, f64), nu:f64, lmbda: f64, bf: bool,
                                   boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {
     
@@ -568,9 +575,9 @@ pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64) -> f64{
     // Find them and Fix it
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
         let mut v_sig:f64 = 1.0;
-        let cs_i = (gamma*0.25*(particles[ii].rho).powf(gamma - 1.)).sqrt();
+        let cs_i = (gamma*0.05*(particles[ii].rho).powf(gamma - 1.)).sqrt();
         for jj in (ii+1)..n {
-            let cs_j = (gamma*0.25*(particles[jj].rho).powf(gamma-1.)).sqrt();
+            let cs_j = (gamma*0.05*(particles[jj].rho).powf(gamma-1.)).sqrt();
             let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
 
             // Divergence of velocity
