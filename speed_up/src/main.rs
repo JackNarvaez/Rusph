@@ -22,10 +22,8 @@ use std::f64::consts::PI;
 
 fn main() -> Result<(), Box<dyn Error>> {
 
-    rayon::ThreadPoolBuilder::new().num_threads(20).build_global().unwrap();
-
     // File's information
-    let path_source = "./Data/initial_distribution/speed_up.csv";
+    let path_source = "./Data/initial_distribution/sedov_blast_wave.csv";
     let mut particles :Vec<Particle> = Vec::new();
     if let Err(err) = sphfunctions::read_data(path_source, &mut particles) {
         println!("{}", err);
@@ -33,6 +31,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     let particles_ptr = Pointer(particles.as_mut_ptr());
 
+    // Simulation's parameters
+    let it_tot = 100; // Total iterations
     let n : usize = particles.len(); // Number of particles
 
     // System's parameters
@@ -50,12 +50,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     sedov_conf(&mut particles, n, h0, 1.0, sphfunctions::f_cubic_kernel, sigma);
 
-    // Save initial information
-    if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/speed_up/initial.csv")), &particles){
-        println!("{}", err);
-        process::exit(1);
-    }
-
     // Tree's parameters
     let s_ : u32 = 10;
     let alpha_ : f64 = 0.05;
@@ -64,7 +58,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let mut dt :f64 = 0.001; // Time step
     let mut it: u32 = 0; // Time iterations
-    let it_tot: u32 = 100; // Total time iterations
 
     // Main loop
     let start = Instant::now(); // Runing time
@@ -78,13 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         dt = sphfunctions::time_step_bale(&particles, n, gamma);
         it += 1;
     }
-    println!("Simulation run successfully.\n Time {} s.\n Iterations: {}.", start.elapsed().as_secs(), it);
-
-    // Save final information
-    if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/speed_up/final.csv")), &particles){
-        println!("{}", err);
-        process::exit(1);
-    }
+    println!("{}", start.elapsed().as_secs());
     Ok(())
 }
 
