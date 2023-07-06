@@ -100,21 +100,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 // Setting initial configuration
 fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, kernel: fn(f64) -> f64, sigma: f64) {
-    let mut init: Vec<usize> = Vec::new();
-    let mut sum: f64 = 0.0;
+    let u0: f64 = 1./(PI*radius*radius);
     for ii in 0..n{
         let r = ((particles[ii].x * particles[ii].x + particles[ii].y * particles[ii].y).sqrt())/h0;
         if r <= radius {
-            init.push(ii);
-            let energy = sigma*kernel(r);
-            particles[ii].u = energy;
-            sum += energy;
+            particles[ii].u = u0;
         } else{
             particles[ii].u = 0.0;
         }
-    }
-    // Normalize thermal energy
-    for ii in init {
-        particles[ii].u /= sum;
     }
 }

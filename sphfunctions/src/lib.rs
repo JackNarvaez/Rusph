@@ -177,7 +177,7 @@ pub fn dfdq_cubic_kernel(q:f64) -> f64 {
 // Gaussian Kernel
 pub fn f_gaussian_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
-    if q < 2. {
+    if q < 3. {
         f = (-q*q).exp();
     }
     f
@@ -186,7 +186,7 @@ pub fn f_gaussian_kernel(q:f64) -> f64 {
 // Derivative of Gaussian Kernel
 pub fn dfdq_gaussian_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
-    if q < 2. {
+    if q < 3. {
         f = -2.0*q*(-q*q).exp();
     }
     f
@@ -500,7 +500,6 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
     particles.par_iter_mut().for_each(|particle|{
         particle.vx += 0.5*dt*particle.ax;
         particle.vy += 0.5*dt*particle.ay;
-        particle.u += 0.5* dt * particle.du;
 
         particle.x += dt * particle.vx;
         particle.y += dt * particle.vy;
@@ -515,7 +514,7 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
     particles.par_iter_mut().for_each(|particle|{
         particle.vx += 0.5* dt * particle.ax;
         particle.vy += 0.5* dt * particle.ay;
-        particle.u += 0.5*dt * particle.du;
+        particle.u += dt * particle.du;
     });
     tree.restart(n);
 }
