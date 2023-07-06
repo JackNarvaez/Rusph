@@ -40,10 +40,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0: f64 = 0.; // y-coordinate of the bottom left corner
     let y1: f64 = 0.25; // Y-lower edge of fluid 2 
     let y2: f64 = 0.75; // Y-upper edge of fluid 2
-    let nx1: usize = 40; 
-    let nx2: usize = 50; 
-    let ny1: usize = 5; 
-    let ny2: usize = 16; 
+    let nx1: usize = 50; 
+    let nx2: usize = 80; 
+    let ny1: usize = 10; 
+    let ny2: usize = 25; 
     let rho1: f64 = 1.0; // Initial density fluid 1
     let rho2: f64 = 2.0; // Initial density fluid 2
     let vx1: f64 = -0.5; // Initial x velocity fluid 1
@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let beta_ : f64 = 0.5;
     let mut tree : Node = <Node as BuildTree>::new(n as u32, x0-0.1*(x0.abs()+0.1), y0-0.1*(x0.abs()+0.1), l+0.2*(x0.abs()+0.1));
     
-    let mut dt :f64 = 0.001; // Time step
+    let mut dt :f64 = 0.0001; // Time step
     let mut it: u32 = 0; // Time iterations
     let it_save: u32 = 10; // Frequency of data saving
 
@@ -81,10 +81,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_gaussian_kernel, sphfunctions::dfdq_gaussian_kernel, sigma,
                                        d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
-                                       sphfunctions::mon89_art_vis,
+                                       sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, w, l, x0, y0);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma);
+        //dt = sphfunctions::time_step_bale(&particles, n, gamma);
         t += dt;
         println!("{}", t);
         if (it%it_save) == 0 {
