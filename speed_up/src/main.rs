@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let particles_ptr = Pointer(particles.as_mut_ptr());
 
     // Simulation's parameters
-    let it_tot = 100; // Total iterations
+    let it_tot = 50; // Total iterations
     let n : usize = particles.len(); // Number of particles
 
     // System's parameters
