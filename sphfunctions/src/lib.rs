@@ -108,12 +108,15 @@ pub fn create_particle(particles: &mut Vec<Particle>, x_p: f64, y_p: f64, vx_p: 
     y: y_p,
     vx: vx_p,
     vy: vy_p,
+    vx_star: 0.0,
+    vy_star: 0.0,
     ax: 0.,
     ay: 0.,
     h: h_p,
     rho: 1.0,
     divv: 0.0,
     u: 0.0,
+    u_star: 0.0, 
     du: 0.0});
 }
 
@@ -125,10 +128,13 @@ pub fn replace_particle(particle: &mut Particle, x_p: f64, y_p: f64, vx_p: f64, 
     particle.vy = vy_p;
     particle.ax = 0.;
     particle.ay = 0.;
+    particle.vx_star = 0.;
+    particle.vy_star = 0.;
     particle.h = h;
     particle.rho = 1.0;
     particle.divv = 0.0;
     particle.u = 0.0;
+    particle.u_star = 0.0;
     particle.du = 0.0;
 }
 
@@ -498,8 +504,10 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
                                   boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {
     
     particles.par_iter_mut().for_each(|particle|{
-        particle.vx += 0.5*dt*particle.ax;
-        particle.vy += 0.5*dt*particle.ay;
+        particle.vx += 0.5 * dt * particle.ax;
+        particle.vy += 0.5 * dt * particle.ay;
+
+        particle.u += 0.5 * dt * particle.du;
 
         particle.x += dt * particle.vx;
         particle.y += dt * particle.vy;
@@ -512,9 +520,53 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
 
     accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
-        particle.vx += 0.5* dt * particle.ax;
-        particle.vy += 0.5* dt * particle.ay;
-        particle.u += dt * particle.du;
+        particle.vx += 0.5 * dt * particle.ax;
+        particle.vy += 0.5 * dt * particle.ay;
+        particle.u += 0.5 * dt * particle.du;
+    });
+    tree.restart(n);
+}
+
+// Velocity Verlet integrator
+pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
+                                  dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
+                                  d:i32, eta: f64, tree: &mut Node, s_: u32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
+                                  artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
+                                  body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
+                                  boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {
+    
+    particles.par_iter_mut().for_each(|particle|{
+        particle.vx += 0.5 * dt * particle.ax;
+        particle.vy += 0.5 * dt * particle.ay;
+
+        particle.u += 0.5 * dt * particle.du;
+
+        particle.x += dt * particle.vx;
+        particle.y += dt * particle.vy;
+        
+        // Predictor
+        
+        particle.vx_star = particle.vx;
+        particle.vy_star = particle.vy;
+        particle.u_star = particle.u;
+        
+        particle.vx += 0.5 * dt * particle.ax;
+        particle.vy += 0.5 * dt * particle.ay;
+        
+        particle.u += 0.5 * dt * particle.du;
+    });
+
+    boundary(particles, w, l, x0, y0);
+
+    tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, d, 1e-03, 100, dt, tree, s_, n, ptr);
+
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr, artificial_viscosity, body_forces, nu, lmbda, bf);
+    
+    particles.par_iter_mut().for_each(|particle|{
+        particle.vx = particle.vx_star + 0.5 * dt * particle.ax;
+        particle.vy = particle.vy_star + 0.5 * dt * particle.ay;
+        particle.u = particle.u_star + 0.5 * dt * particle.du;
     });
     tree.restart(n);
 }

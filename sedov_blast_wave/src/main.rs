@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Main loop
     let start = Instant::now(); // Runing time
     while t < tf  {
-        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
+        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
                                        d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon89_art_vis,

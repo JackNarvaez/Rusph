@@ -6,10 +6,13 @@ pub struct Particle {
     pub rho: f64,
     pub vx: f64,
     pub vy: f64,
+    pub vx_star: f64,
+    pub vy_star: f64,
     pub divv: f64,
     pub ax: f64,
     pub ay: f64,
     pub u: f64,
+    pub u_star: f64,
     pub du: f64,
 }
 
@@ -21,11 +24,14 @@ impl Default for Particle {
             h: 0.1,
             rho: 1.0,
             vx: 0.0,
+            vy_star: 0.0,
+            vx_star: 0.0,
             vy: 0.0,
             divv: 0.0,
             ax: 0.0,
             ay: 0.0,
             u: 1.0,
+            u_star: 0.0,
             du: 0.0,
         }
     }

@@ -64,6 +64,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start: Instant = Instant::now();
     while t < tf {
         t += dt;
+        // In toy star, body forces depend on the particles' velocity.
+        // Therefore, it is not straightforward to use the basic LF integrator.
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
                                                  sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
                                                  d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
