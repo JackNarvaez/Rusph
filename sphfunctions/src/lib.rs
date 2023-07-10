@@ -155,6 +155,52 @@ pub fn euclidean_norm(p1: &Particle, p2: &Particle) -> f64 {
     sum.sqrt()
 }
 
+// Periodic Distance
+pub fn periodic_norm(p1: &Particle, p2: &Particle, w: f64, l: f64, eps: f64) -> f64 {
+    
+    let mut x_temp: f64 = p1.x - p2.x;
+    let mut y_temp: f64 = p1.y - p2.y;
+
+    if x_temp.abs() > w-2.*eps {
+        if x_temp > 0. {
+            x_temp -= w;
+        } else {
+            x_temp += w;
+        }
+    }
+    if y_temp.abs() > l-2.*eps {
+        if y_temp > 0. {
+            y_temp -= l;
+        } else {
+            y_temp += l;
+        }
+    }
+    return (x_temp*x_temp + y_temp*y_temp).sqrt();
+}
+
+// Periodic relative distance
+pub fn periodic_rel_vector(p1: &Particle, p2: &Particle, w: f64, l: f64, eps: f64) -> (f64, f64) {
+    
+    let mut x_temp: f64 = p1.x - p2.x;
+    let mut y_temp: f64 = p1.y - p2.y;
+
+    if x_temp.abs() > w-2.*eps {
+        if x_temp > 0. {
+            x_temp -= w;
+        } else {
+            x_temp += w;
+        }
+    }
+    if y_temp.abs() > l-2.*eps {
+        if y_temp > 0. {
+            y_temp -= l;
+        } else {
+            y_temp += l;
+        }
+    }
+    return (x_temp, y_temp);
+}
+
 
 // -------- Kernel function --------
 
@@ -183,7 +229,7 @@ pub fn dfdq_cubic_kernel(q:f64) -> f64 {
 // Gaussian Kernel
 pub fn f_gaussian_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
-    if q < 3. {
+    if q < 2. {
         f = (-q*q).exp();
     }
     f
@@ -192,7 +238,7 @@ pub fn f_gaussian_kernel(q:f64) -> f64 {
 // Derivative of Gaussian Kernel
 pub fn dfdq_gaussian_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
-    if q < 3. {
+    if q < 2. {
         f = -2.0*q*(-q*q).exp();
     }
     f
@@ -207,10 +253,10 @@ pub fn dwdh(q: f64, f: fn(f64) -> f64, df: fn(f64) -> f64, d:i32) -> f64 {
 // -------- Kernel approximations --------
 
 // Kernel approximation of density
-pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, sigma:f64, d:i32, f: fn(f64)->f64) -> f64 {
+pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, sigma:f64, d:i32, f: fn(f64)->f64, w: f64, l: f64) -> f64 {
     let mut rho :f64 = 0.0;
     for jj in neigh_particles{
-        let r = euclidean_norm(&particles[ii], &particles[*jj]);
+        let r = periodic_norm(&particles[ii], &particles[*jj], w, l, 2.*particles[ii].h);
         rho += f(r/h);
     }
     rho * dm * sigma / h.powi(d)
@@ -223,14 +269,20 @@ pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64, d:i32) -> f64{
 }
 
 // Omega operator
-pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, rho: f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32) -> f64{
+pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, rho: f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, d:i32, w: f64, l: f64) -> f64{
     let mut omeg :f64 = 0.0;
     for jj in neigh_particles {
-        let q = euclidean_norm(&particles[ii], &particles[*jj])/h;
+        let q = periodic_norm(&particles[ii], &particles[*jj], w, l, 2.*h)/h;
         omeg -= dwdh_(q, f, dfdq, d);
     }
+    // println!("{} -> {} {} {}", ii, neigh_particles.len(), omeg, dm*sigma/(h.powi(d)*rho*(d as f64)));
     omeg *= dm*sigma/(h.powi(d)*rho*(d as f64));
-    omeg + 1.
+    if omeg != -1. {
+        return omeg + 1.;
+    } else {
+        println!("{}", ii);
+        return 1.;
+    }
 }
 
 
@@ -239,23 +291,23 @@ pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>
 // -- Newton-Raphson iterator --
 
 // function and derivative of function
-pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32) -> (f64 , f64) {
-    let rho_kernel = density_kernel(particles, ii, neigh_particles, dm, h, sigma, d, f);
+pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, w: f64, l: f64) -> (f64 , f64) {
+    let rho_kernel = density_kernel(particles, ii, neigh_particles, dm, h, sigma, d, f, w, l);
     let rho_h = density_by_smoothing_length(dm, h, eta, d);
     let f_h = rho_h - rho_kernel;
-    let omeg = omega(particles, ii, neigh_particles, dm, h, rho_kernel, dwdh, f, dfdq, sigma, d);
+    let omeg = omega(particles, ii, neigh_particles, dm, h, rho_kernel, dwdh, f, dfdq, sigma, d, w, l);
     let df = -(d as f64)*rho_h*omeg/ h;
     (f_h, df)
 }
 
 // Calculate a new value of 'h'
-fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h_old: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32) -> f64 {
-    let (f, df) = f_iter(particles, ii, neigh_particles, dm, h_old, eta, f, dfdq, sigma, d);
+fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h_old: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, w: f64, l: f64) -> f64 {
+    let (f, df) = f_iter(particles, ii, neigh_particles, dm, h_old, eta, f, dfdq, sigma, d, w, l);
     (h_old - f / df).abs()
 }
 
 // Newton raphson solver to find the value of 'h' for particle 'ii'
-pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, tree: &Node, s_: u32) -> (f64, Vec<usize>) {
+pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, tree: &Node, s_: u32, w: f64, l: f64) -> (f64, Vec<usize>) {
     let mut h_new :f64 = 0.0;
     let mut h_old :f64 = h_guess;
     let mut i : u32 = 1;
@@ -263,9 +315,10 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
     while i <= it {
         // Searching neighboring particles
         neighbors.clear();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, w, l, particles[ii].h);
         // Obtain h_new
-        h_new = nr_iter(particles, ii, &neighbors, dm, h_old, eta, f, dfdq, sigma, d);
+        h_new = nr_iter(particles, ii, &neighbors, dm, h_old, eta, f, dfdq, sigma, d, w, l);
+        // println!("{} p {} it   {}", ii, i, h_new);
         if (h_new - h_old).abs() <=  tol {
             i = it + 2;
         } else{
@@ -284,15 +337,15 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
 // -------- Smoothing length --------
 
 // Calculate the smoothing function for each particle in a given time.
-pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32, n: usize, ptr : Pointer){
+pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32, n: usize, ptr : Pointer, w: f64, l: f64){
     (0..n).into_par_iter().for_each(|ii| {
-        let (h_new, neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*dm*particles[ii].divv/(d as f64)), eta, f, dfdq, sigma, d, tol, it, tree, s_);
+        let (h_new, neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*dm*particles[ii].divv/(d as f64)), eta, f, dfdq, sigma, d, tol, it, tree, s_, w, l);
         let particle = unsafe { &mut *{ptr}.0.add(ii)};
         if h_new != 0.0 {
             // If h is not found, then keep it constant in time.
             particle.h = h_new;
         }
-        particle.rho = density_kernel(particles, ii, &neighbors, dm, particle.h, sigma, d, f);
+        particle.rho = density_kernel(particles, ii, &neighbors, dm, particle.h, sigma, d, f, w, l);
     });
 }
 
@@ -373,9 +426,10 @@ pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _
 // -------- Dynamic Equations --------
 
 // Internal forces: Due to pressure gradient and AV
-pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p_b: f64, omeg_a: f64, omeg_b: f64, grad_ha: f64, grad_hb: f64, art_visc: f64) -> Vec<f64> {
+pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, p_a: f64, p_b: f64, omeg_a: f64, omeg_b: f64, grad_ha: f64, grad_hb: f64, art_visc: f64, w: f64, l: f64) -> Vec<f64> {
     let acc = p_a/(omeg_a*particle_a.rho*particle_a.rho)*grad_ha + p_b/(omeg_b*particle_b.rho*particle_b.rho) * grad_hb + 0.5*art_visc*(grad_ha+grad_hb);
-    vec![-acc*(particle_a.x - particle_b.x), -acc*(particle_a.y - particle_b.y)]
+    let (x_rel, y_rel) = periodic_rel_vector(particle_a, particle_b, w, l, 2.*particle_a.h);
+    vec![-acc*x_rel, -acc*y_rel]
 }
 
 // No body forces
@@ -409,14 +463,14 @@ pub fn body_forces_grav_2obj(particle: &mut Particle, m1: & Star, m2: & Star, om
 // Calculate acceleration for each particle in the system
 pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
                      dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
-                     d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer,
+                     d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer, w: f64, l: f64,
                      artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                      body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool){
     
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, w, l, particles[ii].h);
         return neighbors;
     }).collect();
 
@@ -433,26 +487,27 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
 
         let p_i = eos(particles[ii].rho, particles[ii].u, gamma);
         let cs_i = cs(particles[ii].rho, p_i, gamma);
-        let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d);
+        let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, d, w, l);
         
         for jj in 0..n {
             if ii != jj {
                 let p_j = eos(particles[jj].rho, particles[jj].u, gamma);
                 let cs_j = cs(particles[jj].rho, p_j, gamma);
-                let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d);
-                let r_ij = euclidean_norm(&particles[ii], &particles[jj]);
+                let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, d, w, l);
+                let r_ij = periodic_norm(&particles[ii], &particles[jj], w, l, 2.*particles[ii].h);
                 let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
                 let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
     
                 // Velocity dot position
-                let dot_r_v = (particles[ii].vx-particles[jj].vx)*(particles[ii].x-particles[jj].x)
-                             +(particles[ii].vy-particles[jj].vy)*(particles[ii].y-particles[jj].y);
+                let (x_rel, y_rel) = periodic_rel_vector(&particles[ii], &particles[jj], w, l, 2.*particles[ii].h);
+                let dot_r_v = (particles[ii].vx-particles[jj].vx)*x_rel
+                             +(particles[ii].vy-particles[jj].vy)*y_rel;
     
                 // Artificial viscosity
                 let (art_visc_mom, art_visc_ene) = artificial_viscosity(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
     
                 // Acceleration
-                let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc_mom);
+                let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc_mom, w, l);
                 particle_i.ax += dm *f_ij[0];
                 particle_i.ay += dm *f_ij[1];
                 
@@ -482,8 +537,8 @@ pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f
                         boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {
     
     tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, d, 1e-03, 100, dt, tree, s_, n, ptr);
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr, artificial_viscosity, body_forces, nu, lmbda, bf);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, d, 1e-03, 50, dt, tree, s_, n, ptr, w, l);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr, w, l, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
         particle.x += dt * particle.vx;
         particle.y += dt * particle.vy;
@@ -516,9 +571,9 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
     boundary(particles, w, l, x0, y0);
 
     tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, d, 1e-03, 100, dt, tree, s_, n, ptr);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, d, 1e-03, 50, dt, tree, s_, n, ptr, w, l);
 
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr, artificial_viscosity, body_forces, nu, lmbda, bf);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr, w, l, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
         particle.vx += 0.5 * dt * particle.ax;
         particle.vy += 0.5 * dt * particle.ay;
@@ -559,9 +614,9 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
     boundary(particles, w, l, x0, y0);
 
     tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, d, 1e-03, 100, dt, tree, s_, n, ptr);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, d, 1e-03, 50, dt, tree, s_, n, ptr, w, l);
 
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr, artificial_viscosity, body_forces, nu, lmbda, bf);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr, w, l, artificial_viscosity, body_forces, nu, lmbda, bf);
     
     particles.par_iter_mut().for_each(|particle|{
         particle.vx = particle.vx_star + 0.5 * dt * particle.ax;

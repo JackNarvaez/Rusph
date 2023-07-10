@@ -93,8 +93,14 @@ impl BuildTree for Node {
             self.branches = b.pow(k);
             self.create_sub_cells(b);
             for p in &self.particles {
-                let x_p = ((particles[*p].x - self.xmin) / self.side * b as f64).floor() as u32;
-                let y_p = ((particles[*p].y - self.ymin) / self.side * b as f64).floor() as u32;
+                let mut x_p = ((particles[*p].x - self.xmin) / self.side * b as f64).floor() as u32;
+                if x_p == b {
+                    x_p -= 1;
+                }
+                let mut y_p = ((particles[*p].y - self.ymin) / self.side * b as f64).floor() as u32;
+                if y_p == b {
+                    y_p -= 1;
+                }
                 let j :usize = (x_p + y_p * b) as usize;
                 add_particle(&mut self.children[j], *p);
             }
@@ -122,51 +128,90 @@ impl BuildTree for Node {
 }
 
 pub trait FindNeighbors {
-    fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: f64) -> (u32, u32, u32, u32);
+    fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: u32) -> (u32, u32, u32, u32);
 
     fn children_in_range(&self, xmin: u32, xmax: u32, ymin: u32, ymax:u32, b:u32) -> Vec<usize>;
 
-    fn find_neighbors(& self, p: usize, k: f64, s: u32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>);
+    fn find_neighbors(& self, p: usize, k: f64, s: u32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, x_side: f64, y_side: f64, h: f64);
 }
 
 impl FindNeighbors for Node {
 
-    fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: f64) -> (u32, u32, u32, u32){
-        let factor : f64 =  b/self.side;
+    fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: u32) -> (u32, u32, u32, u32){
+        let factor : f64 =  b as f64 /self.side;
         let x_min = (((x_p - 2.0*h) - self.xmin) * factor).floor() as u32;
         let x_max = (((x_p + 2.0*h) - self.xmin) * factor).floor() as u32;
         let y_min = (((y_p - 2.0*h) - self.ymin) * factor).floor() as u32;
         let y_max = (((y_p + 2.0*h) - self.ymin) * factor).floor() as u32;
-        (x_min, x_max, y_min, y_max)
+        ((x_min).rem_euclid(b), (x_max).rem_euclid(b), (y_min).rem_euclid(b), (y_max).rem_euclid(b))
     }
 
     fn children_in_range(&self, xmin: u32, xmax: u32, ymin: u32, ymax:u32, b:u32) -> Vec<usize>{
         let mut neighbors : Vec<usize> = Vec::new();
         for child in &self.children{
-            if (child.id%b >= xmin) && (child.id/b >= ymin) {
-                if (child.id%b <= xmax) && (child.id/b <= ymax) {
-                    neighbors.push(child.id as usize);
+            let x_id: u32 = child.id%b;
+            let y_id: u32 = child.id/b;
+            let index: u32 = index_range(xmin, ymin, xmax, ymax);
+
+            if index == 0 { 
+                if (x_id >= xmin) && (y_id >= ymin) {
+                    if (x_id <= xmax) && (y_id <= ymax) {
+                        neighbors.push(child.id as usize);
+                    }
+                }
+            } else if index == 1 {
+                if (x_id >= xmin) && (x_id <= xmax) {
+                    if ((ymin <= y_id)&&(y_id <= b)) || (y_id <= ymax) {
+                        neighbors.push(child.id as usize);
+                    }
+                }
+            } else if index == 2 {
+                if (y_id >= ymin) && (y_id <= ymax) {
+                    if ((xmin <= x_id)&&(x_id <= b)) || (x_id <= xmax) {
+                        neighbors.push(child.id as usize);
+                    }
+                }
+            } else {
+                if ((xmin <= x_id)&&(x_id <= b)) || (x_id <= xmax) {
+                    if ((ymin <= y_id)&&(y_id <= b)) || (y_id <= ymax) {
+                        neighbors.push(child.id as usize);
+                    }
                 }
             }
         }
         neighbors
     }
 
-    fn find_neighbors(& self, p: usize, k: f64, s: u32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>) {
+    fn find_neighbors(& self, p: usize, k: f64, s: u32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, x_side: f64, y_side:f64, h: f64) {
         let b = (self.branches as f64).powf(1./k) as u32;
-        let (x_min, x_max, y_min, y_max) = self.range_neigh(particles[p].x, particles[p].y, particles[p].h, b as f64);
+        let (x_min, x_max, y_min, y_max) = self.range_neigh(particles[p].x, particles[p].y, h, b);
         let neighbors = self.children_in_range(x_min, x_max, y_min, y_max, b);
         for ii in neighbors {
             if self.children[ii].n <= s {
                 for q in &self.children[ii].particles {
-                    if ((particles[p].x - particles[*q].x)*(particles[p].x - particles[*q].x) 
-                        + (particles[p].y - particles[*q].y)*(particles[p].y - particles[*q].y)) <= 4.0*particles[p].h*particles[p].h {
+                    if periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, x_side, y_side, 2.*h) <= 4.0*h*h {
                         neighbors_of_p.push(*q);
                     }
                 }
             } else {
-                self.children[ii].find_neighbors(p, k, s, particles, neighbors_of_p);
+                self.children[ii].find_neighbors(p, k, s, particles, neighbors_of_p, x_side, y_side, h);
             }
+        }
+    }
+}
+
+fn index_range(xmin: u32, ymin: u32, xmax: u32, ymax: u32) -> u32 {
+    if xmin < xmax {
+        if ymin < ymax {
+            return 0;
+        } else {
+            return 1;
+        }
+    } else {
+        if ymin < ymax {
+            return 2;
+        } else {
+            return 3;
         }
     }
 }
@@ -196,4 +241,28 @@ pub fn save_neighbors(path: &str, p: usize, neighbors: & Vec<usize>){
     for ii in neighbors {
         wtr.write_record(&[ii.to_string()]).expect("Couldn't write data");
     }
+}
+
+
+// Periodic Distance
+pub fn periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, w: f64, h: f64, eps: f64) -> f64 {
+    
+    let mut x_temp: f64 = x1 - x2;
+    let mut y_temp: f64 = y1 - y2;
+
+    if x_temp.abs() > w-2.*eps {
+        if x_temp > 0. {
+            x_temp -= w;
+        } else {
+            x_temp += w;
+        }
+    }
+    if y_temp.abs() > h-2.*eps {
+        if y_temp > 0. {
+            y_temp -= h;
+        } else {
+            y_temp += h;
+        }
+    }
+    return x_temp*x_temp + y_temp*y_temp;
 }
