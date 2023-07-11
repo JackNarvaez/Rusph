@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // Initial time
-    let tf:f64 = 0.1; // Final time
+    let tf:f64 = 0.5; // Final time
     let mut t:f64 = t0; // Time
     let n : usize = particles.len(); // Number of particles
 
@@ -59,10 +59,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Tree's parameters
-    let s_ : u32 = 10;
+    let s_ : i32 = 10;
     let alpha_ : f64 = 0.05;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as u32, x0, y0, l);
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, l);
     
     let mut dt :f64 = 0.001; // Time step
     let mut it: u32 = 0; // Time iterations
@@ -99,7 +99,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 // Setting initial configuration
-fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0: f64, y0: f64, kernel: fn(f64) -> f64, sigma: f64) {
+fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0: f64, y0: f64, _kernel: fn(f64) -> f64, _sigma: f64) {
     let u0: f64 = 1./(PI*radius*radius);
     for ii in 0..n{
         let r = (((particles[ii].x - x0) * (particles[ii].x - x0) + (particles[ii].y - y0) * (particles[ii].y-y0)).sqrt())/h0;

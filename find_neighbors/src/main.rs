@@ -29,7 +29,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0:f64 = 0.; // circle's center
     let w:f64 = 1.; // circle's center
     let l:f64 = 1.; // circle's center
-    let r:f64 = 0.75; // radius
+    //let r:f64 = 0.75; // radius
     let rho:f64 = 1.0; // density
     let h :f64 = 0.1; // Smoothing length
     // Initialize system
@@ -45,13 +45,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     // Tree parameters
     let k : u32 = 2; // Dimension
-    let s : u32 = 10;
+    let s : i32 = 10;
     let alpha : f64 = 0.5;
     let beta : f64 = 0.5;
 
     // Tree builder
     let start1 = Instant::now();
-    let mut root : Node = <Node as BuildTree>::new(n, x0, y0, w);
+    let mut root : Node = <Node as BuildTree>::new(n as i32, x0, y0, w);
     root.build_tree(k, s, alpha, beta, &particles, 0.1*h);
     println!("Tree Builder: {} s", start1.elapsed().as_secs());
     save_tree(path_tree, &root);

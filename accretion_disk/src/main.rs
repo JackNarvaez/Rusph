@@ -21,8 +21,6 @@ use structures::{
 
 use std::f64::consts::PI;
 
-use rayon::prelude::*;
-
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Binary stars system
@@ -43,7 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let roche_x: f64 = l1 * ang_12.cos() + cm_x;
     let roche_y: f64 = l1 * ang_12.sin() + cm_y;
 
-    let w_orb: f64 = ((star1.m + star2.m)/(a*a*a)).sqrt(); // Angular velocity
+    let _w_orb: f64 = ((star1.m + star2.m)/(a*a*a)).sqrt(); // Angular velocity
 
     // Disk's particles information
     let n : usize = 100; // Number of particles
@@ -54,7 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let h_ini: f64 = 0.02*a;
 
     // File's information
-    let path_result = "./Data/results/accretion_disk_2D.csv";
+    let _path_result = "./Data/results/accretion_disk_2D.csv";
     let mut particles: Vec<Particle> = Vec::new();
     let particles_ptr = Pointer(particles.as_mut_ptr());
 
@@ -72,28 +70,28 @@ fn main() -> Result<(), Box<dyn Error>> {
     let dm:f64 = star2.m/(4.*PI*PI * n as f64); // mass of each particle
 
     // Tree's parameters
-    let s_ : u32 = 10;
+    let s_ : i32 = 10;
     let alpha_ : f64 = 0.5;
     let beta_ : f64 = 0.5;
     
     let mut dt :f64 = 0.004;
     let mut it: u32 = 0;
-    let mut nt: usize = 0;
+    let mut _nt: usize = 0;
 
     // Main loop
     let start = Instant::now();
     println!("{} {}", h_ini, dl_e);
     for ii in 0..5 {
-        nt += n_e;
+        _nt += n_e;
         sphfunctions::inject_particles(&mut particles, roche_x-(ii as f64)*dl_e, roche_y, dl_e, n_e, h_ini);
     }
 
-    let mut tree : Node = <Node as BuildTree>::new(5*n_e as u32, -a, -a, 4.*a);
+    let mut tree : Node = <Node as BuildTree>::new(5*n_e as i32, -a, -a, 4.*a);
 
 
     while t < tf {
         sphfunctions::inject_particles(&mut particles, roche_x, roche_y, dl_e, n_e, h_ini);
-        nt += n_e;
+        _nt += n_e;
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
                                                  sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
                                                  d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,

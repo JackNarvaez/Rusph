@@ -275,15 +275,8 @@ pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>
         let q = periodic_norm(&particles[ii], &particles[*jj], w, l, 2.*h)/h;
         omeg -= dwdh_(q, f, dfdq, d);
     }
-    // println!("{} -> {} {} {}", ii, neigh_particles.len(), omeg, dm*sigma/(h.powi(d)*rho*(d as f64)));
     omeg *= dm*sigma/(h.powi(d)*rho*(d as f64));
     return omeg + 1.;
-    // if omeg != -1. {
-    //     return omeg + 1.;
-    // } else {
-    //     println!("p: {} h:{}", ii, h);
-    //     return 1.;
-    // }
 }
 
 
@@ -308,7 +301,7 @@ fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, 
 }
 
 // Newton raphson solver to find the value of 'h' for particle 'ii'
-pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, tree: &Node, s_: u32, w: f64, l: f64) -> (f64, Vec<usize>) {
+pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, tree: &Node, s_: i32, w: f64, l: f64) -> (f64, Vec<usize>) {
     let mut h_new :f64 = 0.0;
     let mut h_old :f64 = h_guess;
     let mut i : u32 = 1;
@@ -319,7 +312,6 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
         tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, w, l, particles[ii].h);
         // Obtain h_new
         h_new = nr_iter(particles, ii, &neighbors, dm, h_old, eta, f, dfdq, sigma, d, w, l);
-        // println!("{} p {} it   {}", ii, i, h_new);
         if (h_new - h_old).abs() <=  tol {
             i = it + 2;
         } else{
@@ -338,7 +330,7 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
 // -------- Smoothing length --------
 
 // Calculate the smoothing function for each particle in a given time.
-pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: u32, n: usize, ptr : Pointer, w: f64, l: f64){
+pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: i32, n: usize, ptr : Pointer, w: f64, l: f64){
     (0..n).into_par_iter().for_each(|ii| {
         let (h_new, neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*dm*particles[ii].divv/(d as f64)), eta, f, dfdq, sigma, d, tol, it, tree, s_, w, l);
         let particle = unsafe { &mut *{ptr}.0.add(ii)};
@@ -464,7 +456,7 @@ pub fn body_forces_grav_2obj(particle: &mut Particle, m1: & Star, m2: & Star, om
 // Calculate acceleration for each particle in the system
 pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
                      dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
-                     d:i32, tree: &Node, s_: u32, n: usize, ptr : Pointer, w: f64, l: f64,
+                     d:i32, tree: &Node, s_: i32, n: usize, ptr : Pointer, w: f64, l: f64,
                      artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                      body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool){
     
@@ -532,7 +524,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
 // -------- Time integrator --------
 pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
                         dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
-                        d:i32, eta: f64, tree: &mut Node, s_: u32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
+                        d:i32, eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
                         artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                         body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
                         boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {
@@ -554,7 +546,7 @@ pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f
 // Velocity Verlet integrator
 pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
                                   dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
-                                  d:i32, eta: f64, tree: &mut Node, s_: u32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
+                                  d:i32, eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
                                   artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                                   body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
                                   boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {
@@ -586,7 +578,7 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
 // Velocity Verlet integrator
 pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
                                   dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64,
-                                  d:i32, eta: f64, tree: &mut Node, s_: u32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
+                                  d:i32, eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
                                   artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                                   body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
                                   boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {

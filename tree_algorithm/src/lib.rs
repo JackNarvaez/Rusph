@@ -1,7 +1,7 @@
 use std::{
     io,
     f64,
-    u32,
+    i32,
 };
 
 use csv::Writer;
@@ -11,32 +11,32 @@ use structures::{
     Node,
 };
 
+use rayon::prelude::*;
+
 pub trait BuildTree {
 
-    fn new(n_p: u32, x0: f64, y0: f64, l: f64) -> Node;
+    fn new(n_p: i32, x0: f64, y0: f64, l: f64) -> Node;
 
-    fn branching_factor(& self, k: f64, s:f64) -> u32;
+    fn branching_factor(& self, k: f64, s:f64) -> i32;
 
-    fn create_child(&self, j: u32, b: u32, dx: f64) -> Node;
+    fn create_child(&self, j: i32, b: i32, dx: f64) -> Node;
 
-    fn create_sub_cells(&mut self, b: u32);
+    fn create_sub_cells(&mut self, b: i32);
 
     fn delete_sub_cells(&mut self);
 
     fn delete_particles(&mut self);
 
-    fn distribution_ratio(&self, limit: u32, b: u32) -> f64;
+    fn distribution_ratio(&self, limit: i32, b: i32) -> f64;
 
-    fn build_tree(&mut self, k: u32, s: u32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64);
+    fn build_tree(&mut self, k: u32, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64);
 
     fn restart(&mut self, n: usize);
 }
 
-use rayon::prelude::*;
-
 impl BuildTree for Node {
 
-    fn new(n_p: u32, x0: f64, y0: f64, l: f64) -> Node {
+    fn new(n_p: i32, x0: f64, y0: f64, l: f64) -> Node {
         Node{n: n_p, particles: (0..n_p as usize).collect(), 
              xmin: x0,
              ymin: y0,
@@ -44,11 +44,11 @@ impl BuildTree for Node {
              ..Default::default()}
     }
     
-    fn branching_factor(& self, k: f64, s:f64) -> u32 {
-        ((self.n as f64 /s).powf(1./k)).ceil() as u32
+    fn branching_factor(& self, k: f64, s:f64) -> i32 {
+        ((self.n as f64 /s).powf(1./k)).ceil() as i32
     }
 
-    fn create_child(&self, j: u32, b: u32, dx: f64) -> Node {
+    fn create_child(&self, j: i32, b: i32, dx: f64) -> Node {
         Node{xmin: self.xmin + dx*(j%b) as f64,
             ymin: self.ymin + dx*(j/b) as f64,
             side: dx,
@@ -61,7 +61,7 @@ impl BuildTree for Node {
         }
     }
 
-    fn create_sub_cells(&mut self, b: u32) {
+    fn create_sub_cells(&mut self, b: i32) {
         let dx = self.side / b as f64;
         for ii in 0..self.branches {
             self.children.push(self.create_child(ii, b, dx));
@@ -76,35 +76,35 @@ impl BuildTree for Node {
         self.particles.clear();
     }
 
-    fn distribution_ratio(&self, limit: u32, b:u32) -> f64 {
+    fn distribution_ratio(&self, limit: i32, b:i32) -> f64 {
         let mut r :f64 = 0.0;
         for child in &self.children{
             if child.n <= limit {
                 r += 1.0;
             }
         }
-        r / (b.pow(self.depth) as f64)
+        r / (b.pow(self.depth as u32) as f64)
     }
 
-    fn build_tree(&mut self, k: u32, s: u32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64) {
+    fn build_tree(&mut self, k: u32, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64) {
         let mut redistribution :bool = true;
         let mut b = self.branching_factor(k as f64, s as f64);
         while redistribution {
             self.branches = b.pow(k);
             self.create_sub_cells(b);
             for p in &self.particles {
-                let mut x_p = ((particles[*p].x - self.xmin) / self.side * b as f64).floor() as u32;
+                let mut x_p = ((particles[*p].x - self.xmin) / self.side * b as f64).floor() as i32;
                 if x_p == b {
                     x_p -= 1;
                 }
-                let mut y_p = ((particles[*p].y - self.ymin) / self.side * b as f64).floor() as u32;
+                let mut y_p = ((particles[*p].y - self.ymin) / self.side * b as f64).floor() as i32;
                 if y_p == b {
                     y_p -= 1;
                 }
                 let j :usize = (x_p + y_p * b) as usize;
                 add_particle(&mut self.children[j], *p);
             }
-            let r = self.distribution_ratio((alpha * s as f64) as u32, b);
+            let r = self.distribution_ratio((alpha * s as f64) as i32, b);
             if r >= beta {
                 b = b/2;
                 self.delete_sub_cells();
@@ -128,35 +128,35 @@ impl BuildTree for Node {
 }
 
 pub trait FindNeighbors {
-    fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: u32) -> (u32, u32, u32, u32);
+    fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: i32) -> (i32, i32, i32, i32);
 
-    fn children_in_range(&self, xmin: u32, xmax: u32, ymin: u32, ymax:u32, b:u32) -> Vec<usize>;
+    fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, b:i32) -> Vec<usize>;
 
-    fn find_neighbors(& self, p: usize, k: f64, s: u32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, x_side: f64, y_side: f64, h: f64);
+    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, x_side: f64, y_side: f64, h: f64);
 }
 
 impl FindNeighbors for Node {
 
-    fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: u32) -> (u32, u32, u32, u32){
+    fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: i32) -> (i32, i32, i32, i32){
         let factor : f64 =  b as f64 /self.side;
         let x_min = (((x_p - 2.0*h) - self.xmin) * factor).floor() as i32;
         let x_max = (((x_p + 2.0*h) - self.xmin) * factor).floor() as i32;
         let y_min = (((y_p - 2.0*h) - self.ymin) * factor).floor() as i32;
         let y_max = (((y_p + 2.0*h) - self.ymin) * factor).floor() as i32;
-        ((x_min).rem_euclid(b.try_into().unwrap()) as u32, (x_max).rem_euclid(b.try_into().unwrap()) as u32,
-         (y_min).rem_euclid(b.try_into().unwrap()) as u32, (y_max).rem_euclid(b.try_into().unwrap()) as u32)
+        ((x_min).rem_euclid(b), (x_max).rem_euclid(b),
+         (y_min).rem_euclid(b), (y_max).rem_euclid(b))
     }
 
-    fn children_in_range(&self, xmin: u32, xmax: u32, ymin: u32, ymax:u32, b:u32) -> Vec<usize>{
+    fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, b:i32) -> Vec<usize>{
         let mut neighbors : Vec<usize> = Vec::new();
         for child in &self.children{
-            let x_id: u32 = child.id%b;
-            let y_id: u32 = child.id/b;
-            let index: u32 = index_range(xmin, ymin, xmax, ymax);
+            let x_id: i32 = child.id%b;
+            let y_id: i32 = child.id/b;
+            let index: i32 = index_range(xmin, ymin, xmax, ymax);
 
             if index == 0 { 
-                if (x_id >= xmin) && (y_id >= ymin) {
-                    if (x_id <= xmax) && (y_id <= ymax) {
+                if (x_id >= xmin) && (x_id <= xmax) {
+                    if (y_id >= ymin) && (y_id <= ymax) {
                         neighbors.push(child.id as usize);
                     }
                 }
@@ -183,10 +183,9 @@ impl FindNeighbors for Node {
         neighbors
     }
 
-    fn find_neighbors(& self, p: usize, k: f64, s: u32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, x_side: f64, y_side:f64, h: f64) {
-        let b = (self.branches as f64).powf(1./k) as u32;
-        let (x_min, x_max, y_min, y_max) = self.range_neigh(particles[p].x, particles[p].y, h, b);
-        // println!("{} - {} {} {} {}", b, x_min, x_max, y_min, y_max);
+    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, x_side: f64, y_side:f64, h: f64) {
+        let b = (self.branches as f64).powf(1./k) as i32;
+        let (x_min, x_max, y_min, y_max) = self.range_neigh(particles[p].x, particles[p].y, h, b as i32);
         let neighbors = self.children_in_range(x_min, x_max, y_min, y_max, b);
         for ii in neighbors {
             if self.children[ii].n <= s {
@@ -202,7 +201,7 @@ impl FindNeighbors for Node {
     }
 }
 
-fn index_range(xmin: u32, ymin: u32, xmax: u32, ymax: u32) -> u32 {
+fn index_range(xmin: i32, ymin: i32, xmax: i32, ymax: i32) -> i32 {
     if xmin < xmax {
         if ymin < ymax {
             return 0;

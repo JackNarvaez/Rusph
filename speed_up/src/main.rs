@@ -51,10 +51,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     sedov_conf(&mut particles, n, h0, 1.0, sphfunctions::f_cubic_kernel, sigma);
 
     // Tree's parameters
-    let s_ : u32 = 10;
+    let s_ : i32 = 10;
     let alpha_ : f64 = 0.05;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as u32, x0-0.1*x0.abs(), y0-0.1*x0.abs(), l+0.2*x0.abs());
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, l);
     
     let mut dt :f64 = 0.001; // Time step
     let mut it: u32 = 0; // Time iterations

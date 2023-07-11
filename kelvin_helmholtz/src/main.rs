@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     // Simulation's parameters
     let t0:f64 = 0.0; // Initial time
-    let tf:f64 = 0.35; // Final time
+    let tf:f64 = 0.5; // Final time
     let mut t:f64 = t0; // Time
     
     // System's parameters
@@ -64,12 +64,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Tree's parameters
-    let s_ : u32 = 10;
+    let s_ : i32 = 10;
     let alpha_ : f64 = 0.05;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as u32, x0, y0, l);
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, l);
     
-    let mut dt :f64 = 0.0001; // Time step
+    let dt :f64 = 0.0001; // Time step
     let mut it: u32 = 0; // Time iterations
     let it_save: u32 = 10; // Frequency of data saving
 

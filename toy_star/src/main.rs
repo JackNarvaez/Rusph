@@ -51,12 +51,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let dm:f64 = m/n as f64; // Particles' mass
 
     // Tree's parameters
-    let s_ : u32 = 10;
+    let s_ : i32 = 10;
     let alpha_ : f64 = 0.5;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as u32, x0-2.*r, y0-2.*r, 4.*r);
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0-2.*r, y0-2.*r, 4.*r);
 
-    let mut dt :f64 = 0.04; // Time step
+    let dt :f64 = 0.04; // Time step
     let mut it: u32 = 0; // Time iterations
     let it_save: u32 = 100; // Frequency of data saving
 
