@@ -9,7 +9,7 @@ use sphfunctions;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let path = "./Data/initial_distribution/sedov_blast_wave.csv";
-    let n:u32 = 1024; // Number of Particles
+    let n:u32 = 2500; // Number of Particles
     let w:f64 = 1.; // Width
     let l:f64 = 1.; // Large
     let x0:f64 = 0.; // Initial x

@@ -1,6 +1,8 @@
 // Sedov Blast Wave
 
 use std::{
+    fs::File,
+    io::Write,
     error::Error,
     process,
     time::Instant,
@@ -36,6 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tf:f64 = 0.5; // Final time
     let mut t:f64 = t0; // Time
     let n : usize = particles.len(); // Number of particles
+    let mut time_file = File::create("./Data/results/sedov_blast_wave/Time.txt").expect("creation failed"); // Save time steps
 
     // System's parameters
     let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
@@ -53,6 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     sedov_conf(&mut particles, n, h0, w, (w/2.) + x0, (l/2.) + y0, sphfunctions::f_cubic_kernel, sigma);
 
     // Save initial information
+    time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
     if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/sedov_blast_wave/initial.csv")), &particles){
         println!("{}", err);
         process::exit(1);
@@ -79,8 +83,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::periodic_boundary, w, l, x0, y0);
         dt = sphfunctions::time_step_bale(&particles, n, gamma);
         t += dt;
-        println!("{}", t);
         if (it%it_save) == 0 {
+            time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
             if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/sedov_blast_wave/") + &(it/it_save).to_string() + &".csv"), &particles){
                 println!("{}", err);
                 process::exit(1);
@@ -91,6 +95,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Simulation run successfully.\n Time {} s.\n Iterations: {}.", start.elapsed().as_secs(), it);
 
     // Save final information
+    time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
     if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/sedov_blast_wave/final.csv")), &particles){
         println!("{}", err);
         process::exit(1);

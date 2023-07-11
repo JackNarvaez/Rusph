@@ -1,6 +1,8 @@
 // Sedov Blast Wave
 
 use std::{
+    fs::File,
+    io::Write,
     error::Error,
     process,
     time::Instant,
@@ -24,8 +26,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     // Simulation's parameters
     let t0:f64 = 0.0; // Initial time
-    let tf:f64 = 0.5; // Final time
+    let tf:f64 = 1.5; // Final time
     let mut t:f64 = t0; // Time
+    let mut time_file = File::create("./Data/results/kelvin_helmholtz/Time.txt").expect("creation failed"); // Save time steps
     
     // System's parameters
     let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
@@ -38,10 +41,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0: f64 = 0.; // y-coordinate of the bottom left corner
     let y1: f64 = 0.25; // Y-lower edge of fluid 2 
     let y2: f64 = 0.75; // Y-upper edge of fluid 2
-    let nx1: usize = 50; 
-    let nx2: usize = 80; 
-    let ny1: usize = 10; 
-    let ny2: usize = 25; 
+    let nx1: usize = 60; 
+    let nx2: usize = 100; 
+    let ny1: usize = 20; 
+    let ny2: usize = 48; 
     let rho1: f64 = 1.0; // Initial density fluid 1
     let rho2: f64 = 2.0; // Initial density fluid 2
     let vx1: f64 = -0.5; // Initial x velocity fluid 1
@@ -58,6 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let particles_ptr = Pointer(particles.as_mut_ptr());
 
     // Save initial information
+    time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
     if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/kelvin_helmholtz/initial.csv")), &particles){
         println!("{}", err);
         process::exit(1);
@@ -84,8 +88,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::periodic_boundary, w, l, x0, y0);
         //dt = sphfunctions::time_step_bale(&particles, n, gamma);
         t += dt;
-        println!("{}", t);
         if (it%it_save) == 0 {
+            time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
             if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/kelvin_helmholtz/") + &(it/it_save).to_string() + &".csv"), &particles){
                 println!("{}", err);
                 process::exit(1);
@@ -96,6 +100,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     println!("Simulation run successfully.\n Time {} s.\n Iterations: {}.", start.elapsed().as_secs(), it);
 
     // Save final information
+    time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
     if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/kelvin_helmholtz/final.csv")), &particles){
         println!("{}", err);
         process::exit(1);

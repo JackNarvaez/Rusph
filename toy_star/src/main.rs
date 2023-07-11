@@ -1,6 +1,8 @@
 // Toy Star system in 2D
 
 use std::{
+    fs::File,
+    io::Write,
     error::Error,
     time::Instant,
     process,
@@ -36,6 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let tf:f64 = 16.; // Final time
     let mut t:f64 = t0; // Time
     let n: usize = particles.len(); // Number of particles 
+    let mut time_file = File::create("./Data/results/toy_star/Time.txt").expect("creation failed"); // Save time steps
 
     // System's parameters.
     let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
@@ -75,6 +78,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         //dt = sphfunctions::time_step_bale(&particles, n, gamma);
         println!("{}", t);
         if (it%it_save) == 0 {
+            time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
             if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/") + &(it/it_save).to_string() + &".csv"), &particles){
                 println!("{}", err);
                 process::exit(1);
