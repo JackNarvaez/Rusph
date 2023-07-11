@@ -8,9 +8,7 @@ use std::{
 
 use sphfunctions;
 
-use tree_algorithm::{
-    BuildTree,
-};
+use tree_algorithm::BuildTree;
 
 use structures::{
     Particle,
@@ -69,7 +67,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let s_ : u32 = 10;
     let alpha_ : f64 = 0.05;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as u32, x0-0.1*(x0.abs()+0.1), y0-0.1*(x0.abs()+0.1), l+0.2*(x0.abs()+0.1));
+    let mut tree : Node = <Node as BuildTree>::new(n as u32, x0, y0, l);
     
     let mut dt :f64 = 0.0001; // Time step
     let mut it: u32 = 0; // Time iterations

@@ -139,11 +139,12 @@ impl FindNeighbors for Node {
 
     fn range_neigh(&self, x_p: f64, y_p: f64, h: f64, b: u32) -> (u32, u32, u32, u32){
         let factor : f64 =  b as f64 /self.side;
-        let x_min = (((x_p - 2.0*h) - self.xmin) * factor).floor() as u32;
-        let x_max = (((x_p + 2.0*h) - self.xmin) * factor).floor() as u32;
-        let y_min = (((y_p - 2.0*h) - self.ymin) * factor).floor() as u32;
-        let y_max = (((y_p + 2.0*h) - self.ymin) * factor).floor() as u32;
-        ((x_min).rem_euclid(b), (x_max).rem_euclid(b), (y_min).rem_euclid(b), (y_max).rem_euclid(b))
+        let x_min = (((x_p - 2.0*h) - self.xmin) * factor).floor() as i32;
+        let x_max = (((x_p + 2.0*h) - self.xmin) * factor).floor() as i32;
+        let y_min = (((y_p - 2.0*h) - self.ymin) * factor).floor() as i32;
+        let y_max = (((y_p + 2.0*h) - self.ymin) * factor).floor() as i32;
+        ((x_min).rem_euclid(b.try_into().unwrap()) as u32, (x_max).rem_euclid(b.try_into().unwrap()) as u32,
+         (y_min).rem_euclid(b.try_into().unwrap()) as u32, (y_max).rem_euclid(b.try_into().unwrap()) as u32)
     }
 
     fn children_in_range(&self, xmin: u32, xmax: u32, ymin: u32, ymax:u32, b:u32) -> Vec<usize>{
@@ -185,6 +186,7 @@ impl FindNeighbors for Node {
     fn find_neighbors(& self, p: usize, k: f64, s: u32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, x_side: f64, y_side:f64, h: f64) {
         let b = (self.branches as f64).powf(1./k) as u32;
         let (x_min, x_max, y_min, y_max) = self.range_neigh(particles[p].x, particles[p].y, h, b);
+        // println!("{} - {} {} {} {}", b, x_min, x_max, y_min, y_max);
         let neighbors = self.children_in_range(x_min, x_max, y_min, y_max, b);
         for ii in neighbors {
             if self.children[ii].n <= s {

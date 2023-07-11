@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let path = "./Data/tree_algorithm/set_particles.csv";
     let path_tree = "./Data/tree_algorithm/set_tree.csv";
     let path_neighbors = "./Data/tree_algorithm/set_neighbors.csv";
-    let n:u32 = 300; // Number of Particles
+    let n:u32 = 1024; // Number of Particles
     let x0:f64 = 0.; // circle's center
     let y0:f64 = 0.; // circle's center
     let w:f64 = 1.; // circle's center
@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let rho:f64 = 1.0; // density
     let h :f64 = 0.1; // Smoothing length
     // Initialize system
-    if let Err(err) = sphfunctions::init_random_square(path, n, rho, h, w, l, x0, y0){//init_random_circle(path, n, r, rho, h, x0, y0){
+    if let Err(err) = sphfunctions::init_square(path, n, rho, h, w, l, x0, y0){//init_random_circle(path, n, r, rho, h, x0, y0){
         println!("{}", err);
         process::exit(1);
     }
@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Neighbors finder
     let start2 = Instant::now();
     let mut neighbors: Vec<usize> = Vec::new();
-    let p: usize = 38;
+    let p: usize = 0;
 
     root.find_neighbors(p, k as f64, s, &particles, &mut neighbors, w, l, particles[p].h);
     println!("Neighbors Finder: {} s", start2.elapsed().as_secs());

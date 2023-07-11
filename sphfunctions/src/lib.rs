@@ -277,12 +277,13 @@ pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>
     }
     // println!("{} -> {} {} {}", ii, neigh_particles.len(), omeg, dm*sigma/(h.powi(d)*rho*(d as f64)));
     omeg *= dm*sigma/(h.powi(d)*rho*(d as f64));
-    if omeg != -1. {
-        return omeg + 1.;
-    } else {
-        println!("{}", ii);
-        return 1.;
-    }
+    return omeg + 1.;
+    // if omeg != -1. {
+    //     return omeg + 1.;
+    // } else {
+    //     println!("p: {} h:{}", ii, h);
+    //     return 1.;
+    // }
 }
 
 
