@@ -81,7 +81,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::mon89_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, w, l, x0, y0);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, d, w, l, &mut tree, s_);
+        tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
@@ -105,13 +106,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 // Setting initial configuration
 fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0: f64, y0: f64, _kernel: fn(f64) -> f64, _sigma: f64) {
-    let u0: f64 = 1./(PI*radius*radius);
+    let mut rad_part: Vec<usize> = Vec::new();
     for ii in 0..n{
         let r = (((particles[ii].x - x0) * (particles[ii].x - x0) + (particles[ii].y - y0) * (particles[ii].y-y0)).sqrt())/h0;
         if r <= radius {
-            particles[ii].u = u0;
+            rad_part.push(ii);
         } else{
             particles[ii].u = 0.0;
         }
+    }
+    let u0: f64 = 1./rad_part.len() as f64;
+    for ii in &rad_part {
+        particles[*ii].u = u0;
     }
 }

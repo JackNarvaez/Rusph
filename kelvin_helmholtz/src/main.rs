@@ -73,7 +73,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let beta_ : f64 = 0.5;
     let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, l);
     
-    let dt :f64 = 0.0001; // Time step
+    let mut dt :f64 = 0.0001; // Time step
     let mut it: u32 = 0; // Time iterations
     let it_save: u32 = 10; // Frequency of data saving
 
@@ -86,7 +86,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, w, l, x0, y0);
-        //dt = sphfunctions::time_step_bale(&particles, n, gamma);
+        dt = sphfunctions::time_step_bale(&particles, n, gamma, d, w, l, &mut tree, s_);
+        tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");

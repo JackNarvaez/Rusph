@@ -63,7 +63,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // System's parameters
     let eta :f64 = 1.2; // dimensionless constant related to the ratio of smoothing length
-    let d = 2; // Dimension of the system
+    let d: i32 = 2; // Dimension of the system
     let gamma:f64 = 1.01;  // Polytropic index
 
     let sigma :f64 = 10.0/(7.*PI); //  Normalization's constant of kernel
@@ -98,7 +98,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                                  sphfunctions::mon89_art_vis,
                                                  sphfunctions::body_forces_null, 0.0, 0.0, true,
                                                  sphfunctions::periodic_boundary, 1., 1., 1., 1.);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma);
+        dt = sphfunctions::time_step_bale(&particles, n, gamma, d, 4.*a, 4.*a, &mut tree, s_);
+        tree.restart(n);
         t += dt;
         println!("{}", t);
         if (it%100) == 0 {

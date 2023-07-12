@@ -68,7 +68,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::mon89_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, w, l, x0, y0);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma);
+        dt = sphfunctions::time_step_bale(&particles, n, gamma, d, w, l, &mut tree, s_);
+        tree.restart(n);
         it += 1;
     }
     println!("{}", start.elapsed().as_secs());
