@@ -27,9 +27,11 @@ pub trait BuildTree {
 
     fn delete_particles(&mut self);
 
-    fn distribution_ratio(&self, limit: i32, b: i32) -> f64;
+    fn distribution_ratio(&self, limit: i32) -> f64;
 
     fn build_tree(&mut self, k: u32, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64);
+
+    fn build_quatree(&mut self, k: u32, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64);
 
     fn restart(&mut self, n: usize);
 }
@@ -76,14 +78,14 @@ impl BuildTree for Node {
         self.particles.clear();
     }
 
-    fn distribution_ratio(&self, limit: i32, b:i32) -> f64 {
+    fn distribution_ratio(&self, limit: i32) -> f64 {
         let mut r :f64 = 0.0;
         for child in &self.children{
             if child.n <= limit {
                 r += 1.0;
             }
         }
-        r / (b.pow(self.depth as u32) as f64)
+        r / (self.children).len() as f64
     }
 
     fn build_tree(&mut self, k: u32, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64) {
@@ -104,15 +106,46 @@ impl BuildTree for Node {
                 let j :usize = (x_p + y_p * b) as usize;
                 add_particle(&mut self.children[j], *p);
             }
-            let r = self.distribution_ratio((alpha * s as f64) as i32, b);
-            if r >= beta {
-                b = b/2;
+            let mut r: f64 = 0.0;
+            if b != 2 {
+                r = self.distribution_ratio((alpha * s as f64) as i32);
+            }
+            if r > beta {
+                if b > 4 {
+                    b = b/2;
+                } else {
+                    b = 2;
+                }
                 self.delete_sub_cells();
             } else {
                 redistribution = false;
                 self.delete_particles();
             }
         }
+        (self.children).par_iter_mut().for_each(|child| {
+            if (child.n > s) && (child.side > smallest_cell) {
+                child.build_tree(k, s, alpha, beta, particles, smallest_cell);
+            }
+        });
+    }
+
+    fn build_quatree(&mut self, k: u32, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64) {
+        let b:i32 = 2;
+        self.branches = b.pow(k);
+        self.create_sub_cells(b);
+        for p in &self.particles {
+            let mut x_p = ((particles[*p].x - self.xmin) / self.side * b as f64).floor() as i32;
+            if x_p == b {
+                x_p -= 1;
+            }
+            let mut y_p = ((particles[*p].y - self.ymin) / self.side * b as f64).floor() as i32;
+            if y_p == b {
+                y_p -= 1;
+            }
+            let j :usize = (x_p + y_p * b) as usize;
+            add_particle(&mut self.children[j], *p);
+        }
+        self.delete_particles();
         (self.children).par_iter_mut().for_each(|child| {
             if (child.n > s) && (child.side > smallest_cell) {
                 child.build_tree(k, s, alpha, beta, particles, smallest_cell);
