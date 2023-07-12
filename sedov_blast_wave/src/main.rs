@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let mut dt :f64 = 0.001; // Time step
     let mut it: u32 = 0; // Time iterations
-    let it_save: u32 = 10; // Frequency of data saving
+    let it_save: u32 = 1; // Frequency of data saving
 
     // Main loop
     let start = Instant::now(); // Runing time
@@ -78,7 +78,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
                                        d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
-                                       sphfunctions::mon89_art_vis,
+                                       sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, w, l, x0, y0);
         dt = sphfunctions::time_step_mon(&particles, n, gamma, d, w, l, &mut tree, s_);

@@ -374,7 +374,7 @@ pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_
         let nu_visc :f64 = h_mean*dot_r_v/(r_ij*r_ij+eps*h_mean*h_mean);
         let dvdt :f64 = (-alpha*cs_mean+beta*nu_visc)*nu_visc/rho_mean;
     
-        return (dvdt, dvdt);
+        return (dvdt, 0.5*dvdt*dot_r_v);
     } else {
         return (0.0, 0.0);
     }
@@ -390,7 +390,7 @@ pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _
         let v_sig:f64 = 0.5*alpha*(cs_i + cs_j - beta*dot_r_v/r_ij);
         let rho_mean :f64 = 0.5*(rho_i+rho_j);
         let dvdt :f64 = -v_sig*dot_r_v/(r_ij*rho_mean);
-        let dudt :f64 = 0.5*dvdt*(dot_r_v/r_ij);
+        let dudt :f64 = 0.5*dvdt*dot_r_v;
 
         return (dvdt, dudt);
     } else {
@@ -493,7 +493,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 particle_i.divv += div_vel;
                 
                 // Thermal change
-                particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho)*div_vel + 0.25*art_visc_ene*(grad_hi+grad_hj)*dot_r_v);
+                particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho)*div_vel + 0.5*art_visc_ene*(grad_hi+grad_hj));
             }
         }
 
