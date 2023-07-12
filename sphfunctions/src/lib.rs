@@ -247,8 +247,7 @@ pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & V
 
 // Density calculated by smoothing function
 pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64, d:i32) -> f64{
-    let vol = eta/h;
-    m*vol.powi(d)
+    m*(eta/h).powi(d)
 }
 
 // Omega operator
