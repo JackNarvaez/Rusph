@@ -271,7 +271,7 @@ pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize
     let rho_kernel = density_kernel(particles, ii, neigh_particles, dm, h, sigma, d, f, w, l);
     let rho_h = density_by_smoothing_length(dm, h, eta, d);
     let f_h = rho_h - rho_kernel;
-    let omeg = omega(particles, ii, neigh_particles, dm, h, rho_kernel, dwdh, f, dfdq, sigma, d, w, l);
+    let omeg = omega(particles, ii, neigh_particles, dm, h, rho_h, dwdh, f, dfdq, sigma, d, w, l);
     let df = -(d as f64)*rho_h*omeg/ h;
     (f_h, df)
 }
@@ -279,7 +279,7 @@ pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize
 // Calculate a new value of 'h'
 fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h_old: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, w: f64, l: f64) -> f64 {
     let (f, df) = f_iter(particles, ii, neigh_particles, dm, h_old, eta, f, dfdq, sigma, d, w, l);
-    (h_old - f / df).abs()
+    h_old - f / df
 }
 
 // Newton raphson solver to find the value of 'h' for particle 'ii'
@@ -291,10 +291,10 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
     while i <= it {
         // Searching neighboring particles
         neighbors.clear();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, w, l, particles[ii].h);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, w, l, h_old);
         // Obtain h_new
         h_new = nr_iter(particles, ii, &neighbors, dm, h_old, eta, f, dfdq, sigma, d, w, l);
-        if (h_new - h_old).abs() <=  tol {
+        if ((h_new - h_old)/h_old).abs() <=  tol {
             i = it + 2;
         } else{
             i += 1;
@@ -302,9 +302,58 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
         }
     }
     if i == it+1 {
+        println!("PROBLEM NEWTHON RAPHSON METHOD: Solution not found for particle {}. Initial guess was h = {}.", ii, h_guess);
         (0.0, neighbors)
     } else{
         (h_new, neighbors)
+    }
+}
+
+// -- Bisection iterator --
+
+// Bisection solver to find the value of 'h' for particle 'ii'
+pub fn bisection(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, tree: &Node, s_: i32, w: f64, l: f64) -> (f64, Vec<usize>) {
+    let mut h_left :f64 = 0.1*h_guess;
+    let mut h_right :f64 = 0.2;
+    let mut h_mid = 0.5*(h_left + h_right);
+    let mut i : u32 = 1;
+    let mut neighbors_left: Vec<usize> = Vec::new();
+    let mut neighbors_right: Vec<usize> = Vec::new();
+    let mut neighbors_mid: Vec<usize> = Vec::new();
+    while i <= it {
+        // Searching neighboring particles
+        neighbors_left.clear();
+        neighbors_right.clear();
+        neighbors_mid.clear();
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_left, w, l, h_left);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_right, w, l, h_right);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_mid, w, l, h_mid);
+
+        let f_left = density_by_smoothing_length(dm, h_left, eta, d) - density_kernel(particles, ii, &neighbors_left, dm, h_left, sigma, d, f, w, l);
+        let f_right = density_by_smoothing_length(dm, h_right, eta, d) - density_kernel(particles, ii, &neighbors_right, dm, h_right, sigma, d, f, w, l);
+        let f_mid = density_by_smoothing_length(dm, h_mid, eta, d) - density_kernel(particles, ii, &neighbors_mid, dm, h_mid, sigma, d, f, w, l);
+
+        if f_right.signum() == f_left.signum() {
+            i = it + 2;
+        }
+
+        if ((h_right - h_left)/h_mid).abs() <=  tol || f_mid.abs() < 0.001*tol  {
+            i = it + 2;
+        } else{
+            i += 1;
+            if f_mid.signum() == f_left.signum() {
+                h_left = h_mid;
+            } else {
+                h_right = h_mid;
+            }
+            h_mid = 0.5*(h_left + h_right);
+        }
+    }
+    if i == it+1 {
+        println!("PROBLEM BISECTION METHOD: Solution not found for particle {}. Final value was h = {}.", ii, h_mid);
+        (0.0, neighbors_mid)
+    } else{
+        (h_mid, neighbors_mid)
     }
 }
 
@@ -314,11 +363,20 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
 // Calculate the smoothing function for each particle in a given time.
 pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: i32, n: usize, ptr : Pointer, w: f64, l: f64){
     (0..n).into_par_iter().for_each(|ii| {
-        let (h_new, neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*dm*particles[ii].divv/(d as f64)), eta, f, dfdq, sigma, d, tol, it, tree, s_, w, l);
+        let (mut h_new, mut neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*particles[ii].divv/(d as f64)), eta, f, dfdq, sigma, d, tol, it, tree, s_, w, l);
         let particle = unsafe { &mut *{ptr}.0.add(ii)};
         if h_new != 0.0 {
             // If h is not found, then keep it constant in time.
             particle.h = h_new;
+        } else {
+            (h_new, neighbors) = bisection(ii, particles, dm, particles[ii].h*(1.+dt*particles[ii].divv/(d as f64)), eta, f, sigma, d, tol, it, tree, s_, w, l);
+            if h_new != 0.0 {
+                // If h is not found, then keep it constant in time.
+                particle.h = h_new;
+            } else {
+                neighbors.clear();
+                tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, w, l, particle.h);
+            }
         }
         particle.rho = density_kernel(particles, ii, &neighbors, dm, particle.h, sigma, d, f, w, l);
     });
@@ -488,11 +546,11 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 particle_i.ay += dm *f_ij[1];
                 
                 // Divergence of v per unit of mass
-                let div_vel :f64 = grad_hi*dot_r_v;
-                particle_i.divv += div_vel;
+                let div_vel :f64 = grad_hi*dot_r_v / (omeg_i*particles[ii].rho);
+                particle_i.divv -= dm*div_vel;
                 
                 // Thermal change
-                particle_i.du += dm * (p_i / (omeg_i*particles[ii].rho*particles[ii].rho)*div_vel + 0.5*art_visc_ene*(grad_hi+grad_hj));
+                particle_i.du += dm * ((p_i/particles[ii].rho)*div_vel + 0.5*art_visc_ene*(grad_hi+grad_hj));
             }
         }
 

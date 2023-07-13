@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0: f64 = 0.; // y-coordinate of the bottom left corner
     let rho0: f64 = 1.0; // Initial density
     let dm :f64 = rho0*w*l/n as f64; // Particles' mass
-    let h0: f64 = 2.*eta*(w*l / n as f64).sqrt(); // Initial radius of Sedov's wave
+    let h0: f64 = 2.*eta*(w*l / n as f64).powf(1./d as f64); // Initial radius of Sedov's wave
 
     sedov_conf(&mut particles, n, h0, w, (w/2.) + x0, (l/2.) + y0, sphfunctions::f_cubic_kernel, sigma);
 

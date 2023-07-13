@@ -65,10 +65,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
                                        d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
-                                       sphfunctions::mon89_art_vis,
+                                       sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, w, l, x0, y0);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma, d, w, l, &mut tree, s_);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, d, w, l, &mut tree, s_);
         tree.restart(n);
         it += 1;
     }
