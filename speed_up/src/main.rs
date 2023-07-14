@@ -32,7 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let particles_ptr = Pointer(particles.as_mut_ptr());
 
     // Simulation's parameters
-    let it_tot = 50; // Total iterations
+    let it_tot = 10; // Total iterations
     let n : usize = particles.len(); // Number of particles
 
     // System's parameters
@@ -42,13 +42,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let sigma :f64 = 10.0/(7.*PI); // Normalization's constant of kernel
     let w :f64 = 1.; // Domain's width
     let l :f64 = 1.; // Domain's large
-    let x0: f64 = -0.5; // x-coordinate of the bottom left corner
-    let y0: f64 = -0.5; // y-coordinate of the bottom left corner
+    let x0: f64 = 0.; // x-coordinate of the bottom left corner
+    let y0: f64 = 0.; // y-coordinate of the bottom left corner
     let rho0: f64 = 1.0; // Initial density
     let dm :f64 = rho0*w*l/n as f64; // Particles' mass
-    let h0: f64 = 2.*eta*(w*l / n as f64).sqrt(); // Initial radius of Sedov's wave
+    let h0: f64 = 2.*eta*(w*l / n as f64).powf(1./d as f64); // Initial radius of Sedov's wave
 
-    sedov_conf(&mut particles, n, h0, 1.0, sphfunctions::f_cubic_kernel, sigma);
+    sedov_conf(&mut particles, n, h0, w, (w/2.) + x0, (l/2.) + y0, dm);
 
     // Tree's parameters
     let s_ : i32 = 10;
@@ -77,22 +77,18 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 // Setting initial configuration
-fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, kernel: fn(f64) -> f64, sigma: f64) {
-    let mut init: Vec<usize> = Vec::new();
-    let mut sum: f64 = 0.0;
+fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0: f64, y0: f64, dm: f64) {
+    let mut rad_part: Vec<usize> = Vec::new();
     for ii in 0..n{
-        let r = ((particles[ii].x * particles[ii].x + particles[ii].y * particles[ii].y).sqrt())/h0;
+        let r = (((particles[ii].x - x0) * (particles[ii].x - x0) + (particles[ii].y - y0) * (particles[ii].y-y0)).sqrt())/h0;
         if r <= radius {
-            init.push(ii);
-            let energy = sigma*kernel(r);
-            particles[ii].u = energy;
-            sum += energy;
+            rad_part.push(ii);
         } else{
             particles[ii].u = 0.0;
         }
     }
-    // Normalize thermal energy
-    for ii in init {
-        particles[ii].u /= sum;
+    let u0: f64 = 1./(dm * rad_part.len() as f64);
+    for ii in &rad_part {
+        particles[*ii].u = u0;
     }
 }

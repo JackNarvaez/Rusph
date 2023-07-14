@@ -53,7 +53,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let dm :f64 = rho0*w*l/n as f64; // Particles' mass
     let h0: f64 = 2.*eta*(w*l / n as f64).powf(1./d as f64); // Initial radius of Sedov's wave
 
-    sedov_conf(&mut particles, n, h0, w, (w/2.) + x0, (l/2.) + y0, sphfunctions::f_cubic_kernel, sigma);
+    sedov_conf(&mut particles, n, h0, w, (w/2.) + x0, (l/2.) + y0, dm);
 
     // Save initial information
     time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
@@ -105,7 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 // Setting initial configuration
-fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0: f64, y0: f64, _kernel: fn(f64) -> f64, _sigma: f64) {
+fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0: f64, y0: f64, dm: f64) {
     let mut rad_part: Vec<usize> = Vec::new();
     for ii in 0..n{
         let r = (((particles[ii].x - x0) * (particles[ii].x - x0) + (particles[ii].y - y0) * (particles[ii].y-y0)).sqrt())/h0;
@@ -115,7 +115,7 @@ fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0:
             particles[ii].u = 0.0;
         }
     }
-    let u0: f64 = 1./rad_part.len() as f64;
+    let u0: f64 = 1./(dm * rad_part.len() as f64);
     for ii in &rad_part {
         particles[*ii].u = u0;
     }
