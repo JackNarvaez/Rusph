@@ -455,6 +455,18 @@ pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _
     }
 }
 
+// Price (2008): Thermal conductivity switches
+pub fn price08_therm_cond(p_i: f64, p_j: f64, rho_i: f64, rho_j: f64, u_i: f64, u_j: f64) -> f64 {
+    // Parameters
+    let alpha_u: f64 = 1.0;
+
+    let rho_mean :f64 = 0.5*(rho_i+rho_j);
+    let v_sig_u:f64 = ((p_i - p_j).abs()/rho_mean).sqrt();
+    let dudt :f64 = -alpha_u*v_sig_u*(u_i-u_j)/rho_mean;
+
+    return dudt;
+}
+
 
 // -------- Dynamic Equations --------
 
@@ -540,6 +552,9 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 // Artificial viscosity
                 let (art_visc_mom, art_visc_ene) = artificial_viscosity(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
     
+                // Artificial thermal conductivity
+                let art_therm_cond: f64 = price08_therm_cond(p_i, p_j, particles[ii].rho, particles[jj].rho, particles[ii].u, particles[jj].u);
+    
                 // Acceleration
                 let f_ij = acceleration_ab(&particles[ii], &particles[jj], p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc_mom, w, l);
                 particle_i.ax += dm *f_ij[0];
@@ -550,7 +565,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 particle_i.divv -= dm*div_vel;
                 
                 // Thermal change
-                particle_i.du += dm * ((p_i/particles[ii].rho)*div_vel + 0.5*art_visc_ene*(grad_hi+grad_hj));
+                particle_i.du += dm * ((p_i/particles[ii].rho)*div_vel + 0.5*(art_visc_ene + 0.*art_therm_cond*r_ij)*(grad_hi+grad_hj));
             }
         }
 
