@@ -28,15 +28,24 @@ use structures::{
 
 // -------- Write data --------
 
-pub fn init_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64, x0: f64, y0: f64)-> Result<(), Box<dyn Error>>{
+pub fn init_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64, x0: f64, y0: f64, dist: usize)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     let dx = (w*l / n as f64).sqrt();
     let nx :i64 = (w/dx) as i64;
     let ny :i64 = (l/dx) as i64;
     wtr.write_record(&["x", "y", "h", "rho"])?;
-    for jj in 0..ny{
-        for ii in 0..nx{
-            wtr.write_record(&[(x0 + dx*ii as f64).to_string(), (y0 + dx*jj as f64).to_string(), h.to_string(), rho.to_string()])?;
+    if dist == 0 {
+        for jj in 0..ny{
+            for ii in 0..nx{
+                wtr.write_record(&[(x0 + dx*ii as f64).to_string(), (y0 + dx*jj as f64).to_string(), h.to_string(), rho.to_string()])?;
+            }
+        }
+    } else {
+        for jj in 0..ny{
+            let dx_t: f64 = 0.5*dx* (jj%2) as f64;
+            for ii in 0..nx{
+                wtr.write_record(&[(dx_t + x0 + dx*ii as f64).to_string(), (y0 + dx*jj as f64).to_string(), h.to_string(), rho.to_string()])?;
+            }
         }
     }
     wtr.flush()?;
@@ -148,12 +157,6 @@ pub fn inject_particles(particles: &mut Vec<Particle>, x: f64, y: f64, dx: f64, 
 
 
 // -------- Basic vector functions --------
-
-// Euclidean distance
-pub fn euclidean_norm(p1: &Particle, p2: &Particle) -> f64 {
-    let sum :f64 = (p1.x - p2.x)*(p1.x - p2.x) + (p1.y - p2.y)*(p1.y - p2.y);
-    sum.sqrt()
-}
 
 // Periodic relative distance
 pub fn periodic_rel_vector(p1: &Particle, p2: &Particle, w: f64, l: f64, eps: f64) -> (f64, f64) {
@@ -448,7 +451,6 @@ pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _
         let rho_mean :f64 = 0.5*(rho_i+rho_j);
         let dvdt :f64 = -v_sig*dot_r_v/(r_ij*rho_mean);
         let dudt :f64 = 0.5*dvdt*dot_r_v;
-
         return (dvdt, dudt);
     } else {
         return (0.0, 0.0);
@@ -462,7 +464,7 @@ pub fn price08_therm_cond(p_i: f64, p_j: f64, rho_i: f64, rho_j: f64, u_i: f64, 
 
     let rho_mean :f64 = 0.5*(rho_i+rho_j);
     let v_sig_u:f64 = ((p_i - p_j).abs()/rho_mean).sqrt();
-    let dudt :f64 = -alpha_u*v_sig_u*(u_i-u_j)/rho_mean;
+    let dudt :f64 = alpha_u*v_sig_u*(u_i-u_j)/rho_mean;
 
     return dudt;
 }
@@ -565,10 +567,10 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 particle_i.divv -= dm*div_vel;
                 
                 // Thermal change
-                particle_i.du += dm * ((p_i/particles[ii].rho)*div_vel + 0.5*(art_visc_ene + 0.*art_therm_cond*r_ij)*(grad_hi+grad_hj));
+                particle_i.du += dm * ((p_i/particles[ii].rho)*div_vel + 0.5*(art_visc_ene + art_therm_cond*r_ij)*(grad_hi/omeg_i+grad_hj/omeg_j));
             }
         }
-
+            
         // Body forces
         if bf {
             body_forces(particle_i, nu, lmbda);
@@ -638,11 +640,12 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
                                   boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64), w: f64, l: f64, x0: f64, y0: f64) {
     
     particles.par_iter_mut().for_each(|particle|{
+        // println!("1 : {:?}", particle);
         particle.vx += 0.5 * dt * particle.ax;
         particle.vy += 0.5 * dt * particle.ay;
-
+        
         particle.u += 0.5 * dt * particle.du;
-
+        
         particle.x += dt * particle.vx;
         particle.y += dt * particle.vy;
         
@@ -656,6 +659,7 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
         particle.vy += 0.5 * dt * particle.ay;
         
         particle.u += 0.5 * dt * particle.du;
+        // println!("2 : {:?}", particle);
     });
 
     boundary(particles, w, l, x0, y0);
@@ -666,9 +670,11 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
     accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, d, tree, s_, n, ptr, w, l, artificial_viscosity, body_forces, nu, lmbda, bf);
     
     particles.par_iter_mut().for_each(|particle|{
+        // println!("3: {:?}", particle);
         particle.vx = particle.vx_star + 0.5 * dt * particle.ax;
         particle.vy = particle.vy_star + 0.5 * dt * particle.ay;
         particle.u = particle.u_star + 0.5 * dt * particle.du;
+        // println!("4: {:?}", particle);
     });
 }
 

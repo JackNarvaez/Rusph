@@ -10,9 +10,7 @@ use std::{
 
 use sphfunctions;
 
-use tree_algorithm::{
-    BuildTree,
-};
+use tree_algorithm::BuildTree;
 
 use structures::{
     Particle,
@@ -35,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // Initial time
-    let tf:f64 = 0.5; // Final time
+    let tf:f64 = 0.1; // Final time
     let mut t:f64 = t0; // Time
     let n : usize = particles.len(); // Number of particles
     let mut time_file = File::create("./Data/results/sedov_blast_wave/Time.txt").expect("creation failed"); // Save time steps
@@ -51,9 +49,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0: f64 = 0.; // y-coordinate of the bottom left corner
     let rho0: f64 = 1.0; // Initial density
     let dm :f64 = rho0*w*l/n as f64; // Particles' mass
-    let h0: f64 = 2.*eta*(w*l / n as f64).powf(1./d as f64); // Initial radius of Sedov's wave
+    let h0: f64 = eta*(w*l / n as f64).powf(1./d as f64); // Initial radius of Sedov's wave
+    let e0: f64 = 1.0; // Initial energy
+    let r_kern: f64 = 2.;
 
-    sedov_conf(&mut particles, n, h0, w, (w/2.) + x0, (l/2.) + y0, dm);
+    sedov_conf(&mut particles, n, h0, r_kern, (w/2.) + x0, (l/2.) + y0, dm, sphfunctions::f_gaussian_kernel, e0);
 
     // Save initial information
     time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Main loop
     let start = Instant::now(); // Runing time
     while t < tf  {
-        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
+        sphfunctions::euler_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
                                        d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
@@ -105,18 +105,21 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 // Setting initial configuration
-fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0: f64, y0: f64, dm: f64) {
+fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0: f64, y0: f64, dm: f64, kernel: fn(f64) -> f64, e0: f64) {
     let mut rad_part: Vec<usize> = Vec::new();
+    let mut u_norm: f64 = 0.; 
     for ii in 0..n{
         let r = (((particles[ii].x - x0) * (particles[ii].x - x0) + (particles[ii].y - y0) * (particles[ii].y-y0)).sqrt())/h0;
         if r <= radius {
             rad_part.push(ii);
+            particles[ii].u = kernel(r);
+            u_norm += particles[ii].u;
         } else{
             particles[ii].u = 0.0;
         }
     }
-    let u0: f64 = 1./(dm * rad_part.len() as f64);
+    let u0: f64 = e0/(dm * u_norm);
     for ii in &rad_part {
-        particles[*ii].u = u0;
+        particles[*ii].u *= u0;
     }
 }
