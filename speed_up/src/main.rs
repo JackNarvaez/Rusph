@@ -8,9 +8,7 @@ use std::{
 
 use sphfunctions;
 
-use tree_algorithm::{
-    BuildTree,
-};
+use tree_algorithm::BuildTree;
 
 use structures::{
     Particle,
@@ -40,21 +38,25 @@ fn main() -> Result<(), Box<dyn Error>> {
     let d: i32 = 2; // Dimension of the system
     let gamma:f64 = 5./3.;  // Gamma factor (heat capacity ratio)
     let sigma :f64 = 10.0/(7.*PI); // Normalization's constant of kernel
-    let w :f64 = 1.; // Domain's width
-    let l :f64 = 1.; // Domain's large
+    let wd :f64 = 1.; // Domain's width
+    let lg :f64 = 1.; // Domain's large
+    let hg :f64 = 1.; // Domain's large
     let x0: f64 = 0.; // x-coordinate of the bottom left corner
     let y0: f64 = 0.; // y-coordinate of the bottom left corner
+    let z0: f64 = 0.; // y-coordinate of the bottom left corner
     let rho0: f64 = 1.0; // Initial density
-    let dm :f64 = rho0*w*l/n as f64; // Particles' mass
-    let h0: f64 = 2.*eta*(w*l / n as f64).powf(1./d as f64); // Initial radius of Sedov's wave
+    let dm :f64 = rho0*wd*lg/n as f64; // Particles' mass
+    let rkern: f64 = 2.;
 
-    sedov_conf(&mut particles, n, h0, w, (w/2.) + x0, (l/2.) + y0, dm);
+    for ii in 0..n {
+        particles[ii].rho = sphfunctions::density_by_smoothing_length(dm, particles[ii].h, eta, d);
+    }
 
     // Tree's parameters
     let s_ : i32 = 10;
     let alpha_ : f64 = 0.05;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, l);
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, lg);
     
     let mut dt :f64 = 0.001; // Time step
     let mut it: u32 = 0; // Time iterations
@@ -63,32 +65,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now(); // Runing time
     while it < it_tot  {
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
-                                       sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
+                                       sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern,
                                        d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
-                                       sphfunctions::periodic_boundary, w, l, x0, y0);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, d, w, l, &mut tree, s_);
+                                       sphfunctions::periodic_boundary, wd, lg, hg, x0, y0, z0);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, d, wd, lg, hg, &mut tree, s_);
         tree.restart(n);
         it += 1;
     }
     println!("{}", start.elapsed().as_secs());
     Ok(())
-}
-
-// Setting initial configuration
-fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0: f64, y0: f64, dm: f64) {
-    let mut rad_part: Vec<usize> = Vec::new();
-    for ii in 0..n{
-        let r = (((particles[ii].x - x0) * (particles[ii].x - x0) + (particles[ii].y - y0) * (particles[ii].y-y0)).sqrt())/h0;
-        if r <= radius {
-            rad_part.push(ii);
-        } else{
-            particles[ii].u = 0.0;
-        }
-    }
-    let u0: f64 = 1./(dm * rad_part.len() as f64);
-    for ii in &rad_part {
-        particles[*ii].u = u0;
-    }
 }

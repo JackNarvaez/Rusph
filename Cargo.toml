@@ -7,7 +7,6 @@ members = [
     "tree_algorithm",
     "find_neighbors",
     "structures",
-    "accretion_disk",
     "sedov_blast_wave",
     "kelvin_helmholtz",
 ]

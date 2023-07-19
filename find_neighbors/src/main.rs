@@ -27,13 +27,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let n:u32 = 10000; // Number of Particles
     let x0:f64 = 0.; // circle's center
     let y0:f64 = 0.; // circle's center
-    let w:f64 = 1.; // circle's center
-    let l:f64 = 1.; // circle's center
+    let z0:f64 = 0.; // circle's center
+    let wd:f64 = 1.; // circle's center
+    let lg:f64 = 1.; // circle's center
+    let hg:f64 = 1.; // circle's center
     //let r:f64 = 0.75; // radius
     let rho:f64 = 1.0; // density
     let h :f64 = 0.1; // Smoothing length
     // Initialize system
-    if let Err(err) = sphfunctions::init_random_square(path, n, rho, h, w, l, x0, y0){//init_random_circle(path, n, r, rho, h, x0, y0){
+    if let Err(err) = sphfunctions::init_random_square(path, n, rho, h, wd, lg, hg, x0, y0, z0){//init_random_circle(path, n, r, rho, h, x0, y0){
         println!("{}", err);
         process::exit(1);
     }
@@ -51,9 +53,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Tree builder
     let start1 = Instant::now();
-    let mut root : Node = <Node as BuildTree>::new(n as i32, x0, y0, w);
+    let mut root : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd);
     for _ii in 0..10000 {
-        root = <Node as BuildTree>::new(n as i32, x0, y0, w);
+        root = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd);
         root.build_tree(k, s, alpha, beta, &particles, 0.1*h);
     }
     println!("Tree Builder: {} s", start1.elapsed().as_secs());
@@ -66,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for _ii in 0..100000 {
         neighbors = Vec::new();
 
-        root.find_neighbors(p, k as f64, s, &particles, &mut neighbors, w, l, particles[p].h);
+        root.find_neighbors(p, k as f64, s, &particles, &mut neighbors, wd, lg, hg, particles[p].h);
     }
     println!("Neighbors Finder: {} s", start2.elapsed().as_secs());
     save_neighbors(path_neighbors, p, & neighbors);

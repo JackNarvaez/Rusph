@@ -1,6 +1,6 @@
 use std::{
     error::Error,
-    f64, task::RawWaker,
+    f64,
 };
 
 use rand::{Rng, SeedableRng};
@@ -28,53 +28,17 @@ use structures::{
 
 // -------- Write data --------
 
-pub fn init_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64, x0: f64, y0: f64, dist: usize)-> Result<(), Box<dyn Error>>{
-    let mut wtr = Writer::from_path(path)?;
-    let dx = (w*l / n as f64).sqrt();
-    let nx :i64 = (w/dx) as i64;
-    let ny :i64 = (l/dx) as i64;
-    wtr.write_record(&["x", "y", "h", "rho"])?;
-    if dist == 0 {
-        for jj in 0..ny{
-            for ii in 0..nx{
-                wtr.write_record(&[(x0 + dx*ii as f64).to_string(), (y0 + dx*jj as f64).to_string(), h.to_string(), rho.to_string()])?;
-            }
-        }
-    } else {
-        for jj in 0..ny{
-            let dx_t: f64 = 0.5*dx* (jj%2) as f64;
-            for ii in 0..nx{
-                wtr.write_record(&[(dx_t + x0 + dx*ii as f64).to_string(), (y0 + dx*jj as f64).to_string(), h.to_string(), rho.to_string()])?;
-            }
-        }
-    }
-    wtr.flush()?;
-    Ok(())
-}
-
-pub fn init_random_square(path: &str, n: u32, rho:f64, h:f64, w:f64, l:f64, x0: f64, y0: f64)-> Result<(), Box<dyn Error>>{
-   let mut wtr = Writer::from_path(path)?;
-   let mut rng = Pcg64::seed_from_u64(SEED);
-   wtr.write_record(&["x", "y", "h", "rho"])?;
-   for _ii in 0..n{
-       let x = w*rng.gen::<f64>();
-       let y = l*rng.gen::<f64>();
-       wtr.write_record(&[(x+x0).to_string(), (y+y0).to_string(), h.to_string(), rho.to_string()])?;
-   }
-   wtr.flush()?;
-   Ok(())
-}
-
-pub fn init_random_circle(path: &str, n: u32, r:f64, rho:f64, h:f64, x0:f64, y0:f64)-> Result<(), Box<dyn Error>>{
+pub fn init_random_square(path: &str, n: u32, rho:f64, h:f64, wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     let mut rng = Pcg64::seed_from_u64(SEED);
-    wtr.write_record(&["x", "y", "h", "rho"])?;
-    for _ii in 0..n{
-        let r_i = r*(rng.gen::<f64>()).sqrt();
-        let theta_i = 2.0*PI*rng.gen::<f64>();
-        let x = r_i*theta_i.cos() + x0;
-        let y = r_i*theta_i.sin() + y0;
-        wtr.write_record(&[x.to_string(), y.to_string(), h.to_string(), rho.to_string()])?;
+    wtr.write_record(&["x", "y", "z", "h", "rho"])?;
+    for ii in 0..n{
+        let x: f64 = wd*rng.gen::<f64>();
+        let y: f64 = lg*rng.gen::<f64>();
+        let z: f64 = hg*rng.gen::<f64>();
+            wtr.write_record(&[(x0 + x).to_string(), (y0 + y).to_string(), (z0+z).to_string(),
+                               String::from("0.0"), String::from("0.0"), String::from("0.0"),
+                               h.to_string(), String::from("0.0")])?;
     }
     wtr.flush()?;
     Ok(())
@@ -82,11 +46,11 @@ pub fn init_random_circle(path: &str, n: u32, r:f64, rho:f64, h:f64, x0:f64, y0:
 
 pub fn save_data(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
-    wtr.write_record(&["x", "y", "vx", "vy", "u", "h", "rho"])?;
+    wtr.write_record(&["x", "y", "z", "vx", "vy", "vz", "h", "u"])?;
     for ii in 0..particles.len() {
-        wtr.write_record(&[particles[ii].x.to_string(), particles[ii].y.to_string(),
-                           particles[ii].vx.to_string(), particles[ii].vy.to_string(),
-                           particles[ii].u.to_string(), particles[ii].h.to_string(), particles[ii].rho.to_string()])?;
+        wtr.write_record(&[particles[ii].x.to_string(), particles[ii].y.to_string(), particles[ii].z.to_string(),
+                           particles[ii].vx.to_string(), particles[ii].vy.to_string(), particles[ii].vz.to_string(),
+                           particles[ii].h.to_string(), particles[ii].u.to_string()])?;
     }
     wtr.flush()?;
     Ok(())
@@ -100,8 +64,9 @@ pub fn read_data(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dy
         .from_path(path)?;
     for result in rdr.records() {
         let record = result?;
-        particles.push(Particle{x:(&record[0]).parse::<f64>().unwrap(), y:(&record[1]).parse::<f64>().unwrap(),
-                                h:(&record[2]).parse::<f64>().unwrap(), rho:(&record[3]).parse::<f64>().unwrap(),
+        particles.push(Particle{x:(&record[0]).parse::<f64>().unwrap(), y:(&record[1]).parse::<f64>().unwrap(), z:(&record[2]).parse::<f64>().unwrap(),
+                                vx:(&record[3]).parse::<f64>().unwrap(), vy:(&record[4]).parse::<f64>().unwrap(), vz:(&record[5]).parse::<f64>().unwrap(),
+                                h:(&record[6]).parse::<f64>().unwrap(), u:(&record[7]).parse::<f64>().unwrap(),
                                 ..Default::default()});
     }
     Ok(())
@@ -210,6 +175,11 @@ pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & V
 // Density calculated by smoothing function
 pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64, d:i32) -> f64{
     m*(eta/h).powi(d)
+}
+
+// Density calculated by smoothing function
+pub fn h_by_density(m:f64, rho:f64, eta:f64, d:i32) -> f64{
+    eta*(m/rho).powf(1./d as f64)
 }
 
 // Omega operator
@@ -505,7 +475,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 let cs_j = cs(particles[jj].rho, p_j, gamma);
                 let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, rkern, d, wd, lg, hg);
                 
-                let (x_rel, y_rel, z_rel) = periodic_rel_vector(&particles[ii], &particles[jj], wd, ld, hg, rkern*particles[ii].h);
+                let (x_rel, y_rel, z_rel) = periodic_rel_vector(&particles[ii], &particles[jj], wd, lg, hg, rkern*particles[ii].h);
                 let r_ij = (x_rel*x_rel + y_rel*y_rel).sqrt();
                 let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
                 let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));

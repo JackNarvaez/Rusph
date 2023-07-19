@@ -21,8 +21,13 @@ use structures::{
 use std::f64::consts::PI;
 
 fn main() -> Result<(), Box<dyn Error>> {
+    let path_source = "./Data/initial_distribution/kelvin_helmholtz.csv";
 
     let mut particles :Vec<Particle> = Vec::new();
+    if let Err(err) = sphfunctions::read_data(path_source, &mut particles) {
+        println!("{}", err);
+        process::exit(1);
+    }
     
     // Simulation's parameters
     let t0:f64 = 0.0; // Initial time
@@ -35,6 +40,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let d: i32 = 2; // Dimension of the system
     let gamma:f64 = 5./3.;  // Gamma factor (heat capacity ratio)
     let sigma :f64 = 10.0/(7.*PI); // Normalization's constant of kernel
+    let rkern: f64 = 2.;
     let wd :f64 = 1.; // Domain's width
     let lg :f64 = 1.; // Domain's large
     let hg :f64 = 1.; // Domain's large
@@ -43,24 +49,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     let z0: f64 = 0.; // y-coordinate of the bottom left corner
     let y1: f64 = 0.25; // Y-lower edge of fluid 2 
     let y2: f64 = 0.75; // Y-upper edge of fluid 2
-    let nx1: usize = 60; 
-    let nx2: usize = 100; 
-    let ny1: usize = 40; 
-    let ny2: usize = 96; 
+    let nx: usize = 60; // Number of particles in x direction
+    let ny: usize = 100; // Number of particles in region 1 in y direction // TOTAL NY = ny + (rho2/rho1)*ny
+    let nz: usize = 40; // Number of particles in z direction
+
     let rho1: f64 = 1.0; // Initial density fluid 1
     let rho2: f64 = 2.0; // Initial density fluid 2
-    let vx1: f64 = -0.5; // Initial x velocity fluid 1
-    let vx2: f64 = 0.5; // Initial x velocity fluid 2
-    let p0: f64 = 2.5; // Initial pressure
 
-    let m: f64 = rho1 *(y2-y1)*w + rho2*(l-y2+y1)*w;
-    let dm: f64 = m / (2*nx1*ny1 + nx2*ny2) as f64; // Particles' mass
+    let m: f64 = (rho1 *(y2-y1) + rho2*(lg-y2+y1))*wd*hg;
+    let n: usize = 3*nx*ny*nz;
+    let dm: f64 = m / n as f64; // Particles' mass
 
-    kh_init_setup(&mut particles, nx1, nx2, ny1, ny2, w, l, x0, y0, y1, y2, rho1, rho2, vx1, vx2, p0, gamma, eta, dm, d);
+    for ii in 0..n {
+        if (particles[ii].y >= y1) && (particles[ii].y <= y2) {
+            particles[ii].rho = rho2;
+        } else {
+            particles[ii].rho = rho1;
+        }
+    }
     
     let particles_ptr = Pointer(particles.as_mut_ptr());
 
-    let n: usize = particles.len(); // Number of particles
+    if n != particles.len() {
+        println!("Error: n from rho is {} but length of particles is {}", n, particles.len());
+    }
 
     
     // Save initial information
@@ -74,7 +86,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let s_ : i32 = 10;
     let alpha_ : f64 = 0.05;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, l);
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd);
     
     let mut dt :f64 = 0.0001; // Time step
     let mut it: u32 = 0; // Time iterations
@@ -84,12 +96,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now(); // Runing time
     while t < tf  {
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
-                                       sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
+                                       sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern, 
                                        d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
-                                       sphfunctions::periodic_boundary, w, l, x0, y0);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma, d, w, l, &mut tree, s_);
+                                       sphfunctions::periodic_boundary, wd, lg, hg,  x0, y0, z0);
+        dt = sphfunctions::time_step_bale(&particles, n, gamma, rkern, d, wd, lg, hg, &mut tree, s_);
         tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {
@@ -110,48 +122,4 @@ fn main() -> Result<(), Box<dyn Error>> {
         process::exit(1);
     }
     Ok(())
-}
-
-fn delta_vy(x: f64, y: f64, y1: f64, y2: f64) -> f64 {
-    let a: f64 = 0.025;
-    let ld: f64 = 1./6.;
-    if (y-y1).abs() < a {
-        return a*(-2.*PI*(x+0.5)/ld).sin();
-    } else if (y-y2).abs() < a {
-        return a*(2.*PI*(x+0.5)/ld).sin();
-    } else {
-        return 0.0;
-    }
-} 
-
-fn kh_init_setup(particles: &mut Vec<Particle>, nx1: usize, nx2: usize, ny1: usize, ny2: usize, w: f64, l: f64, x0: f64, y0: f64, y1: f64, y2: f64, rho1: f64, rho2: f64, vx1: f64, vx2: f64, p:f64, gamma: f64, eta: f64, dm: f64, d: i32) {
-    let dx1 = w/nx1 as f64;
-    let dx2 = w/nx2 as f64;
-    let dy1 = 0.5*(l-y2+y1)/ny1 as f64;
-    let dy2 = (y2-y1)/ny2 as f64;
-    let h01: f64 = eta *(dm/rho1).powf(1./d as f64);
-    let h02: f64 = eta *(dm/rho2).powf(1./d as f64);
-    for ii in 0..nx1 {
-        for jj in 0..ny1 {
-            particles.push(Particle{x:x0+(dx1*ii as f64), y:y0+(dy1*jj as f64),
-                                    h:h01, rho:rho1,
-                                    vx: vx1, vy: delta_vy(x0+(dx1*ii as f64), y0+(dy1*jj as f64), y1, y2),
-                                    u: p/((gamma - 1.)*rho1),
-                                    ..Default::default()});
-            particles.push(Particle{x:x0+(dx1*ii as f64), y:y0+y2+(dy1*jj as f64),
-                                    h:h01, rho:rho1,
-                                    vx: vx1, vy: delta_vy(x0+(dx1*ii as f64), y0+y2+(dy1*jj as f64), y1, y2),
-                                    u: p/((gamma - 1.)*rho1),
-                                    ..Default::default()});
-        }
-    }
-    for ii in 0..nx2 {
-        for jj in 0..ny2 {
-            particles.push(Particle{x:x0+(dx2*ii as f64), y:y0+y1+(dy2*jj as f64),
-                                    h:h02, rho:rho2,
-                                    vx: vx2, vy: delta_vy(x0+(dx2*ii as f64), y0+y1+(dy2*jj as f64), y1, y2),
-                                    u: p/((gamma - 1.)*rho2),
-                                    ..Default::default()});
-        }
-    }
 }

@@ -10,9 +10,7 @@ use std::{
 
 use sphfunctions;
 
-use tree_algorithm::{
-    BuildTree,
-};
+use tree_algorithm::BuildTree;
 
 use structures::{
     Particle,
@@ -25,7 +23,7 @@ use std::f64::consts::PI;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // File's information
-    let path_source: &str = "./Data/initial_distribution/toy_star_2D.csv";
+    let path_source: &str = "./Data/initial_distribution/toy_star.csv";
     let mut particles :Vec<Particle> = Vec::new();
     if let Err(err) = sphfunctions::read_data(path_source, &mut particles) {
         println!("{}", err);
@@ -42,22 +40,24 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // System's parameters.
     let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
-    let d: i32 = 2; // Dimension of the system
+    let d: i32 = 3; // Dimension of the system
     let gamma:f64 = 2.0;  // Gamma factor (heat capacity ratio)
     let m:f64 = 2.0; // Star's mass
     let r:f64 = 0.75; // Star's radius
     let x0:f64 = 0.; // Star's center
     let y0:f64 = 0.; // Star's center
+    let z0:f64 = 0.; // Star's center
     let nu:f64 = 1.0; // Viscocity parameter
     let lmbda: f64 = sphfunctions::coeff_static_grav_potential(0.05, gamma, m, r);
     let sigma :f64 = 10.0/(7.*PI); //  Normalization's constant of kernel
+    let rkern: f64 = 2.; // Kernel radius
     let dm:f64 = m/n as f64; // Particles' mass
 
     // Tree's parameters
     let s_ : i32 = 10;
     let alpha_ : f64 = 0.5;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0-2.*r, y0-2.*r, 4.*r);
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0-2.*r, y0-2.*r, z0-2.*r, 4.*r);
 
     let mut dt :f64 = 0.04; // Time step
     let mut it: u32 = 0; // Time iterations
@@ -70,12 +70,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         // In toy star, body forces depend on the particles' velocity.
         // Therefore, it is not straightforward to use the basic LF integrator.
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
-                                                 sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
+                                                 sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern,
                                                  d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                                  sphfunctions::mon97_art_vis,
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
-                                                 sphfunctions::periodic_boundary, 4.*r, 4.*r, x0-2.*r, y0-2.*r);
-        dt = sphfunctions::time_step_mon_toy_star(&particles, n, gamma, d, 4.*r, 4.*r, &mut tree, s_);
+                                                 sphfunctions::periodic_boundary, 4.*r, 4.*r, 4.*r, x0-2.*r, y0-2.*r, z0-2.*r);
+        dt = sphfunctions::time_step_mon_toy_star(&particles, n, gamma, rkern, d, 4.*r, 4.*r, 4.*r,  &mut tree, s_);
         tree.restart(n);
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");

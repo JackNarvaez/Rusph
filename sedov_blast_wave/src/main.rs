@@ -37,7 +37,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut t:f64 = t0; // Time
     let n : usize = particles.len(); // Number of particles
     let mut time_file = File::create("./Data/results/sedov_blast_wave/Time.txt").expect("creation failed"); // Save time steps
-
+    
     // System's parameters
     let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
     let d: i32 = 2; // Dimension of the system
@@ -50,13 +50,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0: f64 = 0.; // y-coordinate of the bottom left corner
     let z0: f64 = 0.; // y-coordinate of the bottom left corner
     let rho0: f64 = 1.0; // Initial density
-    let dm :f64 = rho0*w*l/n as f64; // Particles' mass
-    let h0: f64 = eta*(w*l / n as f64).powf(1./d as f64); // Initial radius of Sedov's wave
-    let e0: f64 = 1.0; // Initial energy
+    let dm :f64 = rho0*wd*lg/n as f64; // Particles' mass
     let rkern: f64 = 2.;
-
-    sedov_conf(&mut particles, n, h0, rkern, (w/2.) + x0, (l/2.) + y0, dm, sphfunctions::f_gaussian_kernel, e0);
-
+    
+    for ii in 0..n {
+        particles[ii].rho = sphfunctions::density_by_smoothing_length(dm, particles[ii].h, eta, d);
+    }
+    
     // Save initial information
     time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
     if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/sedov_blast_wave/initial.csv")), &particles){
@@ -104,24 +104,4 @@ fn main() -> Result<(), Box<dyn Error>> {
         process::exit(1);
     }
     Ok(())
-}
-
-// Setting initial configuration
-fn sedov_conf(particles: &mut Vec<Particle>, n: usize, h0: f64, radius: f64, x0: f64, y0: f64, dm: f64, kernel: fn(f64) -> f64, e0: f64) {
-    let mut rad_part: Vec<usize> = Vec::new();
-    let mut u_norm: f64 = 0.; 
-    for ii in 0..n{
-        let r = (((particles[ii].x - x0) * (particles[ii].x - x0) + (particles[ii].y - y0) * (particles[ii].y-y0)).sqrt())/h0;
-        if r <= radius {
-            rad_part.push(ii);
-            particles[ii].u = kernel(r);
-            u_norm += particles[ii].u;
-        } else{
-            particles[ii].u = 0.0;
-        }
-    }
-    let u0: f64 = e0/(dm * u_norm);
-    for ii in &rad_part {
-        particles[*ii].u *= u0;
-    }
 }
