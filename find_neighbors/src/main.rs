@@ -31,11 +31,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let wd:f64 = 1.; // circle's center
     let lg:f64 = 1.; // circle's center
     let hg:f64 = 1.; // circle's center
-    //let r:f64 = 0.75; // radius
-    let rho:f64 = 1.0; // density
     let h :f64 = 0.1; // Smoothing length
     // Initialize system
-    if let Err(err) = sphfunctions::init_random_square(path, n, rho, h, wd, lg, hg, x0, y0, z0){//init_random_circle(path, n, r, rho, h, x0, y0){
+    if let Err(err) = sphfunctions::init_random_square(path, n, h, wd, lg, hg, x0, y0, z0){//init_random_circle(path, n, r, rho, h, x0, y0){
         println!("{}", err);
         process::exit(1);
     }

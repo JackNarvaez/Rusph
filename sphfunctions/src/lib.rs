@@ -28,11 +28,11 @@ use structures::{
 
 // -------- Write data --------
 
-pub fn init_random_square(path: &str, n: u32, rho:f64, h:f64, wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64)-> Result<(), Box<dyn Error>>{
+pub fn init_random_square(path: &str, n: u32, h:f64, wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     let mut rng = Pcg64::seed_from_u64(SEED);
     wtr.write_record(&["x", "y", "z", "h", "rho"])?;
-    for ii in 0..n{
+    for _ii in 0..n{
         let x: f64 = wd*rng.gen::<f64>();
         let y: f64 = lg*rng.gen::<f64>();
         let z: f64 = hg*rng.gen::<f64>();
@@ -402,7 +402,7 @@ pub fn price08_therm_cond(p_i: f64, p_j: f64, rho_i: f64, rho_j: f64, u_i: f64, 
 // -------- Dynamic Equations --------
 
 // Internal forces: Due to pressure gradient and AV
-pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, x_rel: f64, y_rel: f64, z_rel: f64, p_a: f64, p_b: f64, omeg_a: f64, omeg_b: f64, grad_ha: f64, grad_hb: f64, art_visc: f64, wd: f64, lg: f64, hg: f64) -> (f64, f64, f64) {
+pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, x_rel: f64, y_rel: f64, z_rel: f64, p_a: f64, p_b: f64, omeg_a: f64, omeg_b: f64, grad_ha: f64, grad_hb: f64, art_visc: f64) -> (f64, f64, f64) {
     let acc = p_a/(omeg_a*particle_a.rho*particle_a.rho)*grad_ha + p_b/(omeg_b*particle_b.rho*particle_b.rho) * grad_hb + 0.5*art_visc*(grad_ha+grad_hb);
     (-acc*x_rel, -acc*y_rel, -acc*z_rel)
 }
@@ -492,7 +492,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 let art_therm_cond: f64 = price08_therm_cond(p_i, p_j, particles[ii].rho, particles[jj].rho, particles[ii].u, particles[jj].u);
     
                 // Acceleration
-                let (f_ij_x, f_ij_y, f_ij_z) = acceleration_ab(&particles[ii], &particles[jj], x_rel, y_rel, z_rel, p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc_mom, wd, lg, hg);
+                let (f_ij_x, f_ij_y, f_ij_z) = acceleration_ab(&particles[ii], &particles[jj], x_rel, y_rel, z_rel, p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc_mom);
                 particle_i.ax += dm * f_ij_x;
                 particle_i.ay += dm * f_ij_y;
                 particle_i.az += dm * f_ij_z;

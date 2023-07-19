@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     kh_init_setup(&mut particles, nx, ny, nz, wd, lg, hg, x0, y0, z0, y1, y2, rho1, rho2, vx1, vx2, p0, gamma, eta, dm, d);
 
-    if let Err(err) = sphfunctions::save_data(&(String::from("./Data/initial_distribution/kelvin_helmholtz.csv")), &particles){
+    if let Err(err) = sphfunctions::save_data(path, &particles){
         println!("{}", err);
         process::exit(1);
     }

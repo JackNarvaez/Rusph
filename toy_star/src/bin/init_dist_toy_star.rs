@@ -26,14 +26,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let (x0, y0, z0) = (0.0, 0.0, 0.0); // Sphere's center
     let (vx0, vy0, vz0) = (0.0, 0.0, 0.0); // Sphere's velocity
     let u0: f64 = 0.0; // Sphere's energy
-    if let Err(err) = init_random_circle(path, n, r, rho, h, x0, y0, z0, vx0, vy0, vz0, u0) {
+    if let Err(err) = init_random_circle(path, n, r, h, x0, y0, z0, vx0, vy0, vz0, u0) {
         println!("{}", err);
         process::exit(1);
     }
     Ok(())
 }
 
-fn init_random_circle(path: &str, n: u32, r:f64, rho:f64, h:f64, x0:f64, y0:f64, z0: f64, vx0:f64, vy0:f64, vz0: f64, u0: f64)-> Result<(), Box<dyn Error>>{
+fn init_random_circle(path: &str, n: u32, r:f64, h:f64, x0:f64, y0:f64, z0: f64, vx0:f64, vy0:f64, vz0: f64, u0: f64)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     let mut rng = Pcg64::seed_from_u64(SEED);
     wtr.write_record(&["x", "y", "z", "vx", "vy", "vz", "h", "u"])?;
