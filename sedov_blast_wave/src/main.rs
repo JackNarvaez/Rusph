@@ -43,17 +43,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let d: i32 = 2; // Dimension of the system
     let gamma:f64 = 5./3.;  // Gamma factor (heat capacity ratio)
     let sigma :f64 = 10.0/(7.*PI); // Normalization's constant of kernel
-    let w :f64 = 1.; // Domain's width
-    let l :f64 = 1.; // Domain's large
+    let wd :f64 = 1.; // Domain's width
+    let lg :f64 = 1.; // Domain's large
+    let hg :f64 = 1.; // Domain's large
     let x0: f64 = 0.; // x-coordinate of the bottom left corner
     let y0: f64 = 0.; // y-coordinate of the bottom left corner
+    let z0: f64 = 0.; // y-coordinate of the bottom left corner
     let rho0: f64 = 1.0; // Initial density
     let dm :f64 = rho0*w*l/n as f64; // Particles' mass
     let h0: f64 = eta*(w*l / n as f64).powf(1./d as f64); // Initial radius of Sedov's wave
     let e0: f64 = 1.0; // Initial energy
-    let r_kern: f64 = 2.;
+    let rkern: f64 = 2.;
 
-    sedov_conf(&mut particles, n, h0, r_kern, (w/2.) + x0, (l/2.) + y0, dm, sphfunctions::f_gaussian_kernel, e0);
+    sedov_conf(&mut particles, n, h0, rkern, (w/2.) + x0, (l/2.) + y0, dm, sphfunctions::f_gaussian_kernel, e0);
 
     // Save initial information
     time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
@@ -66,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let s_ : i32 = 10;
     let alpha_ : f64 = 0.05;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, l);
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd);
     
     let mut dt :f64 = 0.001; // Time step
     let mut it: u32 = 0; // Time iterations
@@ -76,12 +78,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start = Instant::now(); // Runing time
     while t < tf  {
         sphfunctions::euler_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
-                                       sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma,
+                                       sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern,
                                        d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
-                                       sphfunctions::periodic_boundary, w, l, x0, y0);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, d, w, l, &mut tree, s_);
+                                       sphfunctions::periodic_boundary, wd, lg, hg, x0, y0, z0);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, d, wd, lg, hg, &mut tree, s_);
         tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {

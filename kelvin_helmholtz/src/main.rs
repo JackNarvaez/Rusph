@@ -35,10 +35,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let d: i32 = 2; // Dimension of the system
     let gamma:f64 = 5./3.;  // Gamma factor (heat capacity ratio)
     let sigma :f64 = 10.0/(7.*PI); // Normalization's constant of kernel
-    let w :f64 = 1.; // Domain's width
-    let l :f64 = 1.; // Domain's large
+    let wd :f64 = 1.; // Domain's width
+    let lg :f64 = 1.; // Domain's large
+    let hg :f64 = 1.; // Domain's large
     let x0: f64 = 0.; // x-coordinate of the bottom left corner
     let y0: f64 = 0.; // y-coordinate of the bottom left corner
+    let z0: f64 = 0.; // y-coordinate of the bottom left corner
     let y1: f64 = 0.25; // Y-lower edge of fluid 2 
     let y2: f64 = 0.75; // Y-upper edge of fluid 2
     let nx1: usize = 60; 
