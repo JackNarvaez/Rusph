@@ -54,11 +54,10 @@ impl BuildTree for Node {
     }
 
     fn create_child(&self, j: i32, b: i32, dx: f64, dy: f64, dz: f64) -> Node {
-        let b2: i32 = b*b;
-        let id_2d: i32 = j%b2;
-        Node{xmin: self.xmin + dx*(id_2d%b) as f64,
-            ymin: self.ymin + dy*(id_2d/b) as f64,
-            zmin: self.zmin + dz*(j/b2) as f64,
+        let tem: i32 = j/b;
+        Node{xmin: self.xmin + dx * (j % b) as f64,
+            ymin: self.ymin + dy * (tem % b) as f64,
+            zmin: self.zmin + dz * (tem / b) as f64,
             sidex: dx,
             sidey: dy,
             sidez: dz,
@@ -72,9 +71,9 @@ impl BuildTree for Node {
     }
 
     fn create_sub_cells(&mut self, b: i32) {
-        let dx = self.sidex / b as f64;
-        let dy = self.sidey / b as f64;
-        let dz = self.sidez / b as f64;
+        let dx: f64 = self.sidex / (b as f64);
+        let dy: f64 = self.sidey / (b as f64);
+        let dz: f64 = self.sidez / (b as f64);
         for ii in 0..self.branches {
             self.children.push(self.create_child(ii, b, dx, dy, dz));
         }
@@ -107,15 +106,18 @@ impl BuildTree for Node {
             for p in &self.particles {
                 let mut x_p:i32 = ((particles[*p].x - self.xmin) / self.sidex * b as f64).floor() as i32;
                 if x_p == b {
-                    x_p -= 1;
+                    println!("ALERT!!");
+                    // x_p -= 1;
                 }
                 let mut y_p: i32 = ((particles[*p].y - self.ymin) / self.sidey * b as f64).floor() as i32;
                 if y_p == b {
-                    y_p -= 1;
+                    println!("ALERT!!");
+                    // y_p -= 1;
                 }
                 let mut z_p: i32 = ((particles[*p].z - self.zmin) / self.sidez * b as f64).floor() as i32;
                 if z_p == b {
-                    z_p -= 1;
+                    println!("ALERT!!");
+                    // z_p -= 1;
                 }
                 let j :usize = (x_p + y_p * b + z_p * b * b) as usize;
                 add_particle(&mut self.children[j], *p);
@@ -137,7 +139,7 @@ impl BuildTree for Node {
             }
         }
         (self.children).par_iter_mut().for_each(|child| {
-            if (child.n > s) && ((child.sidex > smallest_cell) || (child.sidey > smallest_cell) || (child.sidez > smallest_cell)) {
+            if (child.n > s) && (child.sidex > smallest_cell) && (child.sidey > smallest_cell) && (child.sidez > smallest_cell) {
                 child.build_tree(k, s, alpha, beta, particles, smallest_cell);
             }
         });
@@ -165,7 +167,7 @@ impl BuildTree for Node {
         }
         self.delete_particles();
         (self.children).par_iter_mut().for_each(|child| {
-            if (child.n > s) && ((child.sidex > smallest_cell) || (child.sidey > smallest_cell) || (child.sidez > smallest_cell)) {
+            if (child.n > s) && (child.sidex > smallest_cell) && (child.sidey > smallest_cell) && (child.sidez > smallest_cell) {
                 child.build_tree(k, s, alpha, beta, particles, smallest_cell);
             }
         });
@@ -179,41 +181,41 @@ impl BuildTree for Node {
 }
 
 pub trait FindNeighbors {
-    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32) -> (i32, i32, i32, i32, i32, i32);
+    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64) -> (i32, i32, i32, i32, i32, i32);
 
     fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>;
 
-    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, x_side: f64, y_side: f64, z_side: f64, h: f64, rkern: f64);
+    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, h: f64, rkern: f64);
 }
 
 impl FindNeighbors for Node {
 
-    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32) -> (i32, i32, i32, i32, i32, i32){
+    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64) -> (i32, i32, i32, i32, i32, i32){
         let factorx : f64 =  b as f64 /self.sidex;
         let factory : f64 =  b as f64 /self.sidey;
         let factorz : f64 =  b as f64 /self.sidez;
-        let x_min = (((x_p - 2.0*h) - self.xmin) * factorx).floor() as i32;
-        let x_max = (((x_p + 2.0*h) - self.xmin) * factorx).floor() as i32;
-        let y_min = (((y_p - 2.0*h) - self.ymin) * factory).floor() as i32;
-        let y_max = (((y_p + 2.0*h) - self.ymin) * factory).floor() as i32;
-        let z_min = (((z_p - 2.0*h) - self.zmin) * factorz).floor() as i32;
-        let z_max = (((z_p + 2.0*h) - self.zmin) * factorz).floor() as i32;
-        ((x_min).rem_euclid(b), (x_max).rem_euclid(b),
-         (y_min).rem_euclid(b), (y_max).rem_euclid(b),
-         (z_min).rem_euclid(b), (z_max).rem_euclid(b))
+        let x_min: i32 = (((x_p - rkern*h) - self.xmin) * factorx).floor() as i32;
+        let x_max: i32 = (((x_p + rkern*h) - self.xmin) * factorx).floor() as i32;
+        let y_min: i32 = (((y_p - rkern*h) - self.ymin) * factory).floor() as i32;
+        let y_max: i32 = (((y_p + rkern*h) - self.ymin) * factory).floor() as i32;
+        let z_min: i32 = (((z_p - rkern*h) - self.zmin) * factorz).floor() as i32;
+        let z_max: i32 = (((z_p + rkern*h) - self.zmin) * factorz).floor() as i32;
+        let n: i32 = 4;
+        (x_min-n, x_max+n, y_min-n, y_max+n, z_min-n, z_max+n)     
+        // ((x_min).rem_euclid(b), (x_max).rem_euclid(b),
+        //  (y_min).rem_euclid(b), (y_max).rem_euclid(b),
+        //  (z_min).rem_euclid(b), (z_max).rem_euclid(b))
     }
 
     fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>{
         let mut neighbors : Vec<usize> = Vec::new();
-        let b2: i32 = b*b;
         for child in &self.children{
-            let id_2d: i32 = child.id%b2;
-
-            let x_id: i32 = id_2d%b;
-            let y_id: i32 = id_2d/b;
-            let z_id: i32 = child.id/b2;
-            let index: i32 = index_range(xmin, ymin, zmin, xmax, ymax, zmax);
-
+            let tem: i32 = child.id/b;
+            let x_id: i32 = child.id%b;
+            let y_id: i32 = tem%b;
+            let z_id: i32 = tem/b;
+            let index: i32 = index_range(xmin, xmax, ymin, ymax, zmin, zmax);
+            println!("{} {} {} {} {} {} {}", index, xmin, xmax, ymin, ymax, zmin, zmax);
             if index == 0 { 
                 if (x_id >= xmin) && (x_id <= xmax) {
                     if (y_id >= ymin) && (y_id <= ymax) {
@@ -285,28 +287,28 @@ impl FindNeighbors for Node {
         neighbors
     }
 
-    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, x_side: f64, y_side:f64, z_side:f64, h: f64, rkern: f64) {
+    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, h: f64, rkern: f64) {
         let b: i32 = (self.branches as f64).powf(1./k) as i32;
-        let (x_min, x_max, y_min, y_max, z_min, z_max) = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, h, b as i32);
+        let (x_min, x_max, y_min, y_max, z_min, z_max) = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, h, b as i32, rkern);
         let neighbors = self.children_in_range(x_min, x_max, y_min, y_max, z_min, z_max, b);
         for ii in neighbors {
             if self.children[ii].n <= s {
                 for q in &self.children[ii].particles {
-                    if periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, x_side, y_side, z_side, rkern*h) <= rkern*rkern*h*h {
+                    if periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, rkern*h) <= rkern*rkern*h*h {
                         neighbors_of_p.push(*q);
                     }
                 }
             } else {
-                self.children[ii].find_neighbors(p, k, s, particles, neighbors_of_p, x_side, y_side, z_side, h, rkern);
+                self.children[ii].find_neighbors(p, k, s, particles, neighbors_of_p, wd, lg, hg, h, rkern);
             }
         }
     }
 }
 
-fn index_range(xmin: i32, ymin: i32, zmin: i32, xmax: i32, ymax: i32, zmax: i32) -> i32 {
-    if xmin < xmax {
-        if ymin < ymax {
-            if zmin < zmax {
+fn index_range(xmin: i32, xmax: i32, ymin: i32, ymax: i32, zmin: i32, zmax: i32) -> i32 {
+    if xmin <= xmax {
+        if ymin <= ymax {
+            if zmin <= zmax {
                 return 0;
             } else {
                 return 1;
