@@ -32,6 +32,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let lg:f64 = 1.; // circle's center
     let hg:f64 = 1.; // circle's center
     let h :f64 = 0.1; // Smoothing length
+    let rkern :f64 = 2.; // Smoothing length
     // Initialize system
     if let Err(err) = sphfunctions::init_random_square(path, n, h, wd, lg, hg, x0, y0, z0){//init_random_circle(path, n, r, rho, h, x0, y0){
         println!("{}", err);
@@ -44,21 +45,19 @@ fn main() -> Result<(), Box<dyn Error>> {
         process::exit(1);
     }
     // Tree parameters
-    let k : u32 = 2; // Dimension
+    let k : u32 = 3; // Dimension
     let s : i32 = 10;
     let alpha : f64 = 0.5;
     let beta : f64 = 0.5;
-
+    
     // Tree builder
     let start1 = Instant::now();
-    let mut root : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd);
+    let mut root : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
     for _ii in 0..10000 {
-        root = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd);
         root.build_tree(k, s, alpha, beta, &particles, 0.1*h);
     }
     println!("Tree Builder: {} s", start1.elapsed().as_secs());
     save_tree(path_tree, &root);
-
     // Neighbors finder
     let start2 = Instant::now();
     let mut neighbors: Vec<usize> = Vec::new();
@@ -66,7 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     for _ii in 0..100000 {
         neighbors = Vec::new();
 
-        root.find_neighbors(p, k as f64, s, &particles, &mut neighbors, wd, lg, hg, particles[p].h);
+        root.find_neighbors(p, k as f64, s, &particles, &mut neighbors, wd, lg, hg, particles[p].h, rkern);
     }
     println!("Neighbors Finder: {} s", start2.elapsed().as_secs());
     save_neighbors(path_neighbors, p, & neighbors);

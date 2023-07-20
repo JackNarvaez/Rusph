@@ -56,7 +56,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let s_ : i32 = 10;
     let alpha_ : f64 = 0.05;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, lg);
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
     
     let mut dt :f64 = 0.001; // Time step
     let mut it: u32 = 0; // Time iterations

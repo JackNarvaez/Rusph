@@ -49,7 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let z0:f64 = 0.; // Star's center
     let nu:f64 = 1.0; // Viscocity parameter
     let lmbda: f64 = sphfunctions::coeff_static_grav_potential(0.05, gamma, m, r);
-    let sigma :f64 = 10.0/(7.*PI); //  Normalization's constant of kernel
+    let sigma :f64 = 1./PI; //  Normalization's constant of kernel
     let rkern: f64 = 2.; // Kernel radius
     let dm:f64 = m/n as f64; // Particles' mass
 
@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let s_ : i32 = 10;
     let alpha_ : f64 = 0.5;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0-2.*r, y0-2.*r, z0-2.*r, 4.*r);
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0-2.*r, y0-2.*r, z0-2.*r, 4.*r, 4.*r, 4.*r);
 
     let mut dt :f64 = 0.04; // Time step
     let mut it: u32 = 0; // Time iterations

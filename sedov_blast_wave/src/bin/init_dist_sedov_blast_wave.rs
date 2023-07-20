@@ -30,9 +30,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut rad_part: Vec<usize> = Vec::new(); // Particles inside the initial sphere
     let eta: f64 = 1.2;
     let rkern: f64 = 2.; // Kernel radius
-    let d: i32 = 2; // Dimensions
-    let h0: f64 = eta*(wd*lg*hg / n as f64).powf(1./d as f64); // Smoothing length
-    let dm: f64 = rho*wd*lg*hg/n as f64; // Particles' mass
+    let d: i32 = 3; // Dimensions
+    let vol: f64 = wd*lg*hg; // Volumen
+    let h0: f64 = eta*( vol / n as f64).powf(1./d as f64); // Smoothing length
+    let dm: f64 = rho*vol/n as f64; // Particles' mass
 
     init_dist_sedov(&mut particles, &mut rad_part, &mut u_norm, nx, ny, nz, rho, rkern, h0, eta, d, wd, lg, hg, x0, y0, z0, dm, sphfunctions::f_cubic_kernel);
     norm_energy(&mut particles, &mut rad_part, e0, u_norm, dm);
@@ -71,12 +72,12 @@ fn init_dist_sedov(particles: &mut Vec<Particle>, rad_part: &mut Vec<usize>, u_n
                 if r <= radius {
                     up = kernel(r);
                     *u_norm += up;
-                    rad_part.push((kk*nz + jj*ny + ii*nx) as usize);
+                    rad_part.push(((kk*ny + jj)*nx + ii) as usize);
                 }
                 particles.push(Particle{x:xp, y:yp, z:zp,
-                    vx: 0.0, vy: 0.0, vz: 0.0,
-                    h:hp, u: up,
-                    ..Default::default()});
+                                        vx: 0.0, vy: 0.0, vz: 0.0,
+                                        h:hp, u: up,
+                                        ..Default::default()});
             }
         }
     }

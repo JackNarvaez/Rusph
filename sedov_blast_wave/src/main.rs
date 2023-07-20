@@ -40,9 +40,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     // System's parameters
     let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
-    let d: i32 = 2; // Dimension of the system
+    let d: i32 = 3; // Dimension of the system
     let gamma:f64 = 5./3.;  // Gamma factor (heat capacity ratio)
-    let sigma :f64 = 10.0/(7.*PI); // Normalization's constant of kernel
+    let sigma :f64 = 1./PI; // Normalization's constant of kernel
     let wd :f64 = 1.; // Domain's width
     let lg :f64 = 1.; // Domain's large
     let hg :f64 = 1.; // Domain's large
@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0: f64 = 0.; // y-coordinate of the bottom left corner
     let z0: f64 = 0.; // y-coordinate of the bottom left corner
     let rho0: f64 = 1.0; // Initial density
-    let dm :f64 = rho0*wd*lg/n as f64; // Particles' mass
+    let dm :f64 = rho0*(wd*lg*hg)/n as f64; // Particles' mass
     let rkern: f64 = 2.;
     
     for ii in 0..n {
@@ -68,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let s_ : i32 = 10;
     let alpha_ : f64 = 0.05;
     let beta_ : f64 = 0.5;
-    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd);
+    let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
     
     let mut dt :f64 = 0.001; // Time step
     let mut it: u32 = 0; // Time iterations
