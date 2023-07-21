@@ -44,6 +44,29 @@ pub fn init_random_square(path: &str, n: u32, h:f64, wd:f64, lg:f64, hg: f64, x0
     Ok(())
 }
 
+pub fn init_square(path: &str, n: u32, h:f64, wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64)-> Result<(), Box<dyn Error>>{
+    let mut wtr = Writer::from_path(path)?;
+    wtr.write_record(&["x", "y", "z", "vx", "vy", "vz", "h", "rho"])?;
+    let dl: f64 = ((wd*lg*hg)/n as f64).powf(1./3.);
+    let nx: u32 = (wd/dl).ceil() as u32;  
+    let ny: u32 = (lg/dl).ceil() as u32;  
+    let nz: u32 = (hg/dl).ceil() as u32;  
+    for kk in 0..nz{
+        for jj in 0..ny{
+            for ii in 0..nx{
+                let x: f64 = x0 + ii as f64*dl;
+                let y: f64 = y0 + jj as f64*dl;
+                let z: f64 = z0 + kk as f64*dl;
+                wtr.write_record(&[(x0 + x).to_string(), (y0 + y).to_string(), (z0+z).to_string(),
+                               String::from("0.0"), String::from("0.0"), String::from("0.0"),
+                               h.to_string(), String::from("0.0")])?;
+            }
+        }
+    }
+    wtr.flush()?;
+    Ok(())
+}
+
 pub fn save_data(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     wtr.write_record(&["x", "y", "z", "vx", "vy", "vz", "h", "u"])?;
@@ -215,7 +238,7 @@ fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, 
 }
 
 // Newton raphson solver to find the value of 'h' for particle 'ii'
-pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, tol: f64, it: u32, tree: &Node, s_: i32, wd: f64, lg: f64, hg: f64) -> (f64, Vec<usize>) {
+pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, tol: f64, it: u32, tree: &Node, s_: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) -> (f64, Vec<usize>) {
     let mut h_new :f64 = 0.0;
     let mut h_old :f64 = h_guess;
     let mut i : u32 = 1;
@@ -223,7 +246,7 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
     while i <= it {
         // Searching neighboring particles
         neighbors.clear();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, h_old, rkern);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, h_old, rkern);
         // Obtain h_new
         h_new = nr_iter(particles, ii, &neighbors, dm, h_old, eta, f, dfdq, sigma, rkern, d, wd, lg, hg);
         if ((h_new - h_old)/h_old).abs() <=  tol {
@@ -244,7 +267,7 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
 // -- Bisection iterator --
 
 // Bisection solver to find the value of 'h' for particle 'ii'
-pub fn bisection(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, tol: f64, it: u32, tree: &Node, s_: i32, wd: f64, lg: f64, hg: f64) -> (f64, Vec<usize>) {
+pub fn bisection(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, tol: f64, it: u32, tree: &Node, s_: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) -> (f64, Vec<usize>) {
     let mut h_left :f64 = 0.1*h_guess;
     let mut h_right :f64 = 0.2;
     let mut h_mid = 0.5*(h_left + h_right);
@@ -257,9 +280,9 @@ pub fn bisection(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, et
         neighbors_left.clear();
         neighbors_right.clear();
         neighbors_mid.clear();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_left, wd, lg, hg, h_left, rkern);
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_right, wd, lg, hg, h_right, rkern);
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_mid, wd, lg, hg, h_mid, rkern);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_left, wd, lg, hg, x0, y0, z0, h_left, rkern);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_right, wd, lg, hg, x0, y0, z0, h_right, rkern);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_mid, wd, lg, hg, x0, y0, z0, h_mid, rkern);
 
         let f_left = density_by_smoothing_length(dm, h_left, eta, d) - density_kernel(particles, ii, &neighbors_left, dm, h_left, sigma, rkern, d, f, wd, lg, hg);
         let f_right = density_by_smoothing_length(dm, h_right, eta, d) - density_kernel(particles, ii, &neighbors_right, dm, h_right, sigma, rkern, d, f, wd, lg, hg);
@@ -293,21 +316,21 @@ pub fn bisection(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, et
 // -------- Smoothing length --------
 
 // Calculate the smoothing function for each particle in a given time.
-pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: i32, n: usize, ptr : Pointer, wd: f64, lg: f64, hg: f64){
+pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: i32, n: usize, ptr : Pointer, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64){
     (0..n).into_par_iter().for_each(|ii| {
-        let (mut h_new, mut neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*particles[ii].divv/(d as f64)), eta, f, dfdq, sigma, rkern, d, tol, it, tree, s_, wd, lg, hg);
+        let (mut h_new, mut neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*particles[ii].divv/(d as f64)), eta, f, dfdq, sigma, rkern, d, tol, it, tree, s_, wd, lg, hg, x0, y0, z0);
         let particle = unsafe { &mut *{ptr}.0.add(ii)};
         if h_new != 0.0 {
             // If h is not found, then keep it constant in time.
             particle.h = h_new;
         } else {
-            (h_new, neighbors) = bisection(ii, particles, dm, particles[ii].h*(1.+dt*particles[ii].divv/(d as f64)), eta, f, sigma, rkern, d, tol, it, tree, s_, wd, lg, hg);
+            (h_new, neighbors) = bisection(ii, particles, dm, particles[ii].h*(1.+dt*particles[ii].divv/(d as f64)), eta, f, sigma, rkern, d, tol, it, tree, s_, wd, lg, hg, x0, y0, z0);
             if h_new != 0.0 {
                 // If h is not found, then keep it constant in time.
                 particle.h = h_new;
             } else {
                 neighbors.clear();
-                tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, particle.h, rkern);
+                tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particle.h, rkern);
             }
         }
         particle.rho = density_kernel(particles, ii, &neighbors, dm, particle.h, sigma, rkern, d, f, wd, lg, hg);
@@ -442,14 +465,14 @@ pub fn body_forces_grav_2obj(particle: &mut Particle, m1: & Star, m2: & Star, om
 // Calculate acceleration for each particle in the system
 pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
                      dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
-                     d:i32, tree: &Node, s_: i32, n: usize, ptr : Pointer, wd: f64, lg: f64, hg: f64,
+                     d:i32, tree: &Node, s_: i32, n: usize, ptr : Pointer, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64,
                      artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                      body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool){
     
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, particles[ii].h, rkern);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[ii].h, rkern);
         return neighbors;
     }).collect();
 
@@ -523,8 +546,8 @@ pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f
                         boundary: fn(&mut Vec<Particle>, f64, f64,f64, f64, f64, f64), wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) {
     
     tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, d, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg);
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, d, tree, s_, n, ptr, wd, lg, hg, artificial_viscosity, body_forces, nu, lmbda, bf);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, d, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, d, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
         particle.x += dt * particle.vx;
         particle.y += dt * particle.vy;
@@ -560,9 +583,9 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
     boundary(particles, wd, lg, hg, x0, y0, z0);
 
     tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, d, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, d, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
 
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, d, tree, s_, n, ptr, wd, lg, hg, artificial_viscosity, body_forces, nu, lmbda, bf);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, d, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
         particle.vx += 0.5 * dt * particle.ax;
         particle.vy += 0.5 * dt * particle.ay;
@@ -608,9 +631,9 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
     boundary(particles, wd, lg, hg, x0, y0, z0);
 
     tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, d, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, d, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
 
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, d, tree, s_, n, ptr, wd, lg, hg, artificial_viscosity, body_forces, nu, lmbda, bf);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, d, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
     
     particles.par_iter_mut().for_each(|particle|{
         particle.vx = particle.vx_star + 0.5 * dt * particle.ax;
@@ -687,11 +710,11 @@ pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64, _rkern: 
 }
 
 // Timestepping Criteria Monaghan (1997)
-pub fn time_step_mon_toy_star(particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f64, d: i32, wd: f64, lg: f64, hg: f64, tree: &mut Node, s_: i32) -> f64{
+pub fn time_step_mon_toy_star(particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f64, d: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64, tree: &mut Node, s_: i32) -> f64{
     let k: f64 = 0.05;
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, particles[ii].h, rkern);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[ii].h, rkern);
         return neighbors;
     }).collect();
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
@@ -725,11 +748,11 @@ pub fn time_step_mon_toy_star(particles: & Vec<Particle>, n: usize, gamma: f64, 
 }
 
 // Timestepping Criteria Monaghan (1997)
-pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f64, d: i32, wd: f64, lg: f64, hg: f64, tree: &mut Node, s_: i32) -> f64{
+pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f64, d: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64, tree: &mut Node, s_: i32) -> f64{
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, particles[ii].h, rkern);
+        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[ii].h, rkern);
         return neighbors;
     }).collect();
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {

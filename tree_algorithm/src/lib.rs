@@ -23,6 +23,8 @@ pub trait BuildTree {
 
     fn create_sub_cells(&mut self, b: i32);
 
+    fn add_particle(&mut self, i: usize);
+
     fn delete_sub_cells(&mut self);
 
     fn delete_particles(&mut self);
@@ -78,6 +80,10 @@ impl BuildTree for Node {
             self.children.push(self.create_child(ii, b, dx, dy, dz));
         }
     }
+    fn add_particle(&mut self, i: usize) {
+        self.particles.push(i);
+        self.n += 1;
+    }
 
     fn delete_sub_cells(&mut self) {
         self.children.clear();
@@ -107,20 +113,21 @@ impl BuildTree for Node {
                 let mut x_p:i32 = ((particles[*p].x - self.xmin) / self.sidex * b as f64).floor() as i32;
                 if x_p == b {
                     println!("ALERT!!");
-                    // x_p -= 1;
+                    x_p -= 1;
                 }
                 let mut y_p: i32 = ((particles[*p].y - self.ymin) / self.sidey * b as f64).floor() as i32;
                 if y_p == b {
                     println!("ALERT!!");
-                    // y_p -= 1;
+                    y_p -= 1;
                 }
                 let mut z_p: i32 = ((particles[*p].z - self.zmin) / self.sidez * b as f64).floor() as i32;
                 if z_p == b {
                     println!("ALERT!!");
-                    // z_p -= 1;
+                    z_p -= 1;
                 }
-                let j :usize = (x_p + y_p * b + z_p * b * b) as usize;
-                add_particle(&mut self.children[j], *p);
+                let j :usize = (x_p + (y_p  + z_p * b) * b) as usize;
+                self.children[j].add_particle(*p);
+            // println!("part: {} {} {} - node: l: {} {} {} {}", particles[*p].x, particles[*p].y, particles[*p].z, self.children[j].sidex, self.children[j].xmin, self.children[j].ymin, self.children[j].zmin);
             }
             let mut r: f64 = 0.0;
             if b != 2 {
@@ -163,7 +170,7 @@ impl BuildTree for Node {
                 z_p -= 1;
             }
             let j :usize = (x_p + y_p * b + z_p * b * b) as usize;
-            add_particle(&mut self.children[j], *p);
+            self.children[j].add_particle(*p);
         }
         self.delete_particles();
         (self.children).par_iter_mut().for_each(|child| {
@@ -181,165 +188,145 @@ impl BuildTree for Node {
 }
 
 pub trait FindNeighbors {
-    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64) -> (i32, i32, i32, i32, i32, i32);
+    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> (i32, i32, i32, i32, i32, i32);
+
+    fn print_particles(&self);
 
     fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>;
 
-    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, h: f64, rkern: f64);
+    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, h: f64, rkern: f64);
 }
 
 impl FindNeighbors for Node {
 
-    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64) -> (i32, i32, i32, i32, i32, i32){
+    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> (i32, i32, i32, i32, i32, i32){
         let factorx : f64 =  b as f64 /self.sidex;
         let factory : f64 =  b as f64 /self.sidey;
         let factorz : f64 =  b as f64 /self.sidez;
-        let x_min: i32 = (((x_p - rkern*h) - self.xmin) * factorx).floor() as i32;
-        let x_max: i32 = (((x_p + rkern*h) - self.xmin) * factorx).floor() as i32;
-        let y_min: i32 = (((y_p - rkern*h) - self.ymin) * factory).floor() as i32;
-        let y_max: i32 = (((y_p + rkern*h) - self.ymin) * factory).floor() as i32;
-        let z_min: i32 = (((z_p - rkern*h) - self.zmin) * factorz).floor() as i32;
-        let z_max: i32 = (((z_p + rkern*h) - self.zmin) * factorz).floor() as i32;
-        let n: i32 = 4;
-        (x_min-n, x_max+n, y_min-n, y_max+n, z_min-n, z_max+n)     
-        // ((x_min).rem_euclid(b), (x_max).rem_euclid(b),
-        //  (y_min).rem_euclid(b), (y_max).rem_euclid(b),
-        //  (z_min).rem_euclid(b), (z_max).rem_euclid(b))
+
+        let mut xlow : f64 = x_p - rkern * h;
+        let mut ylow : f64 = y_p - rkern * h;
+        let mut zlow : f64 = z_p - rkern * h;
+        let mut xup : f64 = x_p + rkern * h;
+        let mut yup : f64 = y_p + rkern * h;
+        let mut zup : f64 = z_p + rkern * h;
+        
+        if self.depth != 0 {
+            xlow =  lowlimit(x_p-rkern*h, x0, wd, self.xmin);
+            ylow =  lowlimit(y_p-rkern*h, y0, lg, self.ymin);
+            zlow =  lowlimit(z_p-rkern*h, z0, hg, self.zmin);
+            xup  =  uplimit(x_p+rkern*h, x0, wd, self.xmin);
+            yup  =  uplimit(y_p+rkern*h, y0, lg, self.ymin);
+            zup  =  uplimit(z_p+rkern*h, z0, hg, self.zmin);
+        }
+
+        let mut x_min: i32 = ((xlow - self.xmin) * factorx).floor() as i32;
+        let mut x_max: i32 = ((xup - self.xmin) * factorx).floor() as i32;
+        let mut y_min: i32 = ((ylow - self.ymin) * factory).floor() as i32;
+        let mut y_max: i32 = ((yup - self.ymin) * factory).floor() as i32;
+        let mut z_min: i32 = ((zlow - self.zmin) * factorz).floor() as i32;
+        let mut z_max: i32 = ((zup - self.zmin) * factorz).floor() as i32;
+
+        if self.depth != 0 {
+            if x_min < 0 {
+                x_min = 0;
+            }
+            if y_min < 0 {
+                y_min = 0;
+            }
+            if z_min < 0 {
+                z_min = 0;
+            }
+            if x_max >= b {
+                x_max = b-1;
+            }
+            if y_max >= b {
+                y_max = b-1;
+            }
+            if z_max >= b {
+                z_max = b-1;
+            }
+        }
+        (x_min, x_max, y_min, y_max, z_min, z_max)
+    }
+
+    fn print_particles(&self) {
+        if self.children.len() == 0 {
+            println!("{} {}", self.depth, self.id);
+            for ii in &self.particles {
+                println!("p:{}.", ii);
+                }
+        } else {
+            println!("{} {}", self.depth, self.id);
+            for child in &self.children{
+                child.print_particles();
+            }
+        }
     }
 
     fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>{
         let mut neighbors : Vec<usize> = Vec::new();
-        for child in &self.children{
-            let tem: i32 = child.id/b;
-            let x_id: i32 = child.id%b;
-            let y_id: i32 = tem%b;
-            let z_id: i32 = tem/b;
-            let index: i32 = index_range(xmin, xmax, ymin, ymax, zmin, zmax);
-            println!("{} {} {} {} {} {} {}", index, xmin, xmax, ymin, ymax, zmin, zmax);
-            if index == 0 { 
-                if (x_id >= xmin) && (x_id <= xmax) {
-                    if (y_id >= ymin) && (y_id <= ymax) {
-                        if (z_id >= zmin) && (z_id <= zmax) {
-                            neighbors.push(child.id as usize);
-                        }
+        let mut x_min: i32 = xmin;
+        let mut x_max: i32 = xmax;
+        let mut y_min: i32 = ymin;
+        let mut y_max: i32 = ymax;
+        let mut z_min: i32 = zmin;
+        let mut z_max: i32 = zmax;
+        // If depth is zero
+
+        for kk in z_min..z_max+1{
+            for jj in y_min..y_max+1{
+                for ii in x_min..x_max+1{
+                    let mut i = ii;
+                    let mut j = jj;
+                    let mut k = kk;
+                    // println!("- {} {} {} {} {}", self.depth, b, i, j, k);
+                    if ii < 0{
+                        i += b;
                     }
-                }
-            } else if index == 1 { 
-                if (x_id >= xmin) && (x_id <= xmax) {
-                    if (y_id >= ymin) && (y_id <= ymax) {
-                        if ((zmin <= z_id)&&(z_id <= b)) || (z_id <= zmax) {
-                            neighbors.push(child.id as usize);
-                        }
+                    if jj < 0 {
+                        j += b;
                     }
-                }
-            } else if index == 2 {
-                if (x_id >= xmin) && (x_id <= xmax) {
-                    if (z_id >= zmin) && (z_id <= zmax) {
-                        if ((ymin <= y_id)&&(y_id <= b)) || (y_id <= ymax) {
-                            neighbors.push(child.id as usize);
-                        }
+                    if kk < 0{
+                        k += b;
                     }
-                }
-            } else if index == 3 {
-                if (x_id >= xmin) && (x_id <= xmax) {
-                    if ((ymin <= y_id)&&(y_id <= b)) || (y_id <= ymax) {
-                        if ((zmin <= z_id)&&(z_id <= b)) || (z_id <= zmax) {
-                            neighbors.push(child.id as usize);
-                        }
+                    if ii >= b{
+                        i -= b;
                     }
-                }
-            } else if index == 4 { 
-                if (y_id >= ymin) && (y_id <= ymax) {
-                    if (z_id >= zmin) && (z_id <= zmax) {
-                        if ((xmin <= x_id)&&(x_id <= b)) || (x_id <= xmax) {
-                            neighbors.push(child.id as usize);
-                        }
+                    if jj >= b {
+                        j -= b;
                     }
-                }
-            } else if index == 5 { 
-                if (y_id >= ymin) && (y_id <= ymax) {
-                    if ((xmin <= x_id)&&(x_id <= b)) || (x_id <= xmax) {
-                        if ((zmin <= z_id)&&(z_id <= b)) || (z_id <= zmax) {
-                            neighbors.push(child.id as usize);
-                        }
+                    if kk >= b {
+                        j -= b;
                     }
+                    neighbors.push((i + (j+k*b)*b) as usize);
                 }
-            } else if index == 6 {
-                if (z_id >= zmin) && (z_id <= zmax) {
-                    if ((xmin <= x_id)&&(x_id <= b)) || (x_id <= xmax) {
-                        if ((ymin <= y_id)&&(y_id <= b)) || (y_id <= ymax) {
-                            neighbors.push(child.id as usize);
-                        }
-                    }
-                }
-            } else if index == 7 {
-                if ((xmin <= x_id)&&(x_id <= b)) || (x_id <= xmax) {
-                    if ((ymin <= y_id)&&(y_id <= b)) || (y_id <= ymax) {
-                        if ((zmin <= z_id)&&(z_id <= b)) || (z_id <= zmax) {
-                            neighbors.push(child.id as usize);
-                        }
-                    }
-                }
-            } else {
-                println!("ERROR: Finding Index in Neighbors' Finder ")
             }
         }
         neighbors
     }
 
-    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, h: f64, rkern: f64) {
-        let b: i32 = (self.branches as f64).powf(1./k) as i32;
-        let (x_min, x_max, y_min, y_max, z_min, z_max) = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, h, b as i32, rkern);
-        let neighbors = self.children_in_range(x_min, x_max, y_min, y_max, z_min, z_max, b);
-        for ii in neighbors {
+    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, x0:f64, y0:f64, z0:f64, h: f64, rkern: f64) {
+        let b: i32 = ((self.branches as f64).powf(1./k)).ceil() as i32;
+        let (x_min, x_max, y_min, y_max, z_min, z_max) = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, h, b as i32, rkern, x0, y0, z0, wd, lg, hg);
+        let cell_neighbors = self.children_in_range(x_min, x_max, y_min, y_max, z_min, z_max, b);
+        println!("depth: {} id: {} n: {} children: {} sel: {:?}", self.depth, self.id, self.n, self.branches, cell_neighbors);
+        for ii in cell_neighbors {
+            println!("\tdepth: {} id: {} side: {} x: {} y: {} z: {} particles: {:?}", self.children[ii].depth, self.children[ii].id, self.children[ii].sidex, self.children[ii].xmin, self.children[ii].ymin, self.children[ii].zmin, self.children[ii].particles);
             if self.children[ii].n <= s {
                 for q in &self.children[ii].particles {
-                    if periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, rkern*h) <= rkern*rkern*h*h {
+                    println!("\t\tp: {}",*q);
+                    let norm: f64 = periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, rkern*h);
+                    // println!("part: {} id: {} depth :{}", *q, &self.children[ii].id, &self.children[ii].depth);
+                    if norm <= rkern*rkern*h*h {
                         neighbors_of_p.push(*q);
                     }
                 }
             } else {
-                self.children[ii].find_neighbors(p, k, s, particles, neighbors_of_p, wd, lg, hg, h, rkern);
+                self.children[ii].find_neighbors(p, k, s, particles, neighbors_of_p, wd, lg, hg, x0, y0, z0, h, rkern);
             }
         }
     }
-}
-
-fn index_range(xmin: i32, xmax: i32, ymin: i32, ymax: i32, zmin: i32, zmax: i32) -> i32 {
-    if xmin <= xmax {
-        if ymin <= ymax {
-            if zmin <= zmax {
-                return 0;
-            } else {
-                return 1;
-            }
-        } else {
-            if zmin < zmax {
-                return 2;
-            } else {
-                return 3;
-            }
-        }
-    } else {
-        if ymin < ymax {
-            if zmin < zmax {
-                return 4;
-            } else {
-                return 5;
-            }
-        } else {
-            if zmin < zmax {
-                return 6;
-            } else {
-                return 7;
-            }
-        }
-    }
-}
-
-fn add_particle(cell: &mut Node, i: usize) {
-    cell.particles.push(i);
-    cell.n += 1;
 }
 
 pub fn save_tree(path: &str, tree: & Node){
@@ -394,4 +381,29 @@ pub fn periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64, wd: f
         }
     }
     return x_temp*x_temp + y_temp*y_temp + z_temp*z_temp;
+}
+
+
+fn lowlimit(init_lim: f64, l0: f64, l: f64, lmin: f64) -> f64 {
+    if init_lim < l0 {
+        if lmin < l0 + 0.5 * l {
+            return 0.;
+        } else {
+            return init_lim + l;
+        }
+    } else {
+        return init_lim;
+    }
+}
+
+fn uplimit(init_lim: f64, l0: f64, l: f64, lmin: f64) -> f64 {
+    if init_lim > l0 + l {
+        if lmin < l0 + 0.5 * l {
+            return init_lim-l;
+        } else {
+            return l0 + l;
+        }
+    } else {
+        return init_lim;
+    }
 }
