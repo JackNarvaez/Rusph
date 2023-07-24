@@ -80,6 +80,7 @@ impl BuildTree for Node {
             self.children.push(self.create_child(ii, b, dx, dy, dz));
         }
     }
+
     fn add_particle(&mut self, i: usize) {
         self.particles.push(i);
         self.n += 1;
@@ -203,22 +204,10 @@ impl FindNeighbors for Node {
         let factorx : f64 =  b as f64 /self.sidex;
         let factory : f64 =  b as f64 /self.sidey;
         let factorz : f64 =  b as f64 /self.sidez;
-
-        let mut xlow : f64 = x_p - rkern * h;
-        let mut ylow : f64 = y_p - rkern * h;
-        let mut zlow : f64 = z_p - rkern * h;
-        let mut xup : f64 = x_p + rkern * h;
-        let mut yup : f64 = y_p + rkern * h;
-        let mut zup : f64 = z_p + rkern * h;
         
-        if self.depth != 0 {
-            xlow =  lowlimit(x_p-rkern*h, x0, wd, self.xmin);
-            ylow =  lowlimit(y_p-rkern*h, y0, lg, self.ymin);
-            zlow =  lowlimit(z_p-rkern*h, z0, hg, self.zmin);
-            xup  =  uplimit(x_p+rkern*h, x0, wd, self.xmin);
-            yup  =  uplimit(y_p+rkern*h, y0, lg, self.ymin);
-            zup  =  uplimit(z_p+rkern*h, z0, hg, self.zmin);
-        }
+        let (xlow, xup) =  lowlimit(x_p-rkern*h, x_p+rkern*h, x0, wd, self.xmin, self.depth);
+        let (ylow, yup) =  lowlimit(y_p-rkern*h, y_p+rkern*h, y0, lg, self.ymin, self.depth);
+        let (zlow, zup) =  lowlimit(z_p-rkern*h, z_p+rkern*h,  z0, hg, self.zmin, self.depth);
 
         let mut x_min: i32 = ((xlow - self.xmin) * factorx).floor() as i32;
         let mut x_max: i32 = ((xup - self.xmin) * factorx).floor() as i32;
@@ -227,8 +216,10 @@ impl FindNeighbors for Node {
         let mut z_min: i32 = ((zlow - self.zmin) * factorz).floor() as i32;
         let mut z_max: i32 = ((zup - self.zmin) * factorz).floor() as i32;
 
+        // println!("d:{} x:{} X:{} y:{} Y:{} z:{} Z:{}", self.depth, x_min, x_max, y_min, y_max, z_min, z_max);
+
         if self.depth != 0 {
-            if x_min < 0 {
+            if x_min  < 0 {
                 x_min = 0;
             }
             if y_min < 0 {
@@ -266,21 +257,15 @@ impl FindNeighbors for Node {
 
     fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>{
         let mut neighbors : Vec<usize> = Vec::new();
-        let mut x_min: i32 = xmin;
-        let mut x_max: i32 = xmax;
-        let mut y_min: i32 = ymin;
-        let mut y_max: i32 = ymax;
-        let mut z_min: i32 = zmin;
-        let mut z_max: i32 = zmax;
         // If depth is zero
 
-        for kk in z_min..z_max+1{
-            for jj in y_min..y_max+1{
-                for ii in x_min..x_max+1{
+        // println!("d:{} x:{} X:{} y:{} Y:{} z:{} Z:{}", self.depth, xmin, xmax, ymin, ymax, zmin, zmax);
+        for kk in zmin..zmax+1{
+            for jj in ymin..ymax+1{
+                for ii in xmin..xmax+1{
                     let mut i = ii;
                     let mut j = jj;
                     let mut k = kk;
-                    // println!("- {} {} {} {} {}", self.depth, b, i, j, k);
                     if ii < 0{
                         i += b;
                     }
@@ -297,7 +282,11 @@ impl FindNeighbors for Node {
                         j -= b;
                     }
                     if kk >= b {
-                        j -= b;
+                        k -= b;
+                    }
+
+                    if (i >= b || j >= b || k >= b) {
+                        println!("- {} {} {} {} {}", self.depth, b, i, j, k);
                     }
                     neighbors.push((i + (j+k*b)*b) as usize);
                 }
@@ -310,14 +299,13 @@ impl FindNeighbors for Node {
         let b: i32 = ((self.branches as f64).powf(1./k)).ceil() as i32;
         let (x_min, x_max, y_min, y_max, z_min, z_max) = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, h, b as i32, rkern, x0, y0, z0, wd, lg, hg);
         let cell_neighbors = self.children_in_range(x_min, x_max, y_min, y_max, z_min, z_max, b);
-        println!("depth: {} id: {} n: {} children: {} sel: {:?}", self.depth, self.id, self.n, self.branches, cell_neighbors);
+        // println!("depth: {} id: {} n: {} children: {} sel: {:?}", self.depth, self.id, self.n, self.branches, cell_neighbors);
         for ii in cell_neighbors {
-            println!("\tdepth: {} id: {} side: {} x: {} y: {} z: {} particles: {:?}", self.children[ii].depth, self.children[ii].id, self.children[ii].sidex, self.children[ii].xmin, self.children[ii].ymin, self.children[ii].zmin, self.children[ii].particles);
+            // println!("\tdepth: {} id: {} side: {} x: {} y: {} z: {} particles: {:?}", self.children[ii].depth, self.children[ii].id, self.children[ii].sidex, self.children[ii].xmin, self.children[ii].ymin, self.children[ii].zmin, self.children[ii].particles);
             if self.children[ii].n <= s {
                 for q in &self.children[ii].particles {
-                    println!("\t\tp: {}",*q);
                     let norm: f64 = periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, rkern*h);
-                    // println!("part: {} id: {} depth :{}", *q, &self.children[ii].id, &self.children[ii].depth);
+                    // println!("\t\tp: {}, r: {}, kr: {}",*q, norm.sqrt(), rkern*h);
                     if norm <= rkern*rkern*h*h {
                         neighbors_of_p.push(*q);
                     }
@@ -384,26 +372,24 @@ pub fn periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64, wd: f
 }
 
 
-fn lowlimit(init_lim: f64, l0: f64, l: f64, lmin: f64) -> f64 {
-    if init_lim < l0 {
-        if lmin < l0 + 0.5 * l {
-            return 0.;
-        } else {
-            return init_lim + l;
-        }
+fn lowlimit(low_lim: f64, up_lim: f64, l0: f64, l: f64, lmin: f64, depth: i32) -> (f64, f64) {
+    if depth == 0 {
+        return  (low_lim, up_lim);
     } else {
-        return init_lim;
-    }
-}
-
-fn uplimit(init_lim: f64, l0: f64, l: f64, lmin: f64) -> f64 {
-    if init_lim > l0 + l {
-        if lmin < l0 + 0.5 * l {
-            return init_lim-l;
+        if low_lim < l0 {
+            if lmin < (l0 + 0.5 * l) {
+                return (0., up_lim);
+            } else {
+                return (low_lim + l, l0 + l);
+            }
+        } else if up_lim > (l0 + l) {
+            if lmin < (l0 + 0.5 * l) {
+                return (0., up_lim-l);
+            } else {
+                return (low_lim, l0 + l);
+            }
         } else {
-            return l0 + l;
+            return (low_lim, up_lim);
         }
-    } else {
-        return init_lim;
     }
 }

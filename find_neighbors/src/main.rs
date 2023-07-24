@@ -24,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let path = "./Data/tree_algorithm/set_particles.csv";
     let path_tree = "./Data/tree_algorithm/set_tree.csv";
     let path_neighbors = "./Data/tree_algorithm/set_neighbors.csv";
-    let n:u32 = 10*10*10; // Number of Particles
+    let n:u32 = 32*32*32; // Number of Particles
     let x0:f64 = 0.; // circle's center
     let y0:f64 = 0.; // circle's center
     let z0:f64 = 0.; // circle's center
@@ -34,10 +34,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let h :f64 = 0.1; // Smoothing length
     let rkern :f64 = 2.; // Smoothing length
     // Initialize system
-    if let Err(err) = sphfunctions::init_square(path, n, h, wd, lg, hg, x0, y0, z0){
-        println!("{}", err);
-        process::exit(1);
-    }
+    // if let Err(err) = sphfunctions::init_square(path, n, h, wd, lg, hg, x0, y0, z0){
+    //     println!("{}", err);
+    //     process::exit(1);
+    // }
     // let path = "./Data/initial_distribution/sedov_blast_wave.csv";
     // Read data
     let mut particles :Vec<Particle> = Vec::new();
@@ -59,18 +59,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     println!("Tree Builder: {} s", start1.elapsed().as_secs());
     save_tree(path_tree, &root);
-    // root.print_particles();
     // Neighbors finder
     let start2 = Instant::now();
     let mut neighbors: Vec<usize> = Vec::new();
-    let p: usize = 0;
-    println!("particle r: {} {} {}, h: {}", particles[p].x, particles[p].y, particles[p].z, particles[p].h);
-    for _ii in 0..1 {
+    for p in 0..n as usize {
         neighbors = Vec::new();
 // 
         root.find_neighbors(p, k as f64, s, &particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[p].h, rkern);
     }
     println!("Neighbors Finder: {} s", start2.elapsed().as_secs());
-    save_neighbors(path_neighbors, p, & neighbors);
+    // save_neighbors(path_neighbors, p, & neighbors);
     Ok(())
 }

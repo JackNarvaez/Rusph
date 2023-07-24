@@ -45,6 +45,7 @@ impl Default for Particle {
     }
 }
 
+#[derive(Debug)]
 pub struct Node {
     pub xmin: f64,
     pub ymin: f64,

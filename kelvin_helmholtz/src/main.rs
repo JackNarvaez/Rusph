@@ -104,6 +104,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         dt = sphfunctions::time_step_bale(&particles, n, gamma, rkern, d, wd, lg, hg, &mut tree, s_);
         tree.restart(n);
         t += dt;
+        println!("{}", t);
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
             if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/kelvin_helmholtz/") + &(it/it_save).to_string() + &".csv"), &particles){

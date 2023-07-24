@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, wd, lg, hg, x0, y0, z0);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, d, wd, lg, hg, &mut tree, s_);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, d, wd, lg, hg, x0, y0, z0, &mut tree, s_);
         tree.restart(n);
         it += 1;
     }
