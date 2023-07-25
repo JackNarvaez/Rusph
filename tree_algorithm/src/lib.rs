@@ -113,22 +113,18 @@ impl BuildTree for Node {
             for p in &self.particles {
                 let mut x_p:i32 = ((particles[*p].x - self.xmin) / self.sidex * b as f64).floor() as i32;
                 if x_p == b {
-                    println!("ALERT!!");
                     x_p -= 1;
                 }
                 let mut y_p: i32 = ((particles[*p].y - self.ymin) / self.sidey * b as f64).floor() as i32;
                 if y_p == b {
-                    println!("ALERT!!");
                     y_p -= 1;
                 }
                 let mut z_p: i32 = ((particles[*p].z - self.zmin) / self.sidez * b as f64).floor() as i32;
                 if z_p == b {
-                    println!("ALERT!!");
                     z_p -= 1;
                 }
                 let j :usize = (x_p + (y_p  + z_p * b) * b) as usize;
                 self.children[j].add_particle(*p);
-            // println!("part: {} {} {} - node: l: {} {} {} {}", particles[*p].x, particles[*p].y, particles[*p].z, self.children[j].sidex, self.children[j].xmin, self.children[j].ymin, self.children[j].zmin);
             }
             let mut r: f64 = 0.0;
             if b != 2 {
@@ -170,7 +166,7 @@ impl BuildTree for Node {
             if z_p == b {
                 z_p -= 1;
             }
-            let j :usize = (x_p + y_p * b + z_p * b * b) as usize;
+            let j :usize = (x_p + (y_p + z_p * b) * b) as usize;
             self.children[j].add_particle(*p);
         }
         self.delete_particles();
@@ -189,25 +185,25 @@ impl BuildTree for Node {
 }
 
 pub trait FindNeighbors {
-    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> (i32, i32, i32, i32, i32, i32);
+    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> Vec<usize>;
 
     fn print_particles(&self);
 
-    fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>;
+    // fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>;
 
     fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, h: f64, rkern: f64);
 }
 
 impl FindNeighbors for Node {
 
-    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> (i32, i32, i32, i32, i32, i32){
+    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> Vec<usize>{
         let factorx : f64 =  b as f64 /self.sidex;
         let factory : f64 =  b as f64 /self.sidey;
         let factorz : f64 =  b as f64 /self.sidez;
         
-        let (xlow, xup) =  lowlimit(x_p-rkern*h, x_p+rkern*h, x0, wd, self.xmin, self.depth);
-        let (ylow, yup) =  lowlimit(y_p-rkern*h, y_p+rkern*h, y0, lg, self.ymin, self.depth);
-        let (zlow, zup) =  lowlimit(z_p-rkern*h, z_p+rkern*h,  z0, hg, self.zmin, self.depth);
+        let (xlow, xup) =  limits(x_p-rkern*h, x_p+rkern*h, x0, wd, self.xmin, self.depth);
+        let (ylow, yup) =  limits(y_p-rkern*h, y_p+rkern*h, y0, lg, self.ymin, self.depth);
+        let (zlow, zup) =  limits(z_p-rkern*h, z_p+rkern*h,  z0, hg, self.zmin, self.depth);
 
         let mut x_min: i32 = ((xlow - self.xmin) * factorx).floor() as i32;
         let mut x_max: i32 = ((xup - self.xmin) * factorx).floor() as i32;
@@ -216,29 +212,35 @@ impl FindNeighbors for Node {
         let mut z_min: i32 = ((zlow - self.zmin) * factorz).floor() as i32;
         let mut z_max: i32 = ((zup - self.zmin) * factorz).floor() as i32;
 
-        // println!("d:{} x:{} X:{} y:{} Y:{} z:{} Z:{}", self.depth, x_min, x_max, y_min, y_max, z_min, z_max);
+        let mut neighbors : Vec<usize> = Vec::new();
 
         if self.depth != 0 {
-            if x_min  < 0 {
-                x_min = 0;
+            let up: i32 = b-1;
+            set_limits(&mut x_min, 0, up);
+            set_limits(&mut x_max, 0, up);
+            set_limits(&mut y_min, 0, up);
+            set_limits(&mut y_max, 0, up);
+            set_limits(&mut z_min, 0, up);
+            set_limits(&mut z_max, 0, up);
+            
+            for kk in z_min..z_max+1{
+                for jj in y_min..y_max+1{
+                    for ii in x_min..x_max+1{
+                        neighbors.push((ii + (jj + kk * b) * b) as usize);
+                    }
+                }
             }
-            if y_min < 0 {
-                y_min = 0;
+            return neighbors;
+        } else {
+            for kk in z_min..z_max+1{
+                for jj in y_min..y_max+1{
+                    for ii in x_min..x_max+1{
+                        neighbors.push((ii.rem_euclid(b)+ (jj.rem_euclid(b)+kk.rem_euclid(b)*b)*b) as usize);
+                    }
+                }
             }
-            if z_min < 0 {
-                z_min = 0;
-            }
-            if x_max >= b {
-                x_max = b-1;
-            }
-            if y_max >= b {
-                y_max = b-1;
-            }
-            if z_max >= b {
-                z_max = b-1;
-            }
+            return neighbors;
         }
-        (x_min, x_max, y_min, y_max, z_min, z_max)
     }
 
     fn print_particles(&self) {
@@ -255,50 +257,49 @@ impl FindNeighbors for Node {
         }
     }
 
-    fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>{
-        let mut neighbors : Vec<usize> = Vec::new();
-        // If depth is zero
+    // fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>{
+    //     let mut neighbors : Vec<usize> = Vec::new();
+    //     // If depth is zero
 
-        // println!("d:{} x:{} X:{} y:{} Y:{} z:{} Z:{}", self.depth, xmin, xmax, ymin, ymax, zmin, zmax);
-        for kk in zmin..zmax+1{
-            for jj in ymin..ymax+1{
-                for ii in xmin..xmax+1{
-                    let mut i = ii;
-                    let mut j = jj;
-                    let mut k = kk;
-                    if ii < 0{
-                        i += b;
-                    }
-                    if jj < 0 {
-                        j += b;
-                    }
-                    if kk < 0{
-                        k += b;
-                    }
-                    if ii >= b{
-                        i -= b;
-                    }
-                    if jj >= b {
-                        j -= b;
-                    }
-                    if kk >= b {
-                        k -= b;
-                    }
+    //     for kk in zmin..zmax+1{
+    //         for jj in ymin..ymax+1{
+    //             for ii in xmin..xmax+1{
+    //                 let mut i = ii;
+    //                 let mut j = jj;
+    //                 let mut k = kk;
+    //                 if ii < 0{
+    //                     i += b;
+    //                 }
+    //                 if jj < 0 {
+    //                     j += b;
+    //                 }
+    //                 if kk < 0{
+    //                     k += b;
+    //                 }
+    //                 if ii >= b{
+    //                     i -= b;
+    //                 }
+    //                 if jj >= b {
+    //                     j -= b;
+    //                 }
+    //                 if kk >= b {
+    //                     k -= b;
+    //                 }
 
-                    if (i >= b || j >= b || k >= b) {
-                        println!("- {} {} {} {} {}", self.depth, b, i, j, k);
-                    }
-                    neighbors.push((i + (j+k*b)*b) as usize);
-                }
-            }
-        }
-        neighbors
-    }
+    //                 if i >= b || j >= b || k >= b {
+    //                     println!("- {} {} {} {} {}", self.depth, b, i, j, k);
+    //                 }
+    //                 neighbors.push((i + (j+k*b)*b) as usize);
+    //             }
+    //         }
+    //     }
+    //     neighbors
+    // }
 
     fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, x0:f64, y0:f64, z0:f64, h: f64, rkern: f64) {
         let b: i32 = ((self.branches as f64).powf(1./k)).ceil() as i32;
-        let (x_min, x_max, y_min, y_max, z_min, z_max) = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, h, b as i32, rkern, x0, y0, z0, wd, lg, hg);
-        let cell_neighbors = self.children_in_range(x_min, x_max, y_min, y_max, z_min, z_max, b);
+        let cell_neighbors = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, h, b as i32, rkern, x0, y0, z0, wd, lg, hg);
+        // let cell_neighbors = self.children_in_range(x_min, x_max, y_min, y_max, z_min, z_max, b);
         // println!("depth: {} id: {} n: {} children: {} sel: {:?}", self.depth, self.id, self.n, self.branches, cell_neighbors);
         for ii in cell_neighbors {
             // println!("\tdepth: {} id: {} side: {} x: {} y: {} z: {} particles: {:?}", self.children[ii].depth, self.children[ii].id, self.children[ii].sidex, self.children[ii].xmin, self.children[ii].ymin, self.children[ii].zmin, self.children[ii].particles);
@@ -372,7 +373,7 @@ pub fn periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64, wd: f
 }
 
 
-fn lowlimit(low_lim: f64, up_lim: f64, l0: f64, l: f64, lmin: f64, depth: i32) -> (f64, f64) {
+fn limits(low_lim: f64, up_lim: f64, l0: f64, l: f64, lmin: f64, depth: i32) -> (f64, f64) {
     if depth == 0 {
         return  (low_lim, up_lim);
     } else {
@@ -391,5 +392,13 @@ fn lowlimit(low_lim: f64, up_lim: f64, l0: f64, l: f64, lmin: f64, depth: i32) -
         } else {
             return (low_lim, up_lim);
         }
+    }
+}
+
+fn set_limits(x: &mut i32, low: i32, up: i32) {
+    if *x < low {
+        *x = low;
+    } else if *x > up {
+        *x = up;
     }
 }
