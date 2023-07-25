@@ -76,6 +76,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
                                                  sphfunctions::periodic_boundary, 4.*r, 4.*r, 4.*r, x0-2.*r, y0-2.*r, z0-2.*r);
         dt = sphfunctions::time_step_mon_toy_star(&particles, n, gamma, rkern, d, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_);
+        println!("{}", dt);
         tree.restart(n);
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");

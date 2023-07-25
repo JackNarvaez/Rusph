@@ -14,9 +14,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut particles :Vec<Particle> = Vec::new();
 
     let path = "./Data/initial_distribution/sedov_blast_wave.csv";
-    let nx:u32 = 32; // Number of Particles in x direction
-    let ny:u32 = 32; // Number of Particles in y direction
-    let nz:u32 = 32; // Number of Particles in z direction
+    let nx:u32 = 16; // Number of Particles in x direction
+    let ny:u32 = 16; // Number of Particles in y direction
+    let nz:u32 = 16; // Number of Particles in z direction
     let n: u32 = nx*ny*nz; // Total number of particles
     let wd:f64 = 1.; // Width
     let lg:f64 = 1.; // Longth

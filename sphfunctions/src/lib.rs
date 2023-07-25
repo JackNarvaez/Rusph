@@ -475,7 +475,6 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
         tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[ii].h, rkern);
         return neighbors;
     }).collect();
-    println!("5.1");
     (0..n).into_par_iter().for_each(move |ii| {
 
         // Pointer to iith-particle
@@ -498,7 +497,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, rkern, d, wd, lg, hg);
                 
                 let (x_rel, y_rel, z_rel) = periodic_rel_vector(&particles[ii], &particles[jj], wd, lg, hg, rkern*particles[ii].h);
-                let r_ij = (x_rel*x_rel + y_rel*y_rel).sqrt();
+                let r_ij = (x_rel*x_rel + y_rel*y_rel+ z_rel*z_rel).sqrt();
                 let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
                 let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
     
@@ -525,9 +524,9 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 
                 // Thermal change
                 particle_i.du += dm * ((p_i/particles[ii].rho)*div_vel + 0.5*(art_visc_ene + art_therm_cond*r_ij)*(grad_hi/omeg_i+grad_hj/omeg_j));
+
             }
         }
-        println!("5.3 {}", ii);  
         // Body forces
         if bf {
             body_forces(particle_i, nu, lmbda);
@@ -603,7 +602,6 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
     
     println!("1");
     particles.par_iter_mut().for_each(|particle|{
-        // println!("1 : {:?}", particle);
         particle.vx += 0.5 * dt * particle.ax;
         particle.vy += 0.5 * dt * particle.ay;
         particle.vz += 0.5 * dt * particle.az;
@@ -627,14 +625,10 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
         
         particle.u += 0.5 * dt * particle.du;
     });
-    println!("2");
     boundary(particles, wd, lg, hg, x0, y0, z0);
-    println!("3");
     tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
     smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, d, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
-    println!("4");
     accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, d, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
-    println!("5");
     particles.par_iter_mut().for_each(|particle|{
         particle.vx = particle.vx_star + 0.5 * dt * particle.ax;
         particle.vy = particle.vy_star + 0.5 * dt * particle.ay;
