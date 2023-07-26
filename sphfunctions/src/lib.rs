@@ -600,7 +600,6 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
                                   body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
                                   boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64, f64, f64), wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) {
     
-    println!("1");
     particles.par_iter_mut().for_each(|particle|{
         particle.vx += 0.5 * dt * particle.ax;
         particle.vy += 0.5 * dt * particle.ay;

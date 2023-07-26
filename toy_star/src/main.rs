@@ -61,12 +61,17 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut dt :f64 = 0.04; // Time step
     let mut it: u32 = 0; // Time iterations
-    let it_save: u32 = 100; // Frequency of data saving
+    let it_save: u32 = 1; // Frequency of data saving
+
+    time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
+    if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/initial.csv")), &particles){
+        println!("{}", err);
+        process::exit(1);
+    }
 
     // Main loop
     let start: Instant = Instant::now();
     while t < tf {
-        t += dt;
         // In toy star, body forces depend on the particles' velocity.
         // Therefore, it is not straightforward to use the basic LF integrator.
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
@@ -76,8 +81,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
                                                  sphfunctions::periodic_boundary, 4.*r, 4.*r, 4.*r, x0-2.*r, y0-2.*r, z0-2.*r);
         dt = sphfunctions::time_step_mon_toy_star(&particles, n, gamma, rkern, d, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_);
-        println!("{}", dt);
         tree.restart(n);
+        t += dt;
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
             if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/") + &(it/it_save).to_string() + &".csv"), &particles){

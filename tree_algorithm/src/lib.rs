@@ -189,8 +189,6 @@ pub trait FindNeighbors {
 
     fn print_particles(&self);
 
-    // fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>;
-
     fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, h: f64, rkern: f64);
 }
 
@@ -257,56 +255,13 @@ impl FindNeighbors for Node {
         }
     }
 
-    // fn children_in_range(&self, xmin: i32, xmax: i32, ymin: i32, ymax:i32, zmin: i32, zmax:i32, b:i32) -> Vec<usize>{
-    //     let mut neighbors : Vec<usize> = Vec::new();
-    //     // If depth is zero
-
-    //     for kk in zmin..zmax+1{
-    //         for jj in ymin..ymax+1{
-    //             for ii in xmin..xmax+1{
-    //                 let mut i = ii;
-    //                 let mut j = jj;
-    //                 let mut k = kk;
-    //                 if ii < 0{
-    //                     i += b;
-    //                 }
-    //                 if jj < 0 {
-    //                     j += b;
-    //                 }
-    //                 if kk < 0{
-    //                     k += b;
-    //                 }
-    //                 if ii >= b{
-    //                     i -= b;
-    //                 }
-    //                 if jj >= b {
-    //                     j -= b;
-    //                 }
-    //                 if kk >= b {
-    //                     k -= b;
-    //                 }
-
-    //                 if i >= b || j >= b || k >= b {
-    //                     println!("- {} {} {} {} {}", self.depth, b, i, j, k);
-    //                 }
-    //                 neighbors.push((i + (j+k*b)*b) as usize);
-    //             }
-    //         }
-    //     }
-    //     neighbors
-    // }
-
     fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, x0:f64, y0:f64, z0:f64, h: f64, rkern: f64) {
         let b: i32 = ((self.branches as f64).powf(1./k)).ceil() as i32;
         let cell_neighbors = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, h, b as i32, rkern, x0, y0, z0, wd, lg, hg);
-        // let cell_neighbors = self.children_in_range(x_min, x_max, y_min, y_max, z_min, z_max, b);
-        // println!("depth: {} id: {} n: {} children: {} sel: {:?}", self.depth, self.id, self.n, self.branches, cell_neighbors);
         for ii in cell_neighbors {
-            // println!("\tdepth: {} id: {} side: {} x: {} y: {} z: {} particles: {:?}", self.children[ii].depth, self.children[ii].id, self.children[ii].sidex, self.children[ii].xmin, self.children[ii].ymin, self.children[ii].zmin, self.children[ii].particles);
             if self.children[ii].n <= s {
                 for q in &self.children[ii].particles {
                     let norm: f64 = periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, rkern*h);
-                    // println!("\t\tp: {}, r: {}, kr: {}",*q, norm.sqrt(), rkern*h);
                     if norm <= rkern*rkern*h*h {
                         neighbors_of_p.push(*q);
                     }
@@ -316,8 +271,11 @@ impl FindNeighbors for Node {
             }
         }
     }
+
 }
 
+
+// Save information about tree and neighbours
 pub fn save_tree(path: &str, tree: & Node){
     let mut wtr = (Writer::from_path(path)).expect("REASON");
     wtr.write_record(&["x_min", "y_min", "z_min", "sidex", "sidey", "sidez", "depth", "n"]).expect("Couldn't write data");
@@ -348,21 +306,23 @@ pub fn periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64, wd: f
     let mut y_temp: f64 = y1 - y2;
     let mut z_temp: f64 = z1 - z2;
 
-    if x_temp.abs() > wd-2.*eps {
+    let diam: f64 = 2.*eps;
+
+    if x_temp.abs() > wd-diam {
         if x_temp > 0. {
             x_temp -= wd;
         } else {
             x_temp += wd;
         }
     }
-    if y_temp.abs() > lg-2.*eps {
+    if y_temp.abs() > lg-diam {
         if y_temp > 0. {
             y_temp -= lg;
         } else {
             y_temp += lg;
         }
     }
-    if z_temp.abs() > hg-2.*eps {
+    if z_temp.abs() > hg-diam {
         if z_temp > 0. {
             z_temp -= hg;
         } else {
@@ -371,7 +331,6 @@ pub fn periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64, wd: f
     }
     return x_temp*x_temp + y_temp*y_temp + z_temp*z_temp;
 }
-
 
 fn limits(low_lim: f64, up_lim: f64, l0: f64, l: f64, lmin: f64, depth: i32) -> (f64, f64) {
     if depth == 0 {

@@ -34,11 +34,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let h :f64 = 0.1; // Smoothing length
     let rkern :f64 = 2.; // Smoothing length
     // Initialize system
-    // if let Err(err) = sphfunctions::init_square(path, n, h, wd, lg, hg, x0, y0, z0){
-    //     println!("{}", err);
-    //     process::exit(1);
-    // }
-    // let path = "./Data/initial_distribution/sedov_blast_wave.csv";
+    if let Err(err) = sphfunctions::init_square(path, n, h, wd, lg, hg, x0, y0, z0){
+        println!("{}", err);
+        process::exit(1);
+    }
     // Read data
     let mut particles :Vec<Particle> = Vec::new();
     if let Err(err) = sphfunctions::read_data(path, &mut particles) {
