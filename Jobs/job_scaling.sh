@@ -1,5 +1,5 @@
 #BSUB -J Scaling
-#BSUB -W 0:40
+#BSUB -W 1:00
 #BSUB -n 40
 #BSUB -q normal
 #BSUB -o Scaling.%J
