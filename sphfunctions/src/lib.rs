@@ -79,6 +79,18 @@ pub fn save_data(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Er
     Ok(())
 }
 
+pub fn save_data_iso(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Error>>{
+    let mut wtr = Writer::from_path(path)?;
+    wtr.write_record(&["x", "y", "z", "vx", "vy", "vz", "h"])?;
+    for ii in 0..particles.len() {
+        wtr.write_record(&[particles[ii].x.to_string(), particles[ii].y.to_string(), particles[ii].z.to_string(),
+                           particles[ii].vx.to_string(), particles[ii].vy.to_string(), particles[ii].vz.to_string(),
+                           particles[ii].h.to_string()])?;
+    }
+    wtr.flush()?;
+    Ok(())
+}
+
 // -------- Read data --------
 
 pub fn read_data(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dyn Error>> {
@@ -90,6 +102,20 @@ pub fn read_data(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dy
         particles.push(Particle{x:(&record[0]).parse::<f64>().unwrap(), y:(&record[1]).parse::<f64>().unwrap(), z:(&record[2]).parse::<f64>().unwrap(),
                                 vx:(&record[3]).parse::<f64>().unwrap(), vy:(&record[4]).parse::<f64>().unwrap(), vz:(&record[5]).parse::<f64>().unwrap(),
                                 h:(&record[6]).parse::<f64>().unwrap(), u:(&record[7]).parse::<f64>().unwrap(),
+                                ..Default::default()});
+    }
+    Ok(())
+}
+
+pub fn read_data_iso(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dyn Error>> {
+    let mut rdr = csv::ReaderBuilder::new()
+        .has_headers(true)
+        .from_path(path)?;
+    for result in rdr.records() {
+        let record = result?;
+        particles.push(Particle{x:(&record[0]).parse::<f64>().unwrap(), y:(&record[1]).parse::<f64>().unwrap(), z:(&record[2]).parse::<f64>().unwrap(),
+                                vx:(&record[3]).parse::<f64>().unwrap(), vy:(&record[4]).parse::<f64>().unwrap(), vz:(&record[5]).parse::<f64>().unwrap(),
+                                h:(&record[6]).parse::<f64>().unwrap(),
                                 ..Default::default()});
     }
     Ok(())
@@ -349,8 +375,20 @@ pub fn eos_polytropic(rho:f64, _k:f64, gamma:f64) -> f64 {
 }
 
 // Coefficient of gravital force
-pub fn coeff_static_grav_potential(k:f64, gamma:f64, m:f64, r:f64) -> f64 {
-    2.0*k*PI.powf(1.-gamma) * (m*(gamma/(gamma - 1.))/(r*r)).powf(gamma)/m
+pub fn coeff_static_grav_potential(k:f64, gamma:f64, m:f64, r:f64, d: i32) -> f64 {
+    if d == 2 {
+        return 2.0*k*PI.powf(1.-gamma) * (m*(gamma/(gamma - 1.))/(r*r)).powf(gamma)/m;
+    } else if d == 3 {
+        let gamma_func: f64 = 3.32335; // Gamma factor function calculated for gamma=2.
+        return 2.*k*(gamma/(gamma-1.))/PI.powf(-1.5*(gamma-1.)) * (gamma_func* m/(r*r*r)).powf(gamma-1.)/(r*r);
+    } else {
+        return 0.;
+    }
+}
+
+pub fn sound_speed_polytropic(rho: f64, gamma: f64) -> f64 {
+    let k: f64 = 0.05;
+    (gamma*k*rho.powf(gamma-1.)).sqrt()
 }
 
 // -- Ideal Gas --
@@ -364,8 +402,26 @@ pub fn thermal_energy(rho:f64, p:f64, gamma:f64) -> f64 {
 }
 
 // Sound speed for the ideal gas eos
+pub fn sound_speed_ideal_gas_u(u:f64, gamma:f64) -> f64 {
+    ((gamma-1.)*gamma*u).sqrt()
+}
+
 pub fn sound_speed_ideal_gas(rho:f64, p:f64, gamma:f64) -> f64 {
     (gamma*p/rho).sqrt()
+}
+
+// -- Isotheraml EoS
+
+pub fn eos_isothermal(rho:f64, _u:f64, gamma:f64) -> f64 {
+    rho.powf(gamma)
+}
+
+pub fn sound_speed_isothermal(rho:f64, _u:f64, gamma:f64) -> f64 {
+    gamma*rho.powf(gamma-1.)
+}
+
+pub fn sound_speed_isothermal_dt(rho:f64, gamma:f64) -> f64 {
+    gamma*rho.powf(gamma-1.)
 }
 
 
@@ -672,29 +728,18 @@ pub fn cfl_dt(h: f64, cs: f64, div_v:f64, alpha:f64, beta: f64) -> f64{
     }
 }
 
-// MOnaghan (1989) Force conditon
+// Monaghan (1989) Force conditon
 pub fn force_dt(h: f64, a: f64, f: f64) -> f64 {
     f*(h/a).sqrt()
 }
 
-// Timestepping Criteria Cossins P. J. (2010)
-pub fn time_step_bale_toy_star(particles: & Vec<Particle>, n: usize, gamma: f64, _rkern: f64, _d: i32, _wd: f64, _lg: f64, _hg: f64, _tree: &mut Node, _s_: i32) -> f64{
-    let k: f64 = 0.05;
-    let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
-        let a: f64 = (particles[ii].ax*particles[ii].ax + particles[ii].ay*particles[ii].ay + particles[ii].az*particles[ii].az).sqrt();
-        let cs: f64 = (gamma*k*(particles[ii].rho).powf(gamma-1.)).sqrt();
-        let dt_a: f64 = force_dt(particles[ii].h, a, 0.3);
-        let dt_cfl: f64 = cfl_dt(particles[ii].h, cs, particles[ii].divv, 1., 2.);
-        return (dt_a).min(dt_cfl);
-    }).collect();
-    dts.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-}
 
 // Timestepping Criteria Cossins P. J. (2010)
-pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64, _rkern: f64, _d: i32, _wd: f64, _lg: f64, _hg: f64, _tree: &mut Node, _s_: i32) -> f64{
+pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64, _rkern: f64, _d: i32, _wd: f64, _lg: f64, _hg: f64,
+                      _tree: &mut Node, _s_: i32, cs: fn(f64, f64) -> f64) -> f64{
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
         let a: f64 = (particles[ii].ax*particles[ii].ax + particles[ii].ay*particles[ii].ay + particles[ii].az*particles[ii].az).sqrt();
-        let cs: f64 = (gamma*(gamma-1.)*particles[ii].u).sqrt();
+        let cs: f64 = cs(particles[ii].u, gamma);
         let dt_a: f64 = force_dt(particles[ii].h, a, 0.3);
         let dt_cfl: f64 = cfl_dt(particles[ii].h, cs, particles[ii].divv, 1., 2.);
         return (dt_a).min(dt_cfl);
@@ -703,45 +748,8 @@ pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64, _rkern: 
 }
 
 // Timestepping Criteria Monaghan (1997)
-pub fn time_step_mon_toy_star(particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f64, d: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64, tree: &mut Node, s_: i32) -> f64{
-    let k: f64 = 0.05;
-    let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
-        let mut neighbors: Vec<usize> = Vec::new();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[ii].h, rkern);
-        return neighbors;
-    }).collect();
-    let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
-        let alpha: f64 = 1.;
-        let beta: f64 = 2.;
-        let mut v_sig:f64 = 0.0;
-        let cs_i: f64 = (gamma*k*(particles[ii].rho).powf(gamma-1.)).sqrt();
-        for jj in &neighbors[ii] {
-            let cs_j: f64 = (gamma*k*(particles[*jj].rho).powf(gamma-1.)).sqrt();
-
-            // Velocity dot position
-            let (x_rel, y_rel, z_rel) = periodic_rel_vector(&particles[ii], &particles[*jj], wd, lg, hg, rkern*particles[ii].h);
-            let r_ij = (x_rel*x_rel + y_rel*y_rel + z_rel*z_rel).sqrt();
-            let dot_r_v = (particles[ii].vx-particles[*jj].vx)*x_rel
-                         +(particles[ii].vy-particles[*jj].vy)*y_rel
-                         +(particles[ii].vz-particles[*jj].vz)*z_rel;
-            
-            if dot_r_v < 0. {
-                let v_sig_ij = alpha*(cs_i+cs_j - beta*(dot_r_v/r_ij));
-                if v_sig_ij > v_sig {
-                    v_sig = v_sig_ij;
-                }
-            }
-        }
-        let a_norm: f64 = (particles[ii].ax*particles[ii].ax + particles[ii].ay*particles[ii].ay + particles[ii].az*particles[ii].az).sqrt();
-        let dt_a: f64 = force_dt(particles[ii].h, a_norm, 0.25);
-        let dt_cfl: f64 = 0.3*particles[ii].h / v_sig;
-    return (dt_a).min(dt_cfl);
-    }).collect();
-    dts.iter().fold(f64::INFINITY, |a, &b| a.min(b))
-}
-
-// Timestepping Criteria Monaghan (1997)
-pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f64, d: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64, tree: &mut Node, s_: i32) -> f64{
+pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f64, d: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64,
+                     tree: &mut Node, s_: i32, cs: fn(f64, f64) -> f64) -> f64{
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
@@ -752,9 +760,9 @@ pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f6
         let alpha: f64 = 1.;
         let beta: f64 = 2.;
         let mut v_sig:f64 = 0.0;
-        let cs_i: f64 = (gamma*(gamma-1.)*particles[ii].u).sqrt();
+        let cs_i: f64 = cs(particles[ii].u, gamma);
         for jj in &neighbors[ii] {
-            let cs_j: f64 = (gamma*(gamma-1.)*particles[*jj].u).sqrt();
+            let cs_j: f64 = cs(particles[*jj].u, gamma);
 
             // Velocity dot position
             let (x_rel, y_rel, z_rel) = periodic_rel_vector(&particles[ii], &particles[*jj], wd, lg, hg, rkern*particles[ii].h);

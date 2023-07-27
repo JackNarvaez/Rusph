@@ -29,9 +29,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let z0: f64 = 0.; // y-coordinate of the bottom left corner
     let y1: f64 = 0.25; // Y-lower edge of fluid 2 
     let y2: f64 = 0.75; // Y-upper edge of fluid 2
-    let nx: usize = 60; // Number of particles in x direction
-    let ny: usize = 100; // Number of particles in region 1 in y direction // TOTAL NY = ny + (rho2/rho1)*ny
-    let nz: usize = 40; // Number of particles in z direction
+    let nx: usize = 16; // Number of particles in x direction
+    let ny: usize = 16; // Number of particles in region 1 in y direction // TOTAL NY = ny + (rho2/rho1)*ny
+    let nz: usize = 16; // Number of particles in z direction
 
     let rho1: f64 = 1.0; // Initial density fluid 1
     let rho2: f64 = 2.0; // Initial density fluid 2

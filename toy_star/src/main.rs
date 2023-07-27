@@ -48,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0:f64 = 0.; // Star's center
     let z0:f64 = 0.; // Star's center
     let nu:f64 = 1.0; // Viscocity parameter
-    let lmbda: f64 = sphfunctions::coeff_static_grav_potential(0.05, gamma, m, r);
+    let lmbda: f64 = sphfunctions::coeff_static_grav_potential(0.05, gamma, m, r, d);
     let sigma :f64 = 1./PI; //  Normalization's constant of kernel
     let rkern: f64 = 2.; // Kernel radius
     let dm:f64 = m/n as f64; // Particles' mass
@@ -61,7 +61,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut dt :f64 = 0.04; // Time step
     let mut it: u32 = 0; // Time iterations
-    let it_save: u32 = 1; // Frequency of data saving
+    let it_save: u32 = 10; // Frequency of data saving
 
     time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
     if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/toy_star/initial.csv")), &particles){
@@ -80,7 +80,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                                  sphfunctions::mon97_art_vis,
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
                                                  sphfunctions::periodic_boundary, 4.*r, 4.*r, 4.*r, x0-2.*r, y0-2.*r, z0-2.*r);
-        dt = sphfunctions::time_step_mon_toy_star(&particles, n, gamma, rkern, d, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, d, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_polytropic);
         tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {

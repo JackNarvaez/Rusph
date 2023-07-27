@@ -54,7 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Tree's parameters
     let s_ : i32 = 10;
-    let alpha_ : f64 = 0.05;
+    let alpha_ : f64 = 0.5;
     let beta_ : f64 = 0.5;
     let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
     
@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, wd, lg, hg, x0, y0, z0);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, d, wd, lg, hg, x0, y0, z0, &mut tree, s_);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, d, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_ideal_gas_u);
         tree.restart(n);
         it += 1;
     }

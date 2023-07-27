@@ -9,4 +9,5 @@ members = [
     "structures",
     "sedov_blast_wave",
     "kelvin_helmholtz",
+    "turbulent_gas",
 ]

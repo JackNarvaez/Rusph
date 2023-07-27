@@ -38,7 +38,8 @@ fn init_random_circle(path: &str, n: u32, r:f64, h:f64, x0:f64, y0:f64, z0: f64,
     let mut rng = Pcg64::seed_from_u64(SEED);
     wtr.write_record(&["x", "y", "z", "vx", "vy", "vz", "h", "u"])?;
     for _ii in 0..n{
-        let r_i = r*(rng.gen::<f64>()).sqrt();
+        // let r_i = r*((rng.gen::<f64>()).powf(1./3.)).cbrt();
+        let r_i = r*(rng.gen::<f64>()).cbrt();
         let theta_i = 2.0*PI*rng.gen::<f64>();
         let phi_i = PI*rng.gen::<f64>();
         let x = r_i*theta_i.cos()*phi_i.sin() + x0;

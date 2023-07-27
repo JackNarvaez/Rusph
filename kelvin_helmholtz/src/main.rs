@@ -49,9 +49,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let z0: f64 = 0.; // y-coordinate of the bottom left corner
     let y1: f64 = 0.25; // Y-lower edge of fluid 2 
     let y2: f64 = 0.75; // Y-upper edge of fluid 2
-    let nx: usize = 60; // Number of particles in x direction
-    let ny: usize = 100; // Number of particles in region 1 in y direction // TOTAL NY = ny + (rho2/rho1)*ny
-    let nz: usize = 40; // Number of particles in z direction
+    let nx: usize = 16; // Number of particles in x direction
+    let ny: usize = 16; // Number of particles in region 1 in y direction // TOTAL NY = ny + (rho2/rho1)*ny
+    let nz: usize = 16; // Number of particles in z direction
 
     let rho1: f64 = 1.0; // Initial density fluid 1
     let rho2: f64 = 2.0; // Initial density fluid 2
@@ -84,7 +84,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     // Tree's parameters
     let s_ : i32 = 10;
-    let alpha_ : f64 = 0.05;
+    let alpha_ : f64 = 0.5;
     let beta_ : f64 = 0.5;
     let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
     
@@ -101,10 +101,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, wd, lg, hg,  x0, y0, z0);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma, rkern, d, wd, lg, hg, &mut tree, s_);
+        dt = sphfunctions::time_step_bale(&particles, n, gamma, rkern, d, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_ideal_gas_u);
         tree.restart(n);
         t += dt;
-        println!("{}", t);
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
             if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/kelvin_helmholtz/") + &(it/it_save).to_string() + &".csv"), &particles){
