@@ -574,18 +574,18 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 let r_ij = (x_rel*x_rel + y_rel*y_rel+ z_rel*z_rel).sqrt();
                 let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
                 let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
-    
+                
                 // Velocity dot position
                 let dot_r_v = (particles[ii].vx-particles[jj].vx)*x_rel
-                             +(particles[ii].vy-particles[jj].vy)*y_rel
-                             +(particles[ii].vz-particles[jj].vz)*z_rel;
-    
+                +(particles[ii].vy-particles[jj].vy)*y_rel
+                +(particles[ii].vz-particles[jj].vz)*z_rel;
+                
                 // Artificial viscosity
                 let (art_visc_mom, art_visc_ene) = artificial_viscosity(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
-    
+                
                 // Artificial thermal conductivity
                 let art_therm_cond: f64 = price08_therm_cond(p_i, p_j, particles[ii].rho, particles[jj].rho, particles[ii].u, particles[jj].u);
-    
+                
                 // Acceleration
                 let (f_ij_x, f_ij_y, f_ij_z) = acceleration_ab(&particles[ii], &particles[jj], x_rel, y_rel, z_rel, p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc_mom);
                 particle_i.ax += dm * f_ij_x;
@@ -598,8 +598,10 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 
                 // Thermal change
                 particle_i.du += dm * ((p_i/particles[ii].rho)*div_vel + 0.5*(art_visc_ene + art_therm_cond*r_ij)*(grad_hi/omeg_i+grad_hj/omeg_j));
-
             }
+        }
+        if particles[ii].x == 0.5 && particles[ii].y == 0.5 && particles[ii].z == 0.5 {
+            println!("u: {} a: {}", particle_i.du, particle_i.u);
         }
         // Body forces
         if bf {
@@ -717,17 +719,17 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
 pub fn periodic_boundary(particles: &mut Vec<Particle>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0: f64){
     // We assume that the domain's system is a rectangular box.
     particles.par_iter_mut().for_each(|particle|{
-        if particle.x > (wd+x0) {
+        if particle.x >= (wd+x0) {
             particle.x -= wd;
         } else if particle.x < x0 {
             particle.x += wd;
         }
-        if particle.y > (lg + y0) {
+        if particle.y >= (lg + y0) {
             particle.y -= lg;
         } else if particle.y < y0 {
             particle.y += lg;
         }
-        if particle.z > (hg + z0) {
+        if particle.z >= (hg + z0) {
             particle.z -= hg;
         } else if particle.z < z0 {
             particle.z += hg;

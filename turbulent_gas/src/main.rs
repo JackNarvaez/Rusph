@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let mut dt :f64 = 0.001; // Time step
     let mut it: u32 = 0; // Time iterations
-    let it_save: u32 = 1; // Frequency of data saving
+    let it_save: u32 = 10; // Frequency of data saving
 
     // Main loop
     let start = Instant::now(); // Runing time
