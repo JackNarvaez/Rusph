@@ -16,11 +16,11 @@ use std::f64::consts::PI;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let path = "./Data/initial_distribution/toy_star.csv";
-    let d: i32 = 2; // Dimension
+    let d: i32 = 3; // Dimension
     let eta: f64 = 1.2;
     let n: u32 = 1000; // Number of Particles
     let r: f64 = 0.75; // Star's radius
-    let m: f64 = 2.0; // Star's mass
+    let m: f64 = 1.0; // Star's mass
     let rho: f64 = 3. * m/(4.*PI*r*r*r); // Density
     let h: f64 = 0.1*eta*(m/(n as f64 * rho)).powf(1./d as f64); // Smoothing length
     let (x0, y0, z0) = (0.0, 0.0, 0.0); // Sphere's center

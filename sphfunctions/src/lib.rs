@@ -167,7 +167,7 @@ pub fn periodic_norm(p1: &Particle, p2: &Particle, wd: f64, lg: f64, hg: f64, ep
 pub fn f_cubic_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
     if q < 1. {
-        f = 1. - 0.75*q*q*(2.0 - q); 
+        f = 1. + 0.75*q*q*(q-2.); 
     } else if q < 2.{
         f = 0.25*(2.-q).powi(3);
     }
@@ -201,6 +201,24 @@ pub fn dfdq_gaussian_kernel(q:f64) -> f64 {
         f = -2.0*q*(-q*q).exp();
     }
     f
+}
+
+// C2 Wendland kernel
+pub fn f_wendland_kernel(q:f64) -> f64 {
+    let mut f:f64 = 0.;
+    if q < 2. {
+        f = (1.-0.5*q).powi(4)*(2.*q+1.);
+    }
+    f
+}
+
+// Derivative of C2 Wendland kernel
+pub fn dfdq_wendland_kernel(q:f64) -> f64 {
+    let mut df:f64 = 0.;
+    if q < 2.{
+        df = -5.*q*(1.-0.5*q).powi(3);
+    }
+    df
 }
 
 // Derivative of kernel w.r.t the smoothing length

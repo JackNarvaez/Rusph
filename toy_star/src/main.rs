@@ -42,14 +42,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
     let d: i32 = 3; // Dimension of the system
     let gamma:f64 = 2.0;  // Gamma factor (heat capacity ratio)
-    let m:f64 = 2.0; // Star's mass
+    let m:f64 = 1.0; // Star's mass
     let r:f64 = 0.75; // Star's radius
     let x0:f64 = 0.; // Star's center
     let y0:f64 = 0.; // Star's center
     let z0:f64 = 0.; // Star's center
     let nu:f64 = 1.0; // Viscocity parameter
     let lmbda: f64 = sphfunctions::coeff_static_grav_potential(0.05, gamma, m, r, d);
-    let sigma :f64 = 1./PI; //  Normalization's constant of kernel
+    let sigma :f64 = 21./(16.*PI);//1./PI; //  Normalization's constant of kernel
     let rkern: f64 = 2.; // Kernel radius
     let dm:f64 = m/n as f64; // Particles' mass
 
@@ -75,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         // In toy star, body forces depend on the particles' velocity.
         // Therefore, it is not straightforward to use the basic LF integrator.
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
-                                                 sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern,
+                                                 sphfunctions::dwdh, sphfunctions::f_wendland_kernel, sphfunctions::dfdq_wendland_kernel, sigma, rkern,
                                                  d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                                  sphfunctions::mon97_art_vis,
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
