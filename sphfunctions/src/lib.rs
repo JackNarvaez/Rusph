@@ -161,7 +161,7 @@ pub fn periodic_norm(p1: &Particle, p2: &Particle, wd: f64, lg: f64, hg: f64, ep
 }
 
 
-// -------- Kernel function --------
+// -------- Kernel functions --------
 
 // Cubic Kernel
 pub fn f_cubic_kernel(q:f64) -> f64 {
@@ -188,7 +188,7 @@ pub fn dfdq_cubic_kernel(q:f64) -> f64 {
 // Gaussian Kernel
 pub fn f_gaussian_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
-    if q < 2. {
+    if q < 3. {
         f = (-q*q).exp();
     }
     f
@@ -197,7 +197,7 @@ pub fn f_gaussian_kernel(q:f64) -> f64 {
 // Derivative of Gaussian Kernel
 pub fn dfdq_gaussian_kernel(q:f64) -> f64 {
     let mut f:f64 = 0.;
-    if q < 2. {
+    if q < 3. {
         f = -2.0*q*(-q*q).exp();
     }
     f
@@ -217,6 +217,32 @@ pub fn dfdq_wendland_kernel(q:f64) -> f64 {
     let mut df:f64 = 0.;
     if q < 2.{
         df = -5.*q*(1.-0.5*q).powi(3);
+    }
+    df
+}
+
+// Quintic Kernel
+pub fn f_quintic_kernel(q:f64) -> f64 {
+    let mut f:f64 = 0.;
+    if q < 1. {
+        f = (3.-q).powf(5.)-6.*(2.-q).powf(5.)+15.*(1.-q).powf(5.); 
+    } else if q < 2.{
+        f = (3.-q).powf(5.)-6.*(2.-q).powf(5.);
+    } else if q < 3. {
+        f = (3.-q).powf(5.);
+    }
+    f
+}
+
+// Derivative of quintic kernel
+pub fn dfdq_quintic_kernel(q:f64) -> f64 {
+    let mut df:f64 = 0.;
+    if q < 1. {
+        df = 5.*(-(3.-q).powf(4.)+6.*(2.-q).powf(4.)-15.*(1.-q).powf(4.)); 
+    } else if q < 2.{
+        df = 5.*(-(3.-q).powf(4.)+6.*(2.-q).powf(4.));
+    } else if q < 3. {
+        df = -5.*(3.-q).powf(4.);
     }
     df
 }
@@ -486,7 +512,7 @@ pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _
 // Price (2008): Thermal conductivity switches
 pub fn price08_therm_cond(p_i: f64, p_j: f64, rho_i: f64, rho_j: f64, u_i: f64, u_j: f64) -> f64 {
     // Parameters
-    let alpha_u: f64 = 1.0;
+    let alpha_u: f64 = 1.;
 
     let rho_mean :f64 = 0.5*(rho_i+rho_j);
     let v_sig_u:f64 = ((p_i - p_j).abs()/rho_mean).sqrt();
@@ -599,9 +625,6 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 // Thermal change
                 particle_i.du += dm * ((p_i/particles[ii].rho)*div_vel + 0.5*(art_visc_ene + art_therm_cond*r_ij)*(grad_hi/omeg_i+grad_hj/omeg_j));
             }
-        }
-        if particles[ii].x == 0.5 && particles[ii].y == 0.5 && particles[ii].z == 0.5 {
-            println!("u: {} a: {}", particle_i.du, particle_i.u);
         }
         // Body forces
         if bf {

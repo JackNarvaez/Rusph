@@ -14,9 +14,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut particles :Vec<Particle> = Vec::new();
 
     let path = "./Data/initial_distribution/sedov_blast_wave.csv";
-    let nx:u32 = 16; // Number of Particles in x direction
-    let ny:u32 = 16; // Number of Particles in y direction
-    let nz:u32 = 16; // Number of Particles in z direction
+    let nx:u32 = 32; // Number of Particles in x direction
+    let ny:u32 = 32; // Number of Particles in y direction
+    let nz:u32 = 32; // Number of Particles in z direction
     let n: u32 = nx*ny*nz; // Total number of particles
     let wd:f64 = 1.; // Width
     let lg:f64 = 1.; // Longth
@@ -48,9 +48,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn norm_energy(particles: &mut Vec<Particle>, rad_part: & Vec<usize>, e0: f64, u_norm: f64, dm: f64) {
     let u0: f64 = e0/(dm * u_norm);
+    // let mut sum: f64 = 0.0;
     for ii in rad_part {
         particles[*ii].u *= u0;
+        // sum += particles[*ii].u;
+        // println!("ii: {} {}", *ii, particles[*ii].u);
     }
+    // println!("U TOT: {}", dm*sum);
 }
 
 fn init_dist_sedov(particles: &mut Vec<Particle>, rad_part: &mut Vec<usize>, u_norm: &mut f64, nx: u32, ny: u32, nz: u32, rho: f64, radius: f64, h0: f64, eta: f64, d: i32, wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64, dm: f64, kernel: fn(f64) -> f64){

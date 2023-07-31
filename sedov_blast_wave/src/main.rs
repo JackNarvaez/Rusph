@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Simulation's parameters
     let t0:f64 = 0.0; // Initial time
-    let tf:f64 = 0.1; // Final time
+    let tf:f64 = 0.08; // Final time
     let mut t:f64 = t0; // Time
     let n : usize = particles.len(); // Number of particles
     let mut time_file = File::create("./Data/results/sedov_blast_wave/Time.txt").expect("creation failed"); // Save time steps
@@ -42,7 +42,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
     let d: i32 = 3; // Dimension of the system
     let gamma:f64 = 5./3.;  // Gamma factor (heat capacity ratio)
+    //___________________________________________________________
     let sigma :f64 = 1./PI; // Normalization's constant of kernel
+    let rkern: f64 = 2.;
+    //___________________________________________________________
     let wd :f64 = 1.; // Domain's width
     let lg :f64 = 1.; // Domain's large
     let hg :f64 = 1.; // Domain's large
@@ -51,7 +54,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let z0: f64 = 0.; // y-coordinate of the bottom left corner
     let rho0: f64 = 1.0; // Initial density
     let dm :f64 = rho0*(wd*lg*hg)/n as f64; // Particles' mass
-    let rkern: f64 = 2.;
     
     for ii in 0..n {
         particles[ii].rho = sphfunctions::density_by_smoothing_length(dm, particles[ii].h, eta, d);
