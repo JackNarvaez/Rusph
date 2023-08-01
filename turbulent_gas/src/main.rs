@@ -9,6 +9,7 @@ use std::{
 };
 
 use sphfunctions;
+use datafunctions;
 
 use tree_algorithm::BuildTree;
 
@@ -25,7 +26,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // File's information
     let path_source = "./Data/initial_distribution/hydro32_00020.csv";
     let mut particles :Vec<Particle> = Vec::new();
-    if let Err(err) = sphfunctions::read_data_iso(path_source, &mut particles) {
+    if let Err(err) = datafunctions::read_data_iso(path_source, &mut particles) {
         println!("{}", err);
         process::exit(1);
     }
@@ -58,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     // Save initial information
     time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-    if let Err(err) = sphfunctions::save_data_iso(&(String::from("./Data/results/turbulent_gas/initial.csv")), &particles){
+    if let Err(err) = datafunctions::save_data_iso(&(String::from("./Data/results/turbulent_gas/initial.csv")), &particles){
         println!("{}", err);
         process::exit(1);
     }
@@ -87,7 +88,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         t += dt;
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-            if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/turbulent_gas/") + &(it/it_save).to_string() + &".csv"), &particles){
+            if let Err(err) = datafunctions::save_data(&(String::from("./Data/results/turbulent_gas/") + &(it/it_save).to_string() + &".csv"), &particles){
                 println!("{}", err);
                 process::exit(1);
             }
@@ -98,7 +99,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Save final information
     time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-    if let Err(err) = sphfunctions::save_data(&(String::from("./Data/results/turbulent_gas/final.csv")), &particles){
+    if let Err(err) = datafunctions::save_data(&(String::from("./Data/results/turbulent_gas/final.csv")), &particles){
         println!("{}", err);
         process::exit(1);
     }

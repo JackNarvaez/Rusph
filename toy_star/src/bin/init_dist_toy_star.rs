@@ -12,20 +12,31 @@ use rand_pcg::Pcg64;
 
 const SEED: u64 = 123;
 
+use datafunctions;
+
 use std::f64::consts::PI;
 
 fn main() -> Result<(), Box<dyn Error>> {
     let path = "./Data/initial_distribution/toy_star.csv";
-    let d: i32 = 3; // Dimension
-    let eta: f64 = 1.2;
-    let n: u32 = 1000; // Number of Particles
-    let r: f64 = 0.75; // Star's radius
-    let m: f64 = 1.0; // Star's mass
+    let input_file = "./toy_star/input";
+    let input: Vec<f64> = datafunctions::read_input(input_file);
+
+    let eta: f64 = input[0];
+    let d: i32 = input[1] as i32; // Dimension
+    let m: f64 = input[4]; // Star's mass
+    let r: f64 = input[5]; // Star's radius
+
+    let (x0, y0, z0) = (input[6], input[7], input[8]); // Sphere's center
+    let (vx0, vy0, vz0) = (input[9], input[10], input[11]); // Sphere's velocity
+    let u0: f64 = input[12]; // Sphere's energy
+
+    let n: u32 = input[17] as u32; // Number of Particles
+
     let rho: f64 = 3. * m/(4.*PI*r*r*r); // Density
     let h: f64 = 0.1*eta*(m/(n as f64 * rho)).powf(1./d as f64); // Smoothing length
-    let (x0, y0, z0) = (0.0, 0.0, 0.0); // Sphere's center
-    let (vx0, vy0, vz0) = (0.0, 0.0, 0.0); // Sphere's velocity
-    let u0: f64 = 0.0; // Sphere's energy
+
+
+    
     if let Err(err) = init_random_circle(path, n, r, h, x0, y0, z0, vx0, vy0, vz0, u0) {
         println!("{}", err);
         process::exit(1);

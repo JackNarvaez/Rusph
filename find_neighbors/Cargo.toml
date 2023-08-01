@@ -7,5 +7,5 @@ edition = "2021"
 
 [dependencies]
 tree_algorithm = { path = "../tree_algorithm" }
-sphfunctions = { path = "../sphfunctions" }
+datafunctions = { path = "../datafunctions" }
 structures = { path = "../structures" }

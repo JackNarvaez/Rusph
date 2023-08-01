@@ -5,7 +5,7 @@ use std::{
     process,
 };
 
-use sphfunctions;
+use datafunctions;
 
 use structures::Particle;
 
@@ -14,30 +14,33 @@ use std::f64::consts::PI;
 fn main() -> Result<(), Box<dyn Error>> {
 
     let path = "./Data/initial_distribution/kelvin_helmholtz.csv";
+    let input_file = "./sedov_blast_wave/input";
+
+    let input: Vec<f64> = datafunctions::read_input(input_file);
 
     let mut particles :Vec<Particle> = Vec::new();
 
     // System's parameters
-    let gamma:f64 = 5./3.;  // Gamma factor (heat capacity ratio)
-    let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
-    let d: i32 = 2; // Dimension of the system
-    let wd :f64 = 1.; // Domain's width
-    let lg :f64 = 1.; // Domain's large
-    let hg :f64 = 1.; // Domain's large
-    let x0: f64 = 0.; // x-coordinate of the bottom left corner
-    let y0: f64 = 0.; // y-coordinate of the bottom left corner
-    let z0: f64 = 0.; // y-coordinate of the bottom left corner
-    let y1: f64 = 0.25; // Y-lower edge of fluid 2 
-    let y2: f64 = 0.75; // Y-upper edge of fluid 2
-    let nx: usize = 16; // Number of particles in x direction
-    let ny: usize = 16; // Number of particles in region 1 in y direction // TOTAL NY = ny + (rho2/rho1)*ny
-    let nz: usize = 16; // Number of particles in z direction
+    let gamma:f64 = input[2];  // Gamma factor (heat capacity ratio)
+    let eta :f64 = input[0]; // Dimensionless constant related to the ratio of smoothing length
+    let d: i32 = input[1] as i32; // Dimension of the system
+    let wd :f64 = input[6]; // Domain's width
+    let lg :f64 = input[7]; // Domain's large
+    let hg :f64 = input[8]; // Domain's large
+    let x0: f64 = input[3]; // x-coordinate of the bottom left corner
+    let y0: f64 = input[4]; // y-coordinate of the bottom left corner
+    let z0: f64 = input[5]; // y-coordinate of the bottom left corner
+    let y1: f64 = input[9]; // Y-lower edge of fluid 2 
+    let y2: f64 = input[10]; // Y-upper edge of fluid 2
+    let nx: usize = input[20] as usize; // Number of particles in x direction
+    let ny: usize = input[21] as usize; // Number of particles in region 1 in y direction // TOTAL NY = ny + (rho2/rho1)*ny
+    let nz: usize = input[22] as usize; // Number of particles in z direction
 
-    let rho1: f64 = 1.0; // Initial density fluid 1
-    let rho2: f64 = 2.0; // Initial density fluid 2
-    let vx1: f64 = -0.5; // Initial x velocity fluid 1
-    let vx2: f64 = 0.5; // Initial x velocity fluid 2
-    let p0: f64 = 2.5; // Initial pressure
+    let rho1: f64 = input[11]; // Initial density fluid 1
+    let rho2: f64 = input[12]; // Initial density fluid 2
+    let vx1: f64 = input[13]; // Initial x velocity fluid 1
+    let vx2: f64 = input[14]; // Initial x velocity fluid 2
+    let p0: f64 = input[15]; // Initial pressure
 
     let m: f64 = (rho1 *(y2-y1) + rho2*(lg-y2+y1))*wd*hg;
     let n: usize = 3*nx*ny*nz;
@@ -45,7 +48,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     kh_init_setup(&mut particles, nx, ny, nz, wd, lg, hg, x0, y0, z0, y1, y2, rho1, rho2, vx1, vx2, p0, gamma, eta, dm, d);
 
-    if let Err(err) = sphfunctions::save_data(path, &particles){
+    if let Err(err) = datafunctions::save_data(path, &particles){
         println!("{}", err);
         process::exit(1);
     }

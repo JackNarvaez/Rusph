@@ -9,28 +9,34 @@ use sphfunctions;
 
 use structures::Particle;
 
+use datafunctions;
+
 fn main() -> Result<(), Box<dyn Error>> {
 
     let mut particles :Vec<Particle> = Vec::new();
 
     let path = "./Data/initial_distribution/sedov_blast_wave.csv";
-    let nx:u32 = 32; // Number of Particles in x direction
-    let ny:u32 = 32; // Number of Particles in y direction
-    let nz:u32 = 32; // Number of Particles in z direction
+    let input_file = "./sedov_blast_wave/input";
+
+    let input: Vec<f64> = datafunctions::read_input(input_file);
+
+    let nx:u32 = input[16] as u32; // Number of Particles in x direction
+    let ny:u32 = input[17] as u32; // Number of Particles in y direction
+    let nz:u32 = input[18] as u32; // Number of Particles in z direction
     let n: u32 = nx*ny*nz; // Total number of particles
-    let wd:f64 = 1.; // Width
-    let lg:f64 = 1.; // Longth
-    let hg:f64 = 1.; // Higth
-    let x0:f64 = 0.; // Initial x
-    let y0:f64 = 0.; // Initial y
-    let z0:f64 = 0.; // Initial y
-    let rho:f64 = 1.0; // Density
-    let e0:f64 = 1.0; // Energy
+    let wd:f64 = input[6]; // Width
+    let lg:f64 = input[7]; // Longth
+    let hg:f64 = input[8]; // Heigth
+    let x0:f64 = input[3]; // Initial x
+    let y0:f64 = input[4]; // Initial y
+    let z0:f64 = input[5]; // Initial y
+    let rho:f64 = input[10]; // Density
+    let e0:f64 = input[11]; // Energy
     let mut u_norm:f64 = 0.0; // Normalization parameter
     let mut rad_part: Vec<usize> = Vec::new(); // Particles inside the initial sphere
-    let eta: f64 = 1.2;
+    let eta: f64 = input [0];
     let rkern: f64 = 2.; // Kernel radius
-    let d: i32 = 3; // Dimensions
+    let d: i32 = input[1] as i32; // Dimensions
     let vol: f64 = wd*lg*hg; // Volumen
     let h0: f64 = eta*( vol / n as f64).powf(1./d as f64); // Smoothing length
     let dm: f64 = rho*vol/n as f64; // Particles' mass
@@ -38,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     init_dist_sedov(&mut particles, &mut rad_part, &mut u_norm, nx, ny, nz, rho, rkern, h0, eta, d, wd, lg, hg, x0, y0, z0, dm, sphfunctions::f_cubic_kernel);
     norm_energy(&mut particles, &mut rad_part, e0, u_norm, dm);
 
-    if let Err(err) = sphfunctions::save_data(path, &particles){
+    if let Err(err) = datafunctions::save_data(path, &particles){
         println!("{}", err);
         process::exit(1);
     }
@@ -48,13 +54,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 fn norm_energy(particles: &mut Vec<Particle>, rad_part: & Vec<usize>, e0: f64, u_norm: f64, dm: f64) {
     let u0: f64 = e0/(dm * u_norm);
-    // let mut sum: f64 = 0.0;
     for ii in rad_part {
         particles[*ii].u *= u0;
-        // sum += particles[*ii].u;
-        // println!("ii: {} {}", *ii, particles[*ii].u);
     }
-    // println!("U TOT: {}", dm*sum);
 }
 
 fn init_dist_sedov(particles: &mut Vec<Particle>, rad_part: &mut Vec<usize>, u_norm: &mut f64, nx: u32, ny: u32, nz: u32, rho: f64, radius: f64, h0: f64, eta: f64, d: i32, wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64, dm: f64, kernel: fn(f64) -> f64){

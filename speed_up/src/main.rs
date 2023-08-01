@@ -7,6 +7,7 @@ use std::{
 };
 
 use sphfunctions;
+use datafunctions;
 
 use tree_algorithm::BuildTree;
 
@@ -23,7 +24,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // File's information
     let path_source = "./Data/initial_distribution/sedov_blast_wave.csv";
     let mut particles :Vec<Particle> = Vec::new();
-    if let Err(err) = sphfunctions::read_data(path_source, &mut particles) {
+    if let Err(err) = datafunctions::read_data(path_source, &mut particles) {
         println!("{}", err);
         process::exit(1);
     }

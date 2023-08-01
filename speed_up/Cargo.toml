@@ -9,4 +9,5 @@ edition = "2021"
 rayon = "1.7"
 tree_algorithm = { path = "../tree_algorithm" }
 sphfunctions = { path = "../sphfunctions" }
+datafunctions = { path = "../datafunctions" }
 structures = { path = "../structures" }

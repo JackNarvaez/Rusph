@@ -4,6 +4,7 @@ members = [
     "toy_star",
     "speed_up",
     "sphfunctions",
+    "datafunctions",
     "tree_algorithm",
     "find_neighbors",
     "structures",
