@@ -1,26 +1,26 @@
 # ------------ System Parameters ------------ #
-1.2     # eta: Dimensionless constant related to the ration of smoothing length
-3       # d: Number of spatial dimensions
-2.0     # gamma: Heat capacity ratio
-1.0     # nu: Viscocity parameter
-1.0     # m: Star's mass
-0.75    # r: Star's radius
-0.0     # x0: Star's center (x-coordinate)
-0.0     # y0: Star's center (y-coordinate)
-0.0     # z0: Star's center (z-coordinate)
-0.0     # vx0: Initial star's velocity (x-coordinate)
-0.0     # vy0: Initial star's velocity (y-coordinate)
-0.0     # vz0: Initial star's velocity (z-coordinate)
-0.0     # u0: Initial particles' energy
+1.2     # 0 eta: Dimensionless constant specifying the smoothing length
+2.0     # 1 gamma: Heat capacity ratio
+3       # 2 d: Number of spatial dimensions
+1.0     # 3 nu: Viscocity parameter
+1.0     # 4 m: Star's mass
+0.75    # 5 r: Star's radius
+0.0     # 6 x0: Star's center (x-coordinate)
+0.0     # 7 y0: Star's center (y-coordinate)
+0.0     # 8 z0: Star's center (z-coordinate)
+0.0     # 9 vx0: Initial star's velocity (x-coordinate)
+0.0     # 10 vy0: Initial star's velocity (y-coordinate)
+0.0     # 11 vz0: Initial star's velocity (z-coordinate)
+0.0     # 12 u0: Initial particles' energy
 
 # ---------- Simulation Parameters ---------- #
-0.0     # t0: Initial time
-16.0    # tf: Final time
-0.04    # dt: Initial time step
-10      # it_save: Frequency of data saving
-1000    # n: Number of particles
+0.0     # 13 t0: Initial time
+16.0    # 14 tf: Final time
+0.04    # 15 dt: Initial time step
+10      # 16 it_save: Frequency of data saving
+1000    # 17 n: Total number of particles
 
 # ------------- Tree parameters ------------- #
-10      # s: Maximum number of particles in a leaf (Bucket size)
-0.5     # alpha: Fraction of the bucket size s
-0.5     # Maximun ratio of cells with less than alpha*s particles
+10      # 18 s: Maximum number of particles in a leaf (Bucket size)
+0.5     # 19 alpha: Fraction of the bucket size s
+0.5     # 20 Maximum ratio of cells with less than alpha*s particles

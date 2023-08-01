@@ -1,4 +1,4 @@
-// Sedov Blast Wave
+// Turbulent Gas in 3D
 
 use std::{
     fs::File,
@@ -23,8 +23,40 @@ use std::f64::consts::PI;
 
 fn main() -> Result<(), Box<dyn Error>> {
 
-    // File's information
+    // Files
     let path_source = "./Data/initial_distribution/hydro32_00020.csv";
+    let input_file = "./turbulent_gas/input";
+
+    //---------------------------------------------------------------------------------------------
+    // Parameters
+    let input: Vec<f64> = datafunctions::read_input(input_file);
+    
+    let eta:f64     = input[0];         // Dimensionless constant specifying the smoothing length
+    let gamma:f64   = input[1];         // Heat capacity ratio
+    let d:i32       = input[2] as i32;  // Dimensions
+    
+    let x0:f64      = input[3];         // Bottom left corner  (x-coordinate)
+    let y0:f64      = input[4];         // Bottom left corner  (y-coordinate)
+    let z0:f64      = input[5];         // Bottom left corner  (z-coordinate)
+    let wd:f64      = input[6];         // Width (x)
+    let lg:f64      = input[7];         // Length (y)
+    let hg:f64      = input[8];         // Heigth (z)
+    let dm:f64      = input[9];         // Particles' mass
+    
+    let t0:f64      = input[10];        // Initial time
+    let tf:f64      = input[11];        // Final time
+    let mut dt:f64  = input[12];        // Initial time step
+    let it_save:u32 = input[13] as u32; // Frequency of data saving
+    
+    // Tree's parameters
+    let s_:i32      = input[14] as i32; // Bucket size
+    let alpha_:f64  = input[15];        // Fraction of the bucket size
+    let beta_:f64   = input[16];        // Maximum ratio of cells with less than alpha*s particles
+    
+    //---------------------------------------------------------------------------------------------
+
+
+    // Create particles
     let mut particles :Vec<Particle> = Vec::new();
     if let Err(err) = datafunctions::read_data_iso(path_source, &mut particles) {
         println!("{}", err);
@@ -33,49 +65,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     let particles_ptr = Pointer(particles.as_mut_ptr());
 
     // Simulation's parameters
-    let t0:f64 = 0.0; // Initial time
-    let tf:f64 = 1.; // Final time
-    let mut t:f64 = t0; // Time
-    let n : usize = particles.len(); // Number of particles
-    let mut time_file = File::create("./Data/results/turbulent_gas/Time.txt").expect("creation failed"); // Save time steps
+    let mut t:f64   = t0; // Time
+    let n : usize   = particles.len(); // Number of particles
+    let mut it: u32 = 0; // Time iterations
+    // Save time evolution
+    let mut time_file = File::create("./Data/results/turbulent_gas/Time.txt").expect("creation failed");
     
-    // System's parameters
-    let eta :f64 = 1.2; // Dimensionless constant related to the ratio of smoothing length
-    let d: i32 = 3; // Dimension of the system
-    let gamma:f64 = 1.;  // Gamma factor (heat capacity ratio)
-    let sigma :f64 = 1./PI; // Normalization's constant of kernel
-    let wd :f64 = 1.; // Domain's width
-    let lg :f64 = 1.; // Domain's large
-    let hg :f64 = 1.; // Domain's large
-    let x0: f64 = 0.; // x-coordinate of the bottom left corner
-    let y0: f64 = 0.; // y-coordinate of the bottom left corner
-    let z0: f64 = 0.; // y-coordinate of the bottom left corner
-    let dm :f64 = 3.0517578125e-05; // Particles' mass
-    let rkern: f64 = 2.;
+    //------------------------------------ kernel -------------------------------------------------
+    let sigma :f64  = 1./PI;            // Normalization constant of kernel
+    let rkern: f64  = 2.;               // Kernel radius
+    //---------------------------------------------------------------------------------------------
     
     for ii in 0..n {
         particles[ii].rho = sphfunctions::density_by_smoothing_length(dm, particles[ii].h, eta, d);
     }
-    
-    // Save initial information
-    time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-    if let Err(err) = datafunctions::save_data_iso(&(String::from("./Data/results/turbulent_gas/initial.csv")), &particles){
-        println!("{}", err);
-        process::exit(1);
-    }
 
-    // Tree's parameters
-    let s_ : i32 = 10;
-    let alpha_ : f64 = 0.5;
-    let beta_ : f64 = 0.5;
     let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
     
-    let mut dt :f64 = 0.001; // Time step
-    let mut it: u32 = 0; // Time iterations
-    let it_save: u32 = 1; // Frequency of data saving
 
-    // Main loop
-    let start = Instant::now(); // Runing time
+    //------------------------------------ Main Loop ----------------------------------------------
+    let start       = Instant::now();   // Runing time
     while t < tf  {
         sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, sphfunctions::eos_isothermal, sphfunctions::sound_speed_isothermal, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern,
@@ -96,6 +105,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         it += 1;
     }
     println!("Simulation run successfully.\n Time {} s.\n Iterations: {}.", start.elapsed().as_secs(), it);
+    //---------------------------------------------------------------------------------------------
 
     // Save final information
     time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");

@@ -33,6 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let hg:f64 = 1.; // circle's center
     let h :f64 = 0.1; // Smoothing length
     let rkern :f64 = 2.; // Smoothing length
+
     // Initialize system
     if let Err(err) = datafunctions::init_square(path, n, h, wd, lg, hg, x0, y0, z0){
         println!("{}", err);
@@ -44,6 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{}", err);
         process::exit(1);
     }
+
     // Tree parameters
     let k : u32 = 3; // Dimension
     let s : i32 = 4;
@@ -58,6 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
     println!("Tree Builder: {} s", start1.elapsed().as_secs());
     save_tree(path_tree, &root);
+    
     // Neighbors finder
     let start2 = Instant::now();
     let mut neighbors: Vec<usize> = Vec::new();
