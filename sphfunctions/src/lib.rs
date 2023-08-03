@@ -487,40 +487,50 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
         let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, rkern, d, wd, lg, hg);
         for jj in 0..n {
             if ii != jj {
-                let p_j = eos(particles[jj].rho, particles[jj].u, gamma);
-                let cs_j = cs(particles[jj].rho, p_j, gamma);
-                let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, rkern, d, wd, lg, hg);
-                
                 let (x_rel, y_rel, z_rel) = periodic_rel_vector(&particles[ii], &particles[jj], wd, lg, hg, rkern*particles[ii].h);
                 let r_ij = (x_rel*x_rel + y_rel*y_rel+ z_rel*z_rel).sqrt();
-                let grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
-                let grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
-                
-                // Velocity dot position
-                let dot_r_v = (particles[ii].vx-particles[jj].vx)*x_rel
-                +(particles[ii].vy-particles[jj].vy)*y_rel
-                +(particles[ii].vz-particles[jj].vz)*z_rel;
-                
-                // Artificial viscosity
-                let (art_visc_mom, art_visc_ene) = artificial_viscosity(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
-                
-                // Artificial thermal conductivity
-                let art_therm_cond: f64 = price08_therm_cond(p_i, p_j, particles[ii].rho, particles[jj].rho, particles[ii].u, particles[jj].u);
-                
-                // Acceleration
-                let (f_ij_x, f_ij_y, f_ij_z) = acceleration_ab(&particles[ii], &particles[jj], x_rel, y_rel, z_rel, p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc_mom);
-                particle_i.ax += dm * f_ij_x;
-                particle_i.ay += dm * f_ij_y;
-                particle_i.az += dm * f_ij_z;
-                
-                // Divergence of v per unit of mass
-                let div_vel :f64 = grad_hi*dot_r_v / (omeg_i*particles[ii].rho);
-                particle_i.divv -= dm*div_vel;
-                
-                // Thermal change
-                particle_i.du += dm * ((p_i/particles[ii].rho)*div_vel + 0.5*(art_visc_ene + art_therm_cond*r_ij)*(grad_hi/omeg_i+grad_hj/omeg_j));
+
+                let mut grad_hi = 0.0;
+                let mut grad_hj = 0.0;
+                if r_ij <= rkern*particles[ii].h {
+                    grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
+                }
+                if r_ij <= rkern*particles[jj].h {
+                    grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
+                }
+                if grad_hi != 0. || grad_hj != 0.0 {
+                    let p_j = eos(particles[jj].rho, particles[jj].u, gamma);
+                    let cs_j = cs(particles[jj].rho, p_j, gamma);
+                    let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, rkern, d, wd, lg, hg);
+                    
+                    
+                    // Velocity dot position
+                    let dot_r_v = (particles[ii].vx-particles[jj].vx)*x_rel
+                    +(particles[ii].vy-particles[jj].vy)*y_rel
+                    +(particles[ii].vz-particles[jj].vz)*z_rel;
+                    
+                    // Artificial viscosity
+                    let (art_visc_mom, art_visc_ene) = artificial_viscosity(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
+                    
+                    // Artificial thermal conductivity
+                    let art_therm_cond: f64 = price08_therm_cond(p_i, p_j, particles[ii].rho, particles[jj].rho, particles[ii].u, particles[jj].u);
+                    
+                    // Acceleration
+                    let (f_ij_x, f_ij_y, f_ij_z) = acceleration_ab(&particles[ii], &particles[jj], x_rel, y_rel, z_rel, p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc_mom);
+                    particle_i.ax += dm * f_ij_x;
+                    particle_i.ay += dm * f_ij_y;
+                    particle_i.az += dm * f_ij_z;
+                    
+                    // Divergence of v per unit of mass
+                    let div_vel :f64 = grad_hi*dot_r_v / (omeg_i*particles[ii].rho);
+                    particle_i.divv -= dm*div_vel;
+                    
+                    // Thermal change
+                    particle_i.du += dm * (0.5*(art_visc_ene + art_therm_cond*r_ij)*(grad_hi/omeg_i+grad_hj/omeg_j));
+                }
             }
         }
+        particle_i.du -= (p_i/particles[ii].rho)*particle_i.divv;
         // Body forces
         if bf {
             body_forces(particle_i, nu, lmbda);
