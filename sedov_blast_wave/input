@@ -17,9 +17,9 @@
 0.1     # 13 tf: Final time
 0.0001  # 14 dt: Initial time step
 1      # 15 it_save: Frequency of data saving
-24      # 16 nx: Particle resolution in the x direction
-24      # 17 ny: Particle resolution in the y direction
-24      # 18 nz: Particle resolution in the z direction
+32      # 16 nx: Particle resolution in the x direction
+32      # 17 ny: Particle resolution in the y direction
+32      # 18 nz: Particle resolution in the z direction
 
 # ------------- Tree parameters ------------- #
 10      # 19 s: Maximum number of particles in a leaf (Bucket size)

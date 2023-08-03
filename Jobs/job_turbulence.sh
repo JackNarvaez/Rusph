@@ -1,5 +1,5 @@
 #BSUB -J Turbulence
-#BSUB -W 4:00
+#BSUB -W 16:00
 #BSUB -n 40
 #BSUB -q normal
 #BSUB -o Turbulence.%J
