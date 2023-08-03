@@ -15,7 +15,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Files
     let path = "./Data/initial_distribution/kelvin_helmholtz.csv";
-    let input_file = "./sedov_blast_wave/input";
+    let input_file = "./kelvin_helmholtz/input";
 
     // Parameters
     let input: Vec<f64> = datafunctions::read_input(input_file);
