@@ -24,7 +24,7 @@ use std::f64::consts::PI;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Files
-    let path_source = "./Data/initial_distribution/hydro32_00020.csv";
+    let path_source = "./Data/initial_distribution/hydro64_00020.csv";
     let input_file = "./turbulent_gas/input";
 
     //---------------------------------------------------------------------------------------------
@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let eta:f64     = input[0];         // Dimensionless constant specifying the smoothing length
     let gamma:f64   = input[1];         // Heat capacity ratio
-    let d:i32       = input[2] as i32;  // Dimensions
+    let _d:i32      = input[2] as i32;  // Dimensions
     
     let x0:f64      = input[3];         // Bottom left corner  (x-coordinate)
     let y0:f64      = input[4];         // Bottom left corner  (y-coordinate)
@@ -77,7 +77,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //---------------------------------------------------------------------------------------------
     
     for ii in 0..n {
-        particles[ii].rho = sphfunctions::density_by_smoothing_length(dm, particles[ii].h, eta, d);
+        particles[ii].rho = sphfunctions::density_by_smoothing_length(dm, particles[ii].h, eta);
     }
 
     let mut tree : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
@@ -88,11 +88,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     while t < tf  {
         sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, sphfunctions::eos_isothermal, sphfunctions::sound_speed_isothermal, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern,
-                                       d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
+                                       eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, wd, lg, hg, x0, y0, z0);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, d, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_isothermal_dt);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_isothermal_dt);
         tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {

@@ -23,7 +23,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input: Vec<f64> = datafunctions::read_input(input_file);
     
     let eta: f64 = input[0];         // Dimensionless constant specifying the smoothing length
-    let d: i32   = input[2] as i32;  // Dimensions
+    let _d: i32   = input[2] as i32; // Dimensions
     
     let x0:f64   = input[3];         // Bottom left corner  (x-coordinate)
     let y0:f64   = input[4];         // Bottom left corner  (y-coordinate)
@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut particles :Vec<Particle> = Vec::new();
 
 
-    init_dist_sedov(&mut particles, &mut rad_part, &mut u_norm, nx, ny, nz, rho, rkern, r0, eta, d, wd, lg, hg, x0, y0, z0, dm, f_cubic_kernel);
+    init_dist_sedov(&mut particles, &mut rad_part, &mut u_norm, nx, ny, nz, rho, rkern, r0, eta, wd, lg, hg, x0, y0, z0, dm, f_cubic_kernel);
     norm_energy(&mut particles, &mut rad_part, e0, u_norm, dm);
 
     if let Err(err) = datafunctions::save_data(path, &particles){
@@ -70,14 +70,14 @@ fn norm_energy(particles: &mut Vec<Particle>, rad_part: & Vec<usize>, e0: f64, u
 }
 
 fn init_dist_sedov(particles: &mut Vec<Particle>, rad_part: &mut Vec<usize>, u_norm: &mut f64, nx: u32, ny: u32, nz: u32, rho: f64, rkern: f64, r0: f64,
-                   eta: f64, d: i32, wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64, dm: f64, kernel: fn(f64) -> f64){
+                   eta: f64, wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64, dm: f64, kernel: fn(f64) -> f64){
     let dx: f64 = wd/nx as f64;
     let dy: f64 = lg/ny as f64;
     let dz: f64 = hg/nz as f64;
     let xc: f64 = wd/2.;
     let yc: f64 = lg/2.;
     let zc: f64 = hg/2.;
-    let hp: f64 = h_by_density(dm, rho, eta, d);
+    let hp: f64 = h_by_density(dm, rho, eta);
     for kk in 0..nz {
         for jj in 0..ny{
             for ii in 0..nx{

@@ -24,22 +24,22 @@ pub fn periodic_rel_vector(p1: &Particle, p2: &Particle, wd: f64, lg: f64, hg: f
     let mut x_temp: f64 = p1.x - p2.x;
     let mut y_temp: f64 = p1.y - p2.y;
     let mut z_temp: f64 = p1.z - p2.z;
-
-    if x_temp.abs() > wd-2.*eps {
+    let twoeps: f64 = 2.*eps;
+    if x_temp.abs() > wd-twoeps {
         if x_temp > 0. {
             x_temp -= wd;
         } else {
             x_temp += wd;
         }
     }
-    if y_temp.abs() > lg-2.*eps {
+    if y_temp.abs() > lg-twoeps {
         if y_temp > 0. {
             y_temp -= lg;
         } else {
             y_temp += lg;
         }
     }
-    if z_temp.abs() > hg-2.*eps {
+    if z_temp.abs() > hg-twoeps {
         if z_temp > 0. {
             z_temp -= hg;
         } else {
@@ -60,124 +60,144 @@ pub fn periodic_norm(p1: &Particle, p2: &Particle, wd: f64, lg: f64, hg: f64, ep
 
 // Cubic Kernel
 pub fn f_cubic_kernel(q:f64) -> f64 {
-    let mut f:f64 = 0.;
     if q < 1. {
-        f = 1. + 0.75*q*q*(q-2.); 
+        return 1. + 0.75*q*q*(q-2.); 
     } else if q < 2.{
-        f = 0.25*(2.-q).powi(3);
+        let f1: f64 = 2.-q;
+        return 0.25*f1*f1*f1;
+    } else {
+        return 0.;
     }
-    f
 }
 
 // Derivative of cubic kernel
 pub fn dfdq_cubic_kernel(q:f64) -> f64 {
-    let mut df:f64 = 0.;
     if q < 1. {
-        df = (2.25*q-3.)*q;
+        return (2.25*q-3.)*q;
     } else if q < 2.{
-        df = -3.*(0.25*q*q-q+1.);
+        return -3.*(0.25*q*q-q+1.);
+    } else {
+        return 0.;
     }
-    df
 }
 
 // Gaussian Kernel
 pub fn f_gaussian_kernel(q:f64) -> f64 {
-    let mut f:f64 = 0.;
     if q < 3. {
-        f = (-q*q).exp();
+        return (-q*q).exp();
+    } else {
+        return 0.;
     }
-    f
 }
 
 // Derivative of Gaussian Kernel
 pub fn dfdq_gaussian_kernel(q:f64) -> f64 {
-    let mut f:f64 = 0.;
     if q < 3. {
-        f = -2.0*q*(-q*q).exp();
+        return -2.0*q*(-q*q).exp();
+    } else {
+        return 0.;
     }
-    f
 }
 
 // C2 Wendland kernel
 pub fn f_wendland_kernel(q:f64) -> f64 {
-    let mut f:f64 = 0.;
     if q < 2. {
-        f = (1.-0.5*q).powi(4)*(2.*q+1.);
+        let f1: f64 = 1.-0.5*q;
+        return f1*f1*f1*f1*(2.*q+1.);
+    } else {
+        return 0.;
     }
-    f
 }
 
 // Derivative of C2 Wendland kernel
 pub fn dfdq_wendland_kernel(q:f64) -> f64 {
-    let mut df:f64 = 0.;
     if q < 2.{
-        df = -5.*q*(1.-0.5*q).powi(3);
+        let f1: f64 = 1.-0.5*q;
+        return -5.*q*f1*f1*f1;
+    } else {
+        return 0.;
     }
-    df
 }
 
 // Quintic Kernel
 pub fn f_quintic_kernel(q:f64) -> f64 {
-    let mut f:f64 = 0.;
+    let f1: f64 = 3.-q;
+    let f1sq: f64 = f1*f1;
     if q < 1. {
-        f = (3.-q).powf(5.)-6.*(2.-q).powf(5.)+15.*(1.-q).powf(5.); 
+        let f2: f64 = 2.-q;
+        let f3: f64 = 1.-q;
+        let f2sq: f64 = f2*f2;
+        let f3sq: f64 = f3*f3;
+        return f1sq*f1sq*f1-6.*f2sq*f2sq*f2+15.*f3sq*f3sq*f3; 
     } else if q < 2.{
-        f = (3.-q).powf(5.)-6.*(2.-q).powf(5.);
+        let f2: f64 = 2.-q;
+        let f2sq: f64 = f2*f2;
+        return f1sq*f1sq*f1-6.*f2sq*f2sq*f2;
     } else if q < 3. {
-        f = (3.-q).powf(5.);
+        return f1sq*f1sq*f1;
+    } else {
+        return 0.;
     }
-    f
 }
 
 // Derivative of quintic kernel
 pub fn dfdq_quintic_kernel(q:f64) -> f64 {
-    let mut df:f64 = 0.;
+    let f1: f64 = 3.-q;
+    let f1sq: f64 = f1*f1;
     if q < 1. {
-        df = 5.*(-(3.-q).powf(4.)+6.*(2.-q).powf(4.)-15.*(1.-q).powf(4.)); 
+        let f2: f64 = 2.-q;
+        let f3: f64 = 1.-q;
+        let f2sq: f64 = f2*f2;
+        let f3sq: f64 = f3*f3;
+        return 5.*(-f1sq*f1sq+6.*f2sq*f2sq-15.*f3sq*f3sq); 
     } else if q < 2.{
-        df = 5.*(-(3.-q).powf(4.)+6.*(2.-q).powf(4.));
+        let f2: f64 = 2.-q;
+        let f2sq: f64 = f2*f2;
+        return 5.*(-f1sq*f1sq+6.*f2sq*f2sq);
     } else if q < 3. {
-        df = -5.*(3.-q).powf(4.);
+        return -5.*f1sq*f1sq;
+    } else {
+        return 0.;
     }
-    df
 }
 
 // Derivative of kernel w.r.t the smoothing length
-pub fn dwdh(q: f64, f: fn(f64) -> f64, df: fn(f64) -> f64, d:i32) -> f64 {
-    (d as f64) *f(q) + q*df(q)
+pub fn dwdh(q: f64, f: fn(f64) -> f64, df: fn(f64) -> f64) -> f64 {
+    3. *f(q) + q*df(q)
 }
 
 
 // -------- Kernel approximations --------
 
 // Kernel approximation of density
-pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, sigma:f64, rkern: f64, d:i32, f: fn(f64)->f64, wd: f64, lg: f64, hg: f64) -> f64 {
+pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, sigma:f64, rkern: f64, f: fn(f64)->f64, wd: f64, lg: f64, hg: f64) -> f64 {
     let mut rho :f64 = 0.0;
     for jj in neigh_particles{
         let r = periodic_norm(&particles[ii], &particles[*jj], wd, lg, hg, rkern*particles[ii].h);
         rho += f(r/h);
     }
-    rho * dm * sigma / h.powi(d)
+    rho * dm * sigma / (h*h*h)
 }
 
 // Density calculated by smoothing function
-pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64, d:i32) -> f64{
-    m*(eta/h).powi(d)
+pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64) -> f64{
+    let vol: f64 = eta/h;
+    m*vol*vol*vol
 }
 
 // Density calculated by smoothing function
-pub fn h_by_density(m:f64, rho:f64, eta:f64, d:i32) -> f64{
-    eta*(m/rho).powf(1./d as f64)
+pub fn h_by_density(m:f64, rho:f64, eta:f64) -> f64{
+    eta*(m/rho).cbrt()
 }
 
 // Omega operator
-pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, rho: f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64, d:i32, wd: f64, lg: f64, hg: f64) -> f64{
+pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, rho: f64, dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64, wd: f64, lg: f64, hg: f64) -> f64{
     let mut omeg :f64 = 0.0;
     for jj in neigh_particles {
         let q = periodic_norm(&particles[ii], &particles[*jj], wd, lg, hg, rkern*h)/h;
-        omeg -= dwdh_(q, f, dfdq, d);
+        omeg -= dwdh_(q, f, dfdq);
     }
-    omeg *= dm*sigma/(h.powi(d)*rho*(d as f64));
+    omeg *= dm*sigma/(3.*h*h*h*rho);
     return omeg + 1.;
 }
 
@@ -187,23 +207,23 @@ pub fn omega(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>
 // -- Newton-Raphson iterator --
 
 // function and derivative of function
-pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, wd: f64, lg: f64, hg: f64) -> (f64 , f64) {
-    let rho_kernel = density_kernel(particles, ii, neigh_particles, dm, h, sigma, rkern, d, f, wd, lg, hg);
-    let rho_h = density_by_smoothing_length(dm, h, eta, d);
+pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, wd: f64, lg: f64, hg: f64) -> (f64 , f64) {
+    let rho_kernel = density_kernel(particles, ii, neigh_particles, dm, h, sigma, rkern, f, wd, lg, hg);
+    let rho_h = density_by_smoothing_length(dm, h, eta);
     let f_h = rho_h - rho_kernel;
-    let omeg = omega(particles, ii, neigh_particles, dm, h, rho_h, dwdh, f, dfdq, sigma, rkern, d, wd, lg, hg);
-    let df = -(d as f64)*rho_h*omeg/ h;
+    let omeg = omega(particles, ii, neigh_particles, dm, h, rho_h, dwdh, f, dfdq, sigma, rkern, wd, lg, hg);
+    let df = -3.*rho_h*omeg/ h;
     (f_h, df)
 }
 
 // Calculate a new value of 'h'
-fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h_old: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, wd: f64, lg: f64, hg: f64) -> f64 {
-    let (f, df) = f_iter(particles, ii, neigh_particles, dm, h_old, eta, f, dfdq, sigma, rkern, d, wd, lg, hg);
+fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h_old: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, wd: f64, lg: f64, hg: f64) -> f64 {
+    let (f, df) = f_iter(particles, ii, neigh_particles, dm, h_old, eta, f, dfdq, sigma, rkern, wd, lg, hg);
     h_old - f / df
 }
 
 // Newton raphson solver to find the value of 'h' for particle 'ii'
-pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, tol: f64, it: u32, tree: &Node, s_: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) -> (f64, Vec<usize>) {
+pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, tol: f64, it: u32, tree: &Node, s_: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) -> (f64, Vec<usize>) {
     let mut h_new :f64 = 0.0;
     let mut h_old :f64 = h_guess;
     let mut i : u32 = 1;
@@ -211,9 +231,9 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
     while i <= it {
         // Searching neighboring particles
         neighbors.clear();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, h_old, rkern);
+        tree.find_neighbors(ii, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, h_old*rkern);
         // Obtain h_new
-        h_new = nr_iter(particles, ii, &neighbors, dm, h_old, eta, f, dfdq, sigma, rkern, d, wd, lg, hg);
+        h_new = nr_iter(particles, ii, &neighbors, dm, h_old, eta, f, dfdq, sigma, rkern, wd, lg, hg);
         if ((h_new - h_old)/h_old).abs() <=  tol {
             i = it + 2;
         } else{
@@ -232,7 +252,7 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
 // -- Bisection iterator --
 
 // Bisection solver to find the value of 'h' for particle 'ii'
-pub fn bisection(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, tol: f64, it: u32, tree: &Node, s_: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) -> (f64, Vec<usize>) {
+pub fn bisection(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, eta:f64, f: fn(f64) -> f64, sigma:f64, rkern: f64, tol: f64, it: u32, tree: &Node, s_: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) -> (f64, Vec<usize>) {
     let mut h_left :f64 = 0.1*h_guess;
     let mut h_right :f64 = 0.2;
     let mut h_mid = 0.5*(h_left + h_right);
@@ -245,13 +265,13 @@ pub fn bisection(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, et
         neighbors_left.clear();
         neighbors_right.clear();
         neighbors_mid.clear();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_left, wd, lg, hg, x0, y0, z0, h_left, rkern);
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_right, wd, lg, hg, x0, y0, z0, h_right, rkern);
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors_mid, wd, lg, hg, x0, y0, z0, h_mid, rkern);
+        tree.find_neighbors(ii, s_, particles, &mut neighbors_left, wd, lg, hg, x0, y0, z0, h_left*rkern);
+        tree.find_neighbors(ii, s_, particles, &mut neighbors_right, wd, lg, hg, x0, y0, z0, h_right*rkern);
+        tree.find_neighbors(ii, s_, particles, &mut neighbors_mid, wd, lg, hg, x0, y0, z0, h_mid*rkern);
 
-        let f_left = density_by_smoothing_length(dm, h_left, eta, d) - density_kernel(particles, ii, &neighbors_left, dm, h_left, sigma, rkern, d, f, wd, lg, hg);
-        let f_right = density_by_smoothing_length(dm, h_right, eta, d) - density_kernel(particles, ii, &neighbors_right, dm, h_right, sigma, rkern, d, f, wd, lg, hg);
-        let f_mid = density_by_smoothing_length(dm, h_mid, eta, d) - density_kernel(particles, ii, &neighbors_mid, dm, h_mid, sigma, rkern, d, f, wd, lg, hg);
+        let f_left = density_by_smoothing_length(dm, h_left, eta) - density_kernel(particles, ii, &neighbors_left, dm, h_left, sigma, rkern, f, wd, lg, hg);
+        let f_right = density_by_smoothing_length(dm, h_right, eta) - density_kernel(particles, ii, &neighbors_right, dm, h_right, sigma, rkern, f, wd, lg, hg);
+        let f_mid = density_by_smoothing_length(dm, h_mid, eta) - density_kernel(particles, ii, &neighbors_mid, dm, h_mid, sigma, rkern, f, wd, lg, hg);
 
         if f_right.signum() == f_left.signum() {
             i = it + 2;
@@ -281,24 +301,24 @@ pub fn bisection(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f64, et
 // -------- Smoothing length --------
 
 // Calculate the smoothing function for each particle in a given time.
-pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, d:i32, tol: f64, it: u32, dt:f64, tree: &Node, s_: i32, n: usize, ptr : Pointer, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64){
+pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, tol: f64, it: u32, dt:f64, tree: &Node, s_: i32, n: usize, ptr : Pointer, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64){
     (0..n).into_par_iter().for_each(|ii| {
-        let (mut h_new, mut neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*particles[ii].divv/(d as f64)), eta, f, dfdq, sigma, rkern, d, tol, it, tree, s_, wd, lg, hg, x0, y0, z0);
+        let (mut h_new, mut neighbors) = newton_raphson(ii, particles, dm, particles[ii].h*(1.+dt*particles[ii].divv/3.), eta, f, dfdq, sigma, rkern, tol, it, tree, s_, wd, lg, hg, x0, y0, z0);
         let particle = unsafe { &mut *{ptr}.0.add(ii)};
         if h_new != 0.0 {
             // If h is not found, then keep it constant in time.
             particle.h = h_new;
         } else {
-            (h_new, neighbors) = bisection(ii, particles, dm, particles[ii].h*(1.+dt*particles[ii].divv/(d as f64)), eta, f, sigma, rkern, d, tol, it, tree, s_, wd, lg, hg, x0, y0, z0);
+            (h_new, neighbors) = bisection(ii, particles, dm, particles[ii].h*(1.+dt*particles[ii].divv/3.), eta, f, sigma, rkern, tol, it, tree, s_, wd, lg, hg, x0, y0, z0);
             if h_new != 0.0 {
                 // If h is not found, then keep it constant in time.
                 particle.h = h_new;
             } else {
                 neighbors.clear();
-                tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particle.h, rkern);
+                tree.find_neighbors(ii, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particle.h*rkern);
             }
         }
-        particle.rho = density_kernel(particles, ii, &neighbors, dm, particle.h, sigma, rkern, d, f, wd, lg, hg);
+        particle.rho = density_kernel(particles, ii, &neighbors, dm, particle.h, sigma, rkern, f, wd, lg, hg);
     });
 }
 
@@ -336,10 +356,6 @@ pub fn eos_ideal_gas(rho:f64, u:f64, gamma:f64) -> f64 {
     (gamma-1.)*rho*u
 }
 
-pub fn thermal_energy(rho:f64, p:f64, gamma:f64) -> f64 {
-    p/((gamma-1.)*rho)
-}
-
 // Sound speed for the ideal gas eos
 pub fn sound_speed_ideal_gas_u(u:f64, gamma:f64) -> f64 {
     ((gamma-1.)*gamma*u).sqrt()
@@ -352,27 +368,26 @@ pub fn sound_speed_ideal_gas(rho:f64, p:f64, gamma:f64) -> f64 {
 // -- Isotheraml EoS
 
 pub fn eos_isothermal(rho:f64, _u:f64, gamma:f64) -> f64 {
-    rho.powf(gamma)
+    rho.powi(gamma as i32)
 }
 
 pub fn sound_speed_isothermal(rho:f64, _u:f64, gamma:f64) -> f64 {
-    gamma*rho.powf(gamma-1.)
+    gamma*rho.powi((gamma-1.) as i32)
 }
 
 pub fn sound_speed_isothermal_dt(rho:f64, gamma:f64) -> f64 {
-    gamma*rho.powf(gamma-1.)
+    gamma*rho.powi((gamma-1.) as i32)
 }
 
 
 // -------- Artificial Viscosity --------
 
 // Monaghan (1989): "Standard" SPH viscous term
-pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_j: f64, rho_i: f64, rho_j: f64) -> (f64, f64) {
+pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_j: f64, rho_mean: f64) -> (f64, f64) {
     if dot_r_v <= 0. {
         // Mean values
         let cs_mean :f64 = 0.5*(cs_i+cs_j);
         let h_mean :f64 = 0.5*(h_i+h_j);
-        let rho_mean :f64 = 0.5*(rho_i+rho_j);
     
         // Parameters
         let alpha :f64 = 1.0;
@@ -388,14 +403,13 @@ pub fn mon89_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_
 }
 
 // Monaghan (1997): AV by Rieman solvers
-pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _h_j: f64, rho_i: f64, rho_j: f64) -> (f64, f64) {
+pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _h_j: f64, rho_mean: f64) -> (f64, f64) {
     if dot_r_v <= 0. {
         // Parameters
         let alpha: f64 = 1.0;
         let beta: f64 = 2.0;
 
         let v_sig:f64 = 0.5*alpha*(cs_i + cs_j - beta*dot_r_v/r_ij);
-        let rho_mean :f64 = 0.5*(rho_i+rho_j);
         let dvdt :f64 = -v_sig*dot_r_v/(r_ij*rho_mean);
         let dudt :f64 = 0.5*dvdt*dot_r_v;
         return (dvdt, dudt);
@@ -405,11 +419,10 @@ pub fn mon97_art_vis(r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, _h_i: f64, _
 }
 
 // Price (2008): Thermal conductivity switches
-pub fn price08_therm_cond(p_i: f64, p_j: f64, rho_i: f64, rho_j: f64, u_i: f64, u_j: f64) -> f64 {
+pub fn price08_therm_cond(p_i: f64, p_j: f64, rho_mean: f64, u_i: f64, u_j: f64) -> f64 {
     // Parameters
     let alpha_u: f64 = 1.;
 
-    let rho_mean :f64 = 0.5*(rho_i+rho_j);
     let v_sig_u:f64 = ((p_i - p_j).abs()/rho_mean).sqrt();
     let dudt :f64 = alpha_u*v_sig_u*(u_i-u_j)/rho_mean;
 
@@ -459,15 +472,15 @@ pub fn body_forces_grav_2obj(particle: &mut Particle, m1: & Star, m2: & Star, om
 
 // Calculate acceleration for each particle in the system
 pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
-                     dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
-                     d:i32, tree: &Node, s_: i32, n: usize, ptr : Pointer, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64,
-                     artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
+                     dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
+                     tree: &Node, s_: i32, n: usize, ptr : Pointer, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64,
+                     artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                      body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool){
     
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[ii].h, rkern);
+        tree.find_neighbors(ii, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[ii].h*rkern);
         return neighbors;
     }).collect();
     (0..n).into_par_iter().for_each(move |ii| {
@@ -484,7 +497,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
 
         let p_i = eos(particles[ii].rho, particles[ii].u, gamma);
         let cs_i = cs(particles[ii].rho, p_i, gamma);
-        let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, rkern, d, wd, lg, hg);
+        let omeg_i = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, rkern, wd, lg, hg);
         for jj in 0..n {
             if ii != jj {
                 let (x_rel, y_rel, z_rel) = periodic_rel_vector(&particles[ii], &particles[jj], wd, lg, hg, rkern*particles[ii].h);
@@ -493,15 +506,17 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                 let mut grad_hi = 0.0;
                 let mut grad_hj = 0.0;
                 if r_ij <= rkern*particles[ii].h {
-                    grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*(particles[ii].h).powi(d+1));
+                    let hisq = particles[ii].h*particles[ii].h;
+                    grad_hi = dfdq(r_ij/particles[ii].h)*sigma/(r_ij*hisq*hisq);
                 }
                 if r_ij <= rkern*particles[jj].h {
-                    grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*(particles[jj].h).powi(d+1));
+                    let hjsq: f64 = particles[jj].h*particles[jj].h;
+                    grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*hjsq*hjsq);
                 }
                 if grad_hi != 0. || grad_hj != 0.0 {
                     let p_j = eos(particles[jj].rho, particles[jj].u, gamma);
                     let cs_j = cs(particles[jj].rho, p_j, gamma);
-                    let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, rkern, d, wd, lg, hg);
+                    let omeg_j = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, rkern, wd, lg, hg);
                     
                     
                     // Velocity dot position
@@ -509,11 +524,13 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                     +(particles[ii].vy-particles[jj].vy)*y_rel
                     +(particles[ii].vz-particles[jj].vz)*z_rel;
                     
+                    // Mean density
+                    let rho_mean: f64 = 0.5 * (particles[ii].rho + particles[jj].rho);
                     // Artificial viscosity
-                    let (art_visc_mom, art_visc_ene) = artificial_viscosity(r_ij, dot_r_v, cs_i, cs_j, particles[ii].h, particles[jj].h, particles[ii].rho, particles[jj].rho);
+                    let (art_visc_mom, art_visc_ene) = artificial_viscosity(r_ij, dot_r_v, cs_i, cs_j, rho_mean, particles[ii].rho, particles[jj].rho);
                     
                     // Artificial thermal conductivity
-                    let art_therm_cond: f64 = price08_therm_cond(p_i, p_j, particles[ii].rho, particles[jj].rho, particles[ii].u, particles[jj].u);
+                    let art_therm_cond: f64 = price08_therm_cond(p_i, p_j, rho_mean, particles[ii].u, particles[jj].u);
                     
                     // Acceleration
                     let (f_ij_x, f_ij_y, f_ij_z) = acceleration_ab(&particles[ii], &particles[jj], x_rel, y_rel, z_rel, p_i, p_j, omeg_i, omeg_j, grad_hi, grad_hj, art_visc_mom);
@@ -541,15 +558,15 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
 
 // -------- Time integrator --------
 pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
-                        dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
-                        d:i32, eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
-                        artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
+                        dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
+                        eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
+                        artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                         body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
                         boundary: fn(&mut Vec<Particle>, f64, f64,f64, f64, f64, f64), wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) {
     
-    tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, d, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, d, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
+    tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
         particle.x += dt * particle.vx;
         particle.y += dt * particle.vy;
@@ -564,9 +581,9 @@ pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f
 
 // Velocity Verlet integrator
 pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
-                                  dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
-                                  d:i32, eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
-                                  artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
+                                  dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
+                                  eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
+                                  artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                                   body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
                                   boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64, f64, f64), wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) {
     
@@ -584,10 +601,10 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
 
     boundary(particles, wd, lg, hg, x0, y0, z0);
 
-    tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, d, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
+    tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
 
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, d, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
         particle.vx += 0.5 * dt * particle.ax;
         particle.vy += 0.5 * dt * particle.ay;
@@ -598,9 +615,9 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
 
 // Velocity Verlet integrator
 pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f64, f64, f64)->f64, cs: fn(f64, f64, f64)->f64, gamma:f64,
-                                  dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64, i32) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
-                                  d:i32, eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
-                                  artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
+                                  dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
+                                  eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
+                                  artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
                                   body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
                                   boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64, f64, f64), wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) {
     
@@ -629,9 +646,9 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
         particle.u += 0.5 * dt * particle.du;
     });
     boundary(particles, wd, lg, hg, x0, y0, z0);
-    tree.build_tree(d as u32, s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, d, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, d, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
+    tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
         particle.vx = particle.vx_star + 0.5 * dt * particle.ax;
         particle.vy = particle.vy_star + 0.5 * dt * particle.ay;
@@ -683,8 +700,9 @@ pub fn force_dt(h: f64, a: f64, f: f64) -> f64 {
 
 
 // Timestepping Criteria Cossins P. J. (2010)
-pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64, _rkern: f64, _d: i32, _wd: f64, _lg: f64, _hg: f64,
-                      _tree: &mut Node, _s_: i32, cs: fn(f64, f64) -> f64) -> f64{
+pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64, _rkern: f64, _wd: f64, _lg: f64, _hg: f64,
+                      _tree: &mut Node, _s_: i32, cs: fn(f64, f64) -> f64) -> f64 {
+
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
         let a: f64 = (particles[ii].ax*particles[ii].ax + particles[ii].ay*particles[ii].ay + particles[ii].az*particles[ii].az).sqrt();
         let cs: f64 = cs(particles[ii].u, gamma);
@@ -696,12 +714,13 @@ pub fn time_step_bale(particles: & Vec<Particle>, n: usize, gamma: f64, _rkern: 
 }
 
 // Timestepping Criteria Monaghan (1997)
-pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f64, d: i32, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64,
-                     tree: &mut Node, s_: i32, cs: fn(f64, f64) -> f64) -> f64{
+pub fn time_step_mon(particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f64, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64,
+                     tree: &mut Node, s_: i32, cs: fn(f64, f64) -> f64) -> f64 {
+                        
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
         let mut neighbors: Vec<usize> = Vec::new();
-        tree.find_neighbors(ii, d as f64, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[ii].h, rkern);
+        tree.find_neighbors(ii, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[ii].h*rkern);
         return neighbors;
     }).collect();
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {

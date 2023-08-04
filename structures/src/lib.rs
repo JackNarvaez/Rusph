@@ -45,7 +45,6 @@ impl Default for Particle {
     }
 }
 
-#[derive(Debug)]
 pub struct Node {
     pub xmin: f64,
     pub ymin: f64,
@@ -59,25 +58,6 @@ pub struct Node {
     pub branches: i32,
     pub children: Vec<Node>,
     pub particles: Vec<usize>,
-}
-
-impl Default for Node {
-    fn default() -> Node {
-        Node {
-            xmin: 0.0,
-            ymin: 0.0,
-            zmin: 0.0,
-            sidex: 1.,
-            sidey: 1.,
-            sidez: 1.,
-            id: 0,
-            depth: 0,
-            n: 0,
-            branches: 0,
-            children: Vec::new(),
-            particles: Vec::new(),
-        }
-    }
 }
 
 #[derive(Copy, Clone)]

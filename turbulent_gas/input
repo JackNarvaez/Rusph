@@ -8,13 +8,13 @@
 1.0     # 6 wd: Width of the system's domain
 1.0     # 7 lg: Length of the system's domain
 1.0     # 8 hg: Height of the system's domain
-3.0517578125e-05 # 9 dm: particle mass
+3.814697265625e-06 # 9 dm: particle mass
 
 # ---------- Simulation Parameters ---------- #
 0.0     # 10 t0: Initial time
 1.0     # 11 tf: Final time
-0.001   # 12 dt: Initial time step
-10      # 13 it_save: Frequency of data saving
+0.0001  # 12 dt: Initial time step
+100     # 13 it_save: Frequency of data saving
 
 # ------------- Tree parameters ------------- #
 10      # 14 s: Maximum number of particles in a leaf (Bucket size)

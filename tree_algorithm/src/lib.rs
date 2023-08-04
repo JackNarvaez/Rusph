@@ -17,7 +17,7 @@ pub trait BuildTree {
 
     fn new(n_p: i32, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64) -> Node;
 
-    fn branching_factor(& self, k: f64, s:f64) -> i32;
+    fn branching_factor(& self, s:f64) -> i32;
 
     fn create_child(&self, j: i32, b: i32, dx: f64, dy: f64, dz: f64) -> Node;
 
@@ -31,9 +31,9 @@ pub trait BuildTree {
 
     fn distribution_ratio(&self, limit: i32) -> f64;
 
-    fn build_tree(&mut self, k: u32, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64);
+    fn build_tree(&mut self, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64);
 
-    fn build_octtree(&mut self, k: u32, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64);
+    fn build_octtree(&mut self, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64);
 
     fn restart(&mut self, n: usize);
 }
@@ -48,11 +48,14 @@ impl BuildTree for Node {
              sidex: wd,
              sidey: lg,
              sidez: hg,
-             ..Default::default()}
+             id: 0,
+             depth: 0,
+             branches: 0,
+             children: Vec::new()}
     }
     
-    fn branching_factor(& self, k: f64, s:f64) -> i32 {
-        ((self.n as f64 /s).powf(1./k)).ceil() as i32
+    fn branching_factor(& self, s:f64) -> i32 {
+        ((self.n as f64 /s).cbrt()).ceil() as i32
     }
 
     fn create_child(&self, j: i32, b: i32, dx: f64, dy: f64, dz: f64) -> Node {
@@ -104,11 +107,11 @@ impl BuildTree for Node {
         r / (self.children).len() as f64
     }
 
-    fn build_tree(&mut self, k: u32, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64) {
+    fn build_tree(&mut self, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64) {
         let mut redistribution :bool = true;
-        let mut b: i32 = self.branching_factor(k as f64, s as f64);
+        let mut b: i32 = self.branching_factor(s as f64);
         while redistribution {
-            self.branches = b.pow(k);
+            self.branches = b*b*b;
             self.create_sub_cells(b);
             for p in &self.particles {
                 let mut x_p:i32 = ((particles[*p].x - self.xmin) / self.sidex * b as f64).floor() as i32;
@@ -144,14 +147,14 @@ impl BuildTree for Node {
         }
         (self.children).par_iter_mut().for_each(|child| {
             if (child.n > s) && (child.sidex > smallest_cell) && (child.sidey > smallest_cell) && (child.sidez > smallest_cell) {
-                child.build_tree(k, s, alpha, beta, particles, smallest_cell);
+                child.build_tree(s, alpha, beta, particles, smallest_cell);
             }
         });
     }
 
-    fn build_octtree(&mut self, k: u32, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64) {
+    fn build_octtree(&mut self, s: i32, alpha: f64, beta: f64, particles: & Vec<Particle>, smallest_cell: f64) {
         let b:i32 = 2;
-        self.branches = b.pow(k);
+        self.branches = b*b*b;
         self.create_sub_cells(b);
         for p in &self.particles {
             let mut x_p: i32 = ((particles[*p].x - self.xmin) / self.sidex * b as f64).floor() as i32;
@@ -172,7 +175,7 @@ impl BuildTree for Node {
         self.delete_particles();
         (self.children).par_iter_mut().for_each(|child| {
             if (child.n > s) && (child.sidex > smallest_cell) && (child.sidey > smallest_cell) && (child.sidez > smallest_cell) {
-                child.build_tree(k, s, alpha, beta, particles, smallest_cell);
+                child.build_tree(s, alpha, beta, particles, smallest_cell);
             }
         });
     }
@@ -185,23 +188,23 @@ impl BuildTree for Node {
 }
 
 pub trait FindNeighbors {
-    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> Vec<usize>;
+    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, b: i32, hrkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> Vec<usize>;
 
     fn print_particles(&self);
 
-    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, h: f64, rkern: f64);
+    fn find_neighbors(& self, p: usize, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, hrkern: f64);
 }
 
 impl FindNeighbors for Node {
 
-    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, h: f64, b: i32, rkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> Vec<usize>{
+    fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, b: i32, hrkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> Vec<usize>{
         let factorx : f64 =  b as f64 /self.sidex;
         let factory : f64 =  b as f64 /self.sidey;
         let factorz : f64 =  b as f64 /self.sidez;
         
-        let (xlow, xup) =  limits(x_p-rkern*h, x_p+rkern*h, x0, wd, self.xmin, self.depth);
-        let (ylow, yup) =  limits(y_p-rkern*h, y_p+rkern*h, y0, lg, self.ymin, self.depth);
-        let (zlow, zup) =  limits(z_p-rkern*h, z_p+rkern*h,  z0, hg, self.zmin, self.depth);
+        let (xlow, xup) =  limits(x_p-hrkern, x_p+hrkern, x0, wd, self.xmin, self.depth);
+        let (ylow, yup) =  limits(y_p-hrkern, y_p+hrkern, y0, lg, self.ymin, self.depth);
+        let (zlow, zup) =  limits(z_p-hrkern, z_p+hrkern,  z0, hg, self.zmin, self.depth);
 
         let mut x_min: i32 = ((xlow - self.xmin) * factorx).floor() as i32;
         let mut x_max: i32 = ((xup - self.xmin) * factorx).floor() as i32;
@@ -255,19 +258,19 @@ impl FindNeighbors for Node {
         }
     }
 
-    fn find_neighbors(& self, p: usize, k: f64, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, x0:f64, y0:f64, z0:f64, h: f64, rkern: f64) {
-        let b: i32 = ((self.branches as f64).powf(1./k)).ceil() as i32;
-        let cell_neighbors = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, h, b as i32, rkern, x0, y0, z0, wd, lg, hg);
+    fn find_neighbors(& self, p: usize, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, x0:f64, y0:f64, z0:f64, hrkern: f64) {
+        let b: i32 = ((self.branches as f64).cbrt()).ceil() as i32;
+        let cell_neighbors = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, b as i32, hrkern, x0, y0, z0, wd, lg, hg);
         for ii in cell_neighbors {
             if self.children[ii].n <= s {
                 for q in &self.children[ii].particles {
-                    let norm: f64 = periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, rkern*h);
-                    if norm <= rkern*rkern*h*h {
+                    let norm: f64 = sq_periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, hrkern);
+                    if norm <= hrkern*hrkern {
                         neighbors_of_p.push(*q);
                     }
                 }
             } else {
-                self.children[ii].find_neighbors(p, k, s, particles, neighbors_of_p, wd, lg, hg, x0, y0, z0, h, rkern);
+                self.children[ii].find_neighbors(p, s, particles, neighbors_of_p, wd, lg, hg, x0, y0, z0, hrkern);
             }
         }
     }
@@ -300,7 +303,7 @@ pub fn save_neighbors(path: &str, p: usize, neighbors: & Vec<usize>){
 
 
 // Periodic Distance
-pub fn periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64, wd: f64, lg: f64, hg: f64, eps: f64) -> f64 {
+pub fn sq_periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64, wd: f64, lg: f64, hg: f64, eps: f64) -> f64 {
     
     let mut x_temp: f64 = x1 - x2;
     let mut y_temp: f64 = y1 - y2;

@@ -47,7 +47,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     // Tree parameters
-    let k : u32 = 3; // Dimension
     let s : i32 = 4;
     let alpha : f64 = 0.5;
     let beta : f64 = 0.5;
@@ -56,7 +55,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start1 = Instant::now();
     let mut root : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
     for _ii in 0..1 {
-        root.build_tree(k, s, alpha, beta, &particles, 0.1*h);
+        root.build_tree(s, alpha, beta, &particles, 0.1*h);
     }
     println!("Tree Builder: {} s", start1.elapsed().as_secs());
     save_tree(path_tree, &root);
@@ -65,11 +64,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start2 = Instant::now();
     let mut neighbors: Vec<usize> = Vec::new();
     for p in 0..n as usize {
-        root.find_neighbors(p, k as f64, s, &particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[p].h, rkern);
+        root.find_neighbors(p, s, &particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[p].h*rkern);
         neighbors = Vec::new();
     }
     let p: usize = 10000;
-    root.find_neighbors(p, k as f64, s, &particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[p].h, rkern);
+    root.find_neighbors(p, s, &particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[p].h*rkern);
     
     println!("Neighbors Finder: {} s", start2.elapsed().as_secs());
     save_neighbors(path_neighbors, p, & neighbors);

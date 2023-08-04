@@ -72,8 +72,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut time_file = File::create("./Data/results/toy_star/Time.txt").expect("creation failed"); // Save time steps
     
     //------------------------------------ kernel -------------------------------------------------
-    let sigma :f64  = 21./(16.*PI);     // Normalization constant of kernel
-    let rkern: f64  = 2.;               // Kernel radius
+    let sigma :f64  = 1./(120.*PI);     // Normalization constant of kernel
+    let rkern: f64  = 3.;               // Kernel radius
     //---------------------------------------------------------------------------------------------
 
     let mut tree : Node = <Node as BuildTree>::new(n as i32, x0-2.*r, y0-2.*r, z0-2.*r, 4.*r, 4.*r, 4.*r);
@@ -84,12 +84,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         // In toy star, body forces depend on the particles' velocity.
         // Therefore, it is not straightforward to use the basic LF integrator.
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
-                                                 sphfunctions::dwdh, sphfunctions::f_wendland_kernel, sphfunctions::dfdq_wendland_kernel, sigma, rkern,
-                                                 d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
+                                                 sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern,
+                                                 eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                                  sphfunctions::mon97_art_vis,
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
                                                  sphfunctions::periodic_boundary, 4.*r, 4.*r, 4.*r, x0-2.*r, y0-2.*r, z0-2.*r);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, d, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_polytropic);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_polytropic);
         tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {

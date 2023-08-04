@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let eta:f64  = input[0];         // Dimensionless constant specifying the smoothing length
     let gamma:f64= input[1];         // Heat capacity ratio
-    let d: i32   = input[2] as i32;  // Dimensions
+    let _d: i32   = input[2] as i32; // Dimensions
     
     let x0:f64   = input[3];         // Bottom left corner  (x-coordinate)
     let y0:f64   = input[4];         // Bottom left corner  (y-coordinate)
@@ -50,7 +50,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut particles :Vec<Particle> = Vec::new();
 
 
-    kh_init_setup(&mut particles, nx, ny, nz, wd, lg, hg, x0, y0, z0, y1, y2, rho1, rho2, vx1, vx2, p0, gamma, eta, dm, d);
+    kh_init_setup(&mut particles, nx, ny, nz, wd, lg, hg, x0, y0, z0, y1, y2, rho1, rho2, vx1, vx2, p0, gamma, eta, dm);
     
     if let Err(err) = datafunctions::save_data(path, &particles){
         println!("{}", err);
@@ -73,13 +73,13 @@ fn delta_vy(x: f64, y: f64, y1: f64, y2: f64) -> f64 {
 } 
 
 
-fn kh_init_setup(particles: &mut Vec<Particle>, nx: usize, ny: usize, nz: usize, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64, y1: f64, y2: f64, rho1: f64, rho2: f64, vx1: f64, vx2: f64, p:f64, gamma: f64, eta: f64, dm: f64, d: i32) {
+fn kh_init_setup(particles: &mut Vec<Particle>, nx: usize, ny: usize, nz: usize, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64, y1: f64, y2: f64, rho1: f64, rho2: f64, vx1: f64, vx2: f64, p:f64, gamma: f64, eta: f64, dm: f64) {
     let dx = wd/nx as f64;
     let dy = 0.5*lg/ny as f64;
     let dy2 = 0.5*dy;
     let dz = hg/nz as f64;
-    let h01: f64 = sphfunctions::h_by_density(dm, rho1, eta, d);
-    let h02: f64 = sphfunctions::h_by_density(dm, rho2, eta, d);
+    let h01: f64 = sphfunctions::h_by_density(dm, rho1, eta);
+    let h02: f64 = sphfunctions::h_by_density(dm, rho2, eta);
     for kk in 0..nz{
         for ii in 0..nx {
             for jj in 0..(ny/2) {

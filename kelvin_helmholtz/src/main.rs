@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let eta:f64     = input[0];         // Dimensionless constant specifying the smoothing length
     let gamma:f64   = input[1];         // Heat capacity ratio
-    let d:i32       = input[2] as i32;  // Dimensions
+    let _d:i32       = input[2] as i32; // Dimensions
     
     let x0:f64      = input[3];         // Bottom left corner  (x-coordinate)
     let y0:f64      = input[4];         // Bottom left corner  (y-coordinate)
@@ -76,8 +76,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut time_file = File::create("./Data/results/kelvin_helmholtz/Time.txt").expect("creation failed"); // Save time steps
     
     //------------------------------------ kernel -------------------------------------------------
-    let sigma :f64  = 1./PI;            // Normalization constant of kernel
-    let rkern: f64  = 2.;               // Kernel radius
+    let sigma :f64  = 1./(120.*PI);            // Normalization constant of kernel
+    let rkern: f64  = 3.;               // Kernel radius
     //---------------------------------------------------------------------------------------------
     
     for ii in 0..n {
@@ -94,12 +94,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start       = Instant::now();   // Runing time
     while t < tf  {
         sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
-                                       sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern, 
-                                       d, eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
+                                       sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern, 
+                                       eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
                                        sphfunctions::periodic_boundary, wd, lg, hg,  x0, y0, z0);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma, rkern, d, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_ideal_gas_u);
+        dt = sphfunctions::time_step_bale(&particles, n, gamma, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_ideal_gas_u);
         tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {

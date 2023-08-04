@@ -18,12 +18,12 @@
 
 # ---------- Simulation Parameters ---------- #
 0.0     # 16 t0: Initial time
-1.      # 17 tf: Final time
+3.      # 17 tf: Final time
 0.0001  # 18 dt: Initial time step
-10      # 19 it_save: Frequency of data saving
-32      # 20 nx: Particle resolution in the x direction
-32      # 21 ny: Particle resolution in the y direction
-32      # 22 nz: Particle resolution in the z direction
+100     # 19 it_save: Frequency of data saving
+64      # 20 nx: Particle resolution in the x direction
+64      # 21 ny: Particle resolution in the y direction
+64      # 22 nz: Particle resolution in the z direction
 
 # ------------- Tree parameters ------------- #
 10      # 23 s: Maximum number of particles in a leaf (Bucket size)
