@@ -1,6 +1,6 @@
 #BSUB -J Scaling
-#BSUB -W 16:00
+#BSUB -W 40:00
 #BSUB -n 70
-#BSUB -q gpu
+#BSUB -q normal
 #BSUB -o Scaling.%J
 bash './speed_up/scaling.sh'

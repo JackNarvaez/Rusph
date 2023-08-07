@@ -22,7 +22,7 @@ use std::f64::consts::PI;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // File
-    let path_source = "./Data/initial_distribution/hydro64_00020.csv";
+    let path_source = "./Data/initial_distribution/hydro128_00020.csv";
 
     // Create Particles
     let mut particles :Vec<Particle> = Vec::new();
@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let particles_ptr = Pointer(particles.as_mut_ptr());
 
     // Simulation parameters
-    let it_tot = 10; // Total iterations
+    let it_tot = 2; // Total iterations
     let n : usize = particles.len(); // Number of particles
 
     //---------------------------------------------------------------------------------------------
@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0:f64      = 0.;               // y-coordinate of the bottom left corner
     let z0:f64      = 0.;               // y-coordinate of the bottom left corner
     let gamma:f64   = 1.;               // Gamma factor (heat capacity ratio)
-    let dm:f64      = 3.814697265625e-06;// Particles' mass
+    let dm:f64      = 4.76837158203125e-07;// Particles' mass
     // let gamma:f64   = 5./3.;         // Gamma factor (heat capacity ratio)
     //let rho0:f64    = 1.;             // Initial density
     //let dm:f64      = rho0*wd*lg/n as f64;// Particles' mass
