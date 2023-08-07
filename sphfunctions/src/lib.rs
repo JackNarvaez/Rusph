@@ -598,9 +598,8 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
         particle.y += dt * particle.vy;
         particle.z += dt * particle.vz;
     });
-
     boundary(particles, wd, lg, hg, x0, y0, z0);
-
+    
     tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
     smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
 

@@ -8,4 +8,5 @@ edition = "2021"
 [dependencies]
 csv = "1.1"
 rayon = "1.7"
+num-integer = "0.1"
 structures = { path = "../structures" }

@@ -17,7 +17,7 @@
 0.0     # 13 t0: Initial time
 16.0    # 14 tf: Final time
 0.04    # 15 dt: Initial time step
-1000    # 16 it_save: Frequency of data saving
+100     # 16 it_save: Frequency of data saving
 1000    # 17 n: Total number of particles
 
 # ------------- Tree parameters ------------- #

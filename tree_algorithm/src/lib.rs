@@ -4,6 +4,8 @@ use std::{
     i32,
 };
 
+use num_integer::Roots;
+
 use csv::Writer;
 
 use structures::{
@@ -259,9 +261,11 @@ impl FindNeighbors for Node {
     }
 
     fn find_neighbors(& self, p: usize, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, x0:f64, y0:f64, z0:f64, hrkern: f64) {
-        let b: i32 = ((self.branches as f64).cbrt()).ceil() as i32;
+        let b: i32 = (self.branches).cbrt();
         let cell_neighbors = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, b as i32, hrkern, x0, y0, z0, wd, lg, hg);
+        // println!("b: {} child: {} -> {:?}", b, self.children.len(), cell_neighbors);
         for ii in cell_neighbors {
+            // println!("{}", ii);
             if self.children[ii].n <= s {
                 for q in &self.children[ii].particles {
                     let norm: f64 = sq_periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, hrkern);
@@ -270,6 +274,7 @@ impl FindNeighbors for Node {
                     }
                 }
             } else {
+                // println!("NEW");
                 self.children[ii].find_neighbors(p, s, particles, neighbors_of_p, wd, lg, hg, x0, y0, z0, hrkern);
             }
         }
