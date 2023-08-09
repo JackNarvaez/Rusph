@@ -8,7 +8,7 @@
 1.0     # 6 wd: Width of the system's domain
 1.0     # 7 lg: Length of the system's domain
 1.0     # 8 hg: Height of the system's domain
-3.814697265625e-06 # 9 dm: particle mass
+3.0517578125e-05 # 9 dm: particle mass (32K Particles)
 
 # ---------- Simulation Parameters ---------- #
 0.0     # 10 t0: Initial time

@@ -22,7 +22,7 @@ use std::f64::consts::PI;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // File
-    let path_source = "./Data/initial_distribution/hydro128_00020.csv";
+    let path_source = "./Data/initial_distribution/hydro32_00020.csv";
 
     // Create Particles
     let mut particles :Vec<Particle> = Vec::new();
@@ -46,10 +46,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0:f64      = 0.;               // y-coordinate of the bottom left corner
     let z0:f64      = 0.;               // y-coordinate of the bottom left corner
     let gamma:f64   = 1.;               // Gamma factor (heat capacity ratio)
-    let dm:f64      = 4.76837158203125e-07;// Particles' mass
-    // let gamma:f64   = 5./3.;         // Gamma factor (heat capacity ratio)
-    //let rho0:f64    = 1.;             // Initial density
-    //let dm:f64      = rho0*wd*lg/n as f64;// Particles' mass
+    let dm:f64      = 3.0517578125e-05; // Particles' mass (32K Particles)
+    // SBW let gamma:f64   = 5./3.;         // Gamma factor (heat capacity ratio)
+    // SBW let rho0:f64    = 1.;             // Initial density
+    // SBW let dm:f64      = rho0*wd*lg/n as f64;// Particles' mass
     let rkern:f64   = 2.;               // Kernel radius
     let sigma:f64   = 1./PI;            // Normalization's constant of kernel
     

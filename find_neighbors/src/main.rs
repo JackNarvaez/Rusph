@@ -54,9 +54,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Tree builder
     let start1 = Instant::now();
     let mut root : Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
-    for _ii in 0..1 {
-        root.build_tree(s, alpha, beta, &particles, 0.1*h);
-    }
+    root.build_tree(s, alpha, beta, &particles, 0.1*h);
     println!("Tree Builder: {} s", start1.elapsed().as_secs());
     save_tree(path_tree, &root);
     
