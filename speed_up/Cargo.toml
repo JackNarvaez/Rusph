@@ -7,7 +7,7 @@ edition = "2021"
 
 [dependencies]
 rayon = "1.7"
-tree_algorithm = { path = "../tree_algorithm" }
-sphfunctions = { path = "../sphfunctions" }
-datafunctions = { path = "../datafunctions" }
+tree_algorithm = { path = "../functions/tree_algorithm" }
+sphfunctions = { path = "../functions/sphfunctions" }
+datafunctions = { path = "../functions/datafunctions" }
 structures = { path = "../structures" }

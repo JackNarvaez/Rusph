@@ -1,14 +1,14 @@
 [workspace]
 
 members = [
-    "toy_star",
-    "speed_up",
-    "sphfunctions",
-    "datafunctions",
-    "tree_algorithm",
-    "find_neighbors",
+    "./functions/sphfunctions",
+    "./functions/datafunctions",
+    "./functions/tree_algorithm",
     "structures",
-    "sedov_blast_wave",
-    "kelvin_helmholtz",
-    "turbulent_gas",
+    "speed_up",
+    "./tests/sedov_blast_wave",
+    "./tests/kelvin_helmholtz",
+    "./tests/toy_star",
+    "./tests/turbulent_gas",
+    "./tests/find_neighbors",
 ]
