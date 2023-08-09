@@ -1,0 +1,26 @@
+# ------------ System Parameters ------------ #
+1.2     # 0 eta: Dimensionless constant specifying the smoothing length
+2.0     # 1 gamma: Heat capacity ratio
+3       # 2 d: Number of spatial dimensions
+1.0     # 3 nu: Viscocity parameter
+1.0     # 4 m: Star's mass
+0.75    # 5 r: Star's radius
+0.0     # 6 x0: Star's center (x-coordinate)
+0.0     # 7 y0: Star's center (y-coordinate)
+0.0     # 8 z0: Star's center (z-coordinate)
+0.0     # 9 vx0: Initial star's velocity (x-coordinate)
+0.0     # 10 vy0: Initial star's velocity (y-coordinate)
+0.0     # 11 vz0: Initial star's velocity (z-coordinate)
+0.0     # 12 u0: Initial particles' energy
+
+# ---------- Simulation Parameters ---------- #
+0.0     # 13 t0: Initial time
+16.0    # 14 tf: Final time
+0.04    # 15 dt: Initial time step
+100     # 16 it_save: Frequency of data saving
+1000    # 17 n: Total number of particles
+
+# ------------- Tree parameters ------------- #
+10      # 18 s: Maximum number of particles in a leaf (Bucket size)
+0.5     # 19 alpha: Fraction of the bucket size s
+0.5     # 20 Maximum ratio of cells with less than alpha*s particles

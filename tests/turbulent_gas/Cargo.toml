@@ -1,0 +1,13 @@
+[package]
+name = "turbulent_gas"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+rayon = "1.7"
+tree_algorithm = { path = "../../functions/tree_algorithm" }
+sphfunctions = { path = "../../functions/sphfunctions" }
+datafunctions = { path = "../../functions/datafunctions" }
+structures = { path = "../../structures" }

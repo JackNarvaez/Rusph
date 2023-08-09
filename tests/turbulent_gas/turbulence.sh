@@ -1,0 +1,1 @@
+cargo run -p turbulent_gas --bin turbulent_gas
