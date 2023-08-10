@@ -282,7 +282,6 @@ impl FindNeighbors for Node {
                     }
                 }
             } else {
-                // println!("NEW");
                 self.children[ii].find_neighbors(p, s, particles, neighbors_of_p, wd, lg, hg, x0, y0, z0, hrkern);
             }
         }
