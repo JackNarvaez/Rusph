@@ -57,7 +57,11 @@ impl BuildTree for Node {
     }
     
     fn branching_factor(& self, s:f64) -> i32 {
-        ((self.n as f64 /s).cbrt()).ceil() as i32
+        let b:i32 = ((self.n as f64 /s).cbrt()).ceil() as i32;
+        if b==0 {
+            println!("ERROOOOOOORRR, {}", (self.n as f64 /s).cbrt());
+        }
+        b
     }
 
     fn create_child(&self, j: i32, b: i32, dx: f64, dy: f64, dz: f64) -> Node {
@@ -113,6 +117,9 @@ impl BuildTree for Node {
         let mut redistribution :bool = true;
         let mut b: i32 = self.branching_factor(s as f64);
         while redistribution {
+            if b==0 {
+                println!("ERROOOOOOORRR, {}", b);
+            }
             self.branches = b*b*b;
             self.create_sub_cells(b);
             for p in &self.particles {
@@ -145,6 +152,9 @@ impl BuildTree for Node {
             } else {
                 redistribution = false;
                 self.delete_particles();
+            }
+            if b==0 {
+                println!("ERROOOOOOORRR, {}", b);
             }
         }
         (self.children).par_iter_mut().for_each(|child| {
@@ -263,10 +273,11 @@ impl FindNeighbors for Node {
     fn find_neighbors(& self, p: usize, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, x0:f64, y0:f64, z0:f64, hrkern: f64) {
         let b: i32 = (self.branches).cbrt();
         let cell_neighbors = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, b as i32, hrkern, x0, y0, z0, wd, lg, hg);
-        // println!("b: {} child: {} -> {:?}", b, self.children.len(), cell_neighbors);
+        // println!("id: {} b: {} part: {} child: {} branches: {} -> {:?}", self.id, b, self.n, self.children.len(), self.branches, cell_neighbors);
         for ii in cell_neighbors {
             // println!("{}", ii);
-            if self.children[ii].n <= s {
+            if self.children[ii].branches == 0 {
+                // if self.children[ii].n <= s {
                 for q in &self.children[ii].particles {
                     let norm: f64 = sq_periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, hrkern);
                     if norm <= hrkern*hrkern {

@@ -57,7 +57,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     root.build_tree(s, alpha, beta, &particles, 0.1*h);
     println!("Tree Builder: {} s", start1.elapsed().as_secs());
     save_tree(path_tree, &root);
-    
+
     // Neighbors finder
     let start2 = Instant::now();
     let mut neighbors: Vec<usize> = Vec::new();
