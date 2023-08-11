@@ -11,3 +11,8 @@ Test systems
 - The Kelvin-Helmholtz problem
 - Toy star
 - Turbulent Gas
+
+Future work
+-----------
+
+So far, Rusph includes only hydrodynamical equations for non-viscous fluids. However, efforts are underway to incorporate additional factors in the future, such as Gravity, Real Viscosity, and Magnetohydrodynamics.
