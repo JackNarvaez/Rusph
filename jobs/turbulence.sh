@@ -3,4 +3,4 @@
 #BSUB -n 40
 #BSUB -q normal
 #BSUB -o Turbulence.%J
-bash './turbulent_gas/turbulence.sh'
+bash './tests/turbulent_gas/turbulence.sh'

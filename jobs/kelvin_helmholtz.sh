@@ -3,4 +3,4 @@
 #BSUB -n 40
 #BSUB -q gpu
 #BSUB -o KelvinHelmholtz.%J
-bash './kelvin_helmholtz/kh.sh'
+bash './tests/kelvin_helmholtz/kh.sh'

@@ -3,4 +3,4 @@
 #BSUB -n 40
 #BSUB -q gpu
 #BSUB -o Sedov.%J
-bash './sedov_blast_wave/sedov.sh'
+bash './tests/sedov_blast_wave/sedov.sh'
