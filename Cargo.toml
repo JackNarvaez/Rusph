@@ -1,10 +1,10 @@
 [workspace]
 
 members = [
-    "./functions/sphfunctions",
-    "./functions/datafunctions",
-    "./functions/tree_algorithm",
-    "structures",
+    "./src/sphfunctions",
+    "./src/datafunctions",
+    "./src/tree_algorithm",
+    "./src/structures",
     "speed_up",
     "./tests/sedov_blast_wave",
     "./tests/kelvin_helmholtz",
