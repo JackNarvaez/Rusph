@@ -58,9 +58,6 @@ impl BuildTree for Node {
     
     fn branching_factor(& self, s:f64) -> i32 {
         let b:i32 = ((self.n as f64 /s).cbrt()).ceil() as i32;
-        if b==0 {
-            println!("ERROOOOOOORRR, {}", (self.n as f64 /s).cbrt());
-        }
         b
     }
 
@@ -117,23 +114,29 @@ impl BuildTree for Node {
         let mut redistribution :bool = true;
         let mut b: i32 = self.branching_factor(s as f64);
         while redistribution {
-            if b==0 {
-                println!("ERROOOOOOORRR, {}", b);
-            }
             self.branches = b*b*b;
             self.create_sub_cells(b);
             for p in &self.particles {
-                let mut x_p:i32 = ((particles[*p].x - self.xmin) / self.sidex * b as f64).floor() as i32;
+                let mut x_p:i32 = ((particles[*p].x - self.xmin) as f64/ self.sidex * b as f64).floor() as i32;
                 if x_p == b {
                     x_p -= 1;
                 }
-                let mut y_p: i32 = ((particles[*p].y - self.ymin) / self.sidey * b as f64).floor() as i32;
+                if x_p < 0 {
+                    x_p = 0;
+                } 
+                let mut y_p: i32 = ((particles[*p].y - self.ymin) as f64/ self.sidey * b as f64).floor() as i32;
                 if y_p == b {
                     y_p -= 1;
                 }
-                let mut z_p: i32 = ((particles[*p].z - self.zmin) / self.sidez * b as f64).floor() as i32;
+                if y_p < 0 {
+                    y_p = 0;
+                }
+                let mut z_p: i32 = ((particles[*p].z - self.zmin) as f64/ self.sidez * b as f64).floor() as i32;
                 if z_p == b {
                     z_p -= 1;
+                }
+                if z_p < 0 {
+                    z_p = 0;
                 }
                 let j :usize = (x_p + (y_p  + z_p * b) * b) as usize;
                 self.children[j].add_particle(*p);

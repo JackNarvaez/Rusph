@@ -48,9 +48,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let it_save:u32 = input[16] as u32; // Frequency of data saving
     
     // Tree's parameters
-    let s_:i32      = input[18] as i32; // Bucket size
-    let alpha_:f64  = input[19];        // Fraction of the bucket size
-    let beta_:f64   = input[20];        // Maximum ratio of cells with less than alpha*s particles
+    let s_:i32      = input[19] as i32; // Bucket size
+    let alpha_:f64  = input[20];        // Fraction of the bucket size
+    let beta_:f64   = input[21];        // Maximum ratio of cells with less than alpha*s particles
     
     //---------------------------------------------------------------------------------------------
 
@@ -76,6 +76,10 @@ fn main() -> Result<(), Box<dyn Error>> {
     let rkern: f64  = 3.;               // Kernel radius
     //---------------------------------------------------------------------------------------------
 
+    for ii in 0..n {
+        particles[ii].rho = sphfunctions::density_by_smoothing_length(dm, particles[ii].h, eta);
+    }
+
     let mut tree : Node = <Node as BuildTree>::new(n as i32, x0-2.*r, y0-2.*r, z0-2.*r, 4.*r, 4.*r, 4.*r);
 
     //------------------------------------ Main Loop ----------------------------------------------
@@ -83,7 +87,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     while t < tf {
         // In toy star, body forces depend on the particles' velocity.
         // Therefore, it is not straightforward to use the basic LF integrator.
-        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
+        sphfunctions::euler_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
                                                  sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern,
                                                  eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                                  sphfunctions::mon97_art_vis,

@@ -236,6 +236,8 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
         h_new = nr_iter(particles, ii, &neighbors, dm, h_old, eta, f, dfdq, sigma, rkern, wd, lg, hg);
         if ((h_new - h_old)/h_old).abs() <=  tol {
             i = it + 2;
+        } else if h_new < 0. || h_new > wd {
+            i = it + 1;
         } else{
             i += 1;
             h_old = h_new;
@@ -565,7 +567,7 @@ pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f
                         boundary: fn(&mut Vec<Particle>, f64, f64,f64, f64, f64, f64), wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) {
     
     tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 10, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
     accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
         particle.x += dt * particle.vx;
@@ -601,7 +603,7 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
     boundary(particles, wd, lg, hg, x0, y0, z0);
     
     tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 30, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
 
     accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
@@ -646,7 +648,7 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
     });
     boundary(particles, wd, lg, hg, x0, y0, z0);
     tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
-    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 50, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
+    smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 30, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0);
     accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf);
     particles.par_iter_mut().for_each(|particle|{
         particle.vx = particle.vx_star + 0.5 * dt * particle.ax;

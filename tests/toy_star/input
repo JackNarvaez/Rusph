@@ -18,9 +18,10 @@
 16.0    # 14 tf: Final time
 0.04    # 15 dt: Initial time step
 100     # 16 it_save: Frequency of data saving
-1000    # 17 n: Total number of particles
+16      # 17 n: Total number of particles
+0       # 18 rd: random initial distribution
 
 # ------------- Tree parameters ------------- #
-10      # 18 s: Maximum number of particles in a leaf (Bucket size)
-0.5     # 19 alpha: Fraction of the bucket size s
-0.5     # 20 Maximum ratio of cells with less than alpha*s particles
+10      # 19 s: Maximum number of particles in a leaf (Bucket size)
+0.5     # 20 alpha: Fraction of the bucket size s
+0.5     # 21 Maximum ratio of cells with less than alpha*s particles

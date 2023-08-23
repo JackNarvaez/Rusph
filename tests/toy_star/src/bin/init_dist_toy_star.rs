@@ -38,14 +38,26 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vz0:f64  = input[11];        // Star's velocity (z-coordinate)
     let u0:f64   = input[12];        // Initial energy
     
-    let n:u32    = input[17] as u32; // Total number of particles
+    let n:u32    = input[17] as u32; // Resolution
 
-    let rho:f64  = 3. * m/(4.*PI*r*r*r); // Density
-    let h:f64    = 0.1*eta*(m/(n as f64 * rho)).powf(1./d as f64); // Smoothing length
+    let rd:u32   = input[18] as u32; // Random initial distribution
 
-    if let Err(err) = init_random_circle(path, n, r, h, x0, y0, z0, vx0, vy0, vz0, u0) {
-        println!("{}", err);
-        process::exit(1);
+    if rd == 1 {
+        let rho:f64  = 3. * m/(4.*PI*r*r*r); // Density
+        let nt: u32  = n*n*n;         // Total number of particles
+        let h:f64    = eta*(m/(nt as f64 * rho)).powf(1./d as f64); // Smoothing length
+
+        if let Err(err) = init_random_circle(path, nt, r, h, x0, y0, z0, vx0, vy0, vz0, u0) {
+            println!("{}", err);
+            process::exit(1);
+        }
+    } else {
+        let h:f64    = eta*(2.*r/n as f64); // Smoothing length
+        if let Err(err) = init_circle(path, n, r, h, x0, y0, z0, vx0, vy0, vz0, u0) {
+            println!("{}", err);
+            process::exit(1);
+        }
+
     }
     Ok(())
 }
@@ -65,6 +77,29 @@ fn init_random_circle(path: &str, n: u32, r:f64, h:f64, x0:f64, y0:f64, z0: f64,
         wtr.write_record(&[x.to_string(), y.to_string(), z.to_string(),
                            vx0.to_string(), vy0.to_string(), vz0.to_string(),
                            h.to_string(), u0.to_string()])?;
+    }
+    wtr.flush()?;
+    Ok(())
+}
+
+pub fn init_circle(path: &str, n: u32, r:f64, h:f64, x0:f64, y0:f64, z0: f64, vx0:f64, vy0:f64, vz0: f64, u0: f64)-> Result<(), Box<dyn Error>>{
+    let mut wtr = Writer::from_path(path)?;
+    wtr.write_record(&["x", "y", "z", "vx", "vy", "vz", "h", "rho"])?;
+    let dl: f64 = 2.*r/n as f64; 
+    let r2:f64 = r*r;
+    for kk in 0..n+1{
+        for jj in 0..n+1{
+            for ii in 0..n+1{
+                let x: f64 = (x0-r) + ii as f64*dl;
+                let y: f64 = (y0-r) + jj as f64*dl;
+                let z: f64 = (z0-r) + kk as f64*dl;
+                if (x*x + y*y + z*z) < r2 {
+                    wtr.write_record(&[x.to_string(), y.to_string(), z.to_string(),
+                           vx0.to_string(), vy0.to_string(), vz0.to_string(),
+                           h.to_string(), u0.to_string()])?;
+                }
+            }
+        }
     }
     wtr.flush()?;
     Ok(())
