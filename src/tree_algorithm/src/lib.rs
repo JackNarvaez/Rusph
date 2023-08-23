@@ -156,9 +156,6 @@ impl BuildTree for Node {
                 redistribution = false;
                 self.delete_particles();
             }
-            if b==0 {
-                println!("ERROOOOOOORRR, {}", b);
-            }
         }
         (self.children).par_iter_mut().for_each(|child| {
             if (child.n > s) && (child.sidex > smallest_cell) && (child.sidey > smallest_cell) && (child.sidez > smallest_cell) {
