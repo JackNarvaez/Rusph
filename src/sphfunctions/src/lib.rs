@@ -2,8 +2,6 @@ use std::f64;
 
 use rayon::prelude::*;
 
-use std::f64::consts::PI;
-
 use tree_algorithm::{
     FindNeighbors,
     BuildTree,
@@ -333,18 +331,6 @@ pub fn smoothing_length(particles: &mut Vec<Particle>, dm:f64, eta:f64, f: fn(f6
 pub fn eos_polytropic(rho:f64, _k:f64, gamma:f64) -> f64 {
     let k: f64 = 0.05;
     k * rho.powf(gamma)
-}
-
-// Coefficient of gravital force
-pub fn coeff_static_grav_potential(k:f64, gamma:f64, m:f64, r:f64, d: i32) -> f64 {
-    if d == 2 {
-        return 2.0*k*PI.powf(1.-gamma) * (m*(gamma/(gamma - 1.))/(r*r)).powf(gamma)/m;
-    } else if d == 3 {
-        let gamma_func: f64 = 3.32335; // Gamma factor function calculated for gamma=2.
-        return 2.*k*(gamma/(gamma-1.))/PI.powf(-1.5*(gamma-1.)) * (gamma_func* m/(r*r*r)).powf(gamma-1.)/(r*r);
-    } else {
-        return 0.;
-    }
 }
 
 pub fn sound_speed_polytropic(rho: f64, gamma: f64) -> f64 {

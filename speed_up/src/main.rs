@@ -1,4 +1,4 @@
-// Sedov Blast Wave
+// Speedup
 
 use std::{
     error::Error,

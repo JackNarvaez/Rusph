@@ -8,6 +8,8 @@ use std::{
     process,
 };
 
+use spfunc::gamma::*;
+
 use tree_algorithm::BuildTree;
 
 use structures::{
@@ -32,8 +34,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input: Vec<f64> = datafunctions::read_input(input_file);
     
     let eta:f64     = input[0];         // Dimensionless constant specifying the smoothing length
-    let gamma:f64   = input[1];         // Heat capacity ratio
-    let d:i32       = input[2] as i32;  // Dimensions
+    let gamm:f64   = input[1];         // Heat capacity ratio
+    let _d:i32       = input[2] as i32;  // Dimensions
     let nu:f64      = input[3];         // Viscocity parameter
     let m: f64      = input[4];         // Star's mass
     let r: f64      = input[5];         // Star's radius
@@ -66,7 +68,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut t:f64   = t0;               // Time
     let n:usize     = particles.len();
     let dm:f64      = m/n as f64;       // Particles' mass
-    let lmbda:f64   = sphfunctions::coeff_static_grav_potential(0.05, gamma, m, r, d);
+    let lmbda:f64   = coeff_static_grav_potential(0.05, gamm, m, r);
     let mut it:u32  = 0;                // Time iterations
     // Save time evolution
     let mut time_file = File::create("./Data/results/toy_star/Time.txt").expect("creation failed"); // Save time steps
@@ -87,13 +89,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     while t < tf {
         // In toy star, body forces depend on the particles' velocity.
         // Therefore, it is not straightforward to use the basic LF integrator.
-        sphfunctions::euler_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamma,
+        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamm,
                                                  sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern,
                                                  eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                                  sphfunctions::mon97_art_vis,
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
                                                  sphfunctions::periodic_boundary, 4.*r, 4.*r, 4.*r, x0-2.*r, y0-2.*r, z0-2.*r);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_polytropic);
+        dt = sphfunctions::time_step_mon(&particles, n, gamm, rkern, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_polytropic);
         tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {
@@ -114,4 +116,10 @@ fn main() -> Result<(), Box<dyn Error>> {
         process::exit(1);
     }
     Ok(())
+}
+
+// Coefficient of gravital force
+fn coeff_static_grav_potential(k:f64, gamm:f64, m:f64, r:f64) -> f64 {
+    let gamma_func: f64 = gamma(1.5 + gamm/(gamm-1.))/gamma(gamm/(gamm-1.));
+    return 2.*k*(gamm/(gamm-1.))/PI.powf(1.5*(gamm-1.)) * (gamma_func* m/(r*r*r)).powf(gamm-1.)/(r*r);
 }
