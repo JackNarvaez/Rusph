@@ -16,3 +16,9 @@ Future work
 -----------
 
 So far, Rusph includes only hydrodynamical equations for non-viscous fluids. However, efforts are underway to incorporate additional factors in the future, such as Gravity, Real Viscosity, and Magnetohydrodynamics.
+
+License
+-----------
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
