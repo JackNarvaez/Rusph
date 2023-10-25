@@ -1,13 +1,16 @@
 [package]
 name = "speed_up"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
+authors.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rayon = "1.7"
 tree_algorithm = { path = "../src/tree_algorithm" }
 sphfunctions = { path = "../src/sphfunctions" }
 datafunctions = { path = "../src/datafunctions" }
 structures = { path = "../src/structures" }
+
+[build-dependencies]
+rayon.workspace = true

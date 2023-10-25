@@ -12,3 +12,17 @@ members = [
     "./tests/turbulent_gas",
     "./tests/find_neighbors",
 ]
+
+resolver = "2"
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+authors = ["Narvaez J <janarvaez@unal.edu.co"]
+description = "Implementation of the SPH algorithm in the Rust programming language"
+readme = "./README.md"
+license-file = "./LICENSE"
+
+[workspace.dependencies]
+rayon = "1.7"
+csv = "1.1"

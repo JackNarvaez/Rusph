@@ -1,11 +1,12 @@
 [package]
 name = "sphfunctions"
-version = "0.1.0"
+version.workspace = true
 edition = "2021"
+authors.workspace = true
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-rayon = "1.7"
+rayon.workspace = true
 structures = { path = "../structures" }
 tree_algorithm = { path = "../tree_algorithm" }
