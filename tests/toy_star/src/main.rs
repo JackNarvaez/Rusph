@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         t += dt;
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-            if let Err(err) = datafunctions::save_data(&(String::from("./Data/results/toy_star/") + &(it/it_save).to_string() + &".csv"), &particles){
+            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Data/results/toy_star/") + &(it/it_save).to_string()), &particles){
                 println!("{}", err);
                 process::exit(1);
             }
@@ -111,7 +111,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //---------------------------------------------------------------------------------------------
 
     // Save final information
-    if let Err(err) = datafunctions::save_data(&(String::from("./Data/results/toy_star/final.csv")), &particles){
+    if let Err(err) = datafunctions::save_data_bin(&(String::from("./Data/results/toy_star/final")), &particles){
         println!("{}", err);
         process::exit(1);
     }

@@ -17,7 +17,7 @@
 0.0     # 13 t0: Initial time
 16.0    # 14 tf: Final time
 0.04    # 15 dt: Initial time step
-100     # 16 it_save: Frequency of data saving
+10     # 16 it_save: Frequency of data saving
 24      # 17 n: Total number of particles
 0       # 18 rd: random initial distribution
 

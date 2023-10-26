@@ -1,5 +1,5 @@
 use std::{
-    io::{BufRead, BufReader},
+    io::{BufRead, BufReader, prelude::*},
     fs::File,
     error::Error,
     f64,
@@ -58,26 +58,31 @@ pub fn init_square(path: &str, n: u32, h:f64, wd:f64, lg:f64, hg: f64, x0: f64, 
 pub fn save_data(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     wtr.write_record(&["x", "y", "z", "vx", "vy", "vz", "h", "u"])?;
-    for ii in 0..particles.len() {
-        wtr.write_record(&[particles[ii].x.to_string(), particles[ii].y.to_string(), particles[ii].z.to_string(),
-                           particles[ii].vx.to_string(), particles[ii].vy.to_string(), particles[ii].vz.to_string(),
-                           particles[ii].h.to_string(), particles[ii].u.to_string()])?;
+    for particle in particles {
+        wtr.write_record(&[particle.x.to_string(), particle.y.to_string(), particle.z.to_string(),
+                           particle.vx.to_string(), particle.vy.to_string(), particle.vz.to_string(),
+                           particle.h.to_string(), particle.u.to_string()])?;
     }
     wtr.flush()?;
     Ok(())
 }
 
-pub fn save_data_iso(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Error>>{
-    let mut wtr = Writer::from_path(path)?;
-    wtr.write_record(&["x", "y", "z", "vx", "vy", "vz", "h"])?;
-    for ii in 0..particles.len() {
-        wtr.write_record(&[particles[ii].x.to_string(), particles[ii].y.to_string(), particles[ii].z.to_string(),
-                           particles[ii].vx.to_string(), particles[ii].vy.to_string(), particles[ii].vz.to_string(),
-                           particles[ii].h.to_string()])?;
+pub fn save_data_bin(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Error>>{
+    let mut wtr = File::create(path)?;
+    for particle in particles {
+        wtr.write_all(&particle.x.to_le_bytes())?;
+        wtr.write_all(&particle.y.to_le_bytes())?;
+        wtr.write_all(&particle.z.to_le_bytes())?;
+        wtr.write_all(&particle.vx.to_le_bytes())?;
+        wtr.write_all(&particle.vy.to_le_bytes())?;
+        wtr.write_all(&particle.vz.to_le_bytes())?;
+        wtr.write_all(&particle.h.to_le_bytes())?;
+        wtr.write_all(&particle.u.to_le_bytes())?;
     }
     wtr.flush()?;
     Ok(())
 }
+
 
 // -------- Read data --------
 
