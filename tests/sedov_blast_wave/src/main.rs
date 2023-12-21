@@ -24,7 +24,7 @@ use std::f64::consts::PI;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Files
-    let path_source = "./Data/initial_distribution/sedov_blast_wave.csv";
+    let path_source = "./Sedov/Ini_00.csv";
     let input_file = "./tests/sedov_blast_wave/input";
 
     //---------------------------------------------------------------------------------------------
@@ -70,7 +70,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let dm :f64     = rho0*(wd*lg*hg)/n as f64; // Particles' mass
     let mut it: u32 = 0;                // Time iterations
     // Save time evolution
-    let mut time_file = File::create("./Data/results/sedov_blast_wave/Time.txt").expect("creation failed");
+    let mut time_file = File::create("./Sedov/Time.txt").expect("creation failed");
     
     //------------------------------------ kernel -------------------------------------------------
     let sigma :f64  = 1./(120.*PI);            // Normalization constant of kernel
@@ -97,7 +97,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         t += dt;
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Data/results/sedov_blast_wave/") + &(it/it_save).to_string()), &particles){
+            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Sedov/Ev_") + &(it/it_save).to_string()), &particles){
                 println!("{}", err);
                 process::exit(1);
             }
@@ -109,7 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Save final information
     time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-    if let Err(err) = datafunctions::save_data(&(String::from("./Data/results/sedov_blast_wave/final")), &particles){
+    if let Err(err) = datafunctions::save_data_bin(&(String::from("./Sedov/Fin_00")), &particles){
         println!("{}", err);
         process::exit(1);
     }

@@ -26,7 +26,7 @@ use datafunctions;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Files
-    let path_source: &str = "./Data/initial_distribution/toy_star.csv";
+    let path_source: &str = "./Toystar/Ini_00.csv";
     let input_file = "./tests/toy_star/input";
 
     //---------------------------------------------------------------------------------------------
@@ -71,7 +71,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let lmbda:f64   = coeff_static_grav_potential(0.05, gamm, m, r);
     let mut it:u32  = 0;                // Time iterations
     // Save time evolution
-    let mut time_file = File::create("./Data/results/toy_star/Time.txt").expect("creation failed"); // Save time steps
+    let mut time_file = File::create("./Toystar/Time.txt").expect("creation failed"); // Save time steps
     
     //------------------------------------ kernel -------------------------------------------------
     let sigma :f64  = 1./(120.*PI);     // Normalization constant of kernel
@@ -100,7 +100,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         t += dt;
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Data/results/toy_star/") + &(it/it_save).to_string()), &particles){
+            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Toystar/Ev_") + &(it/it_save).to_string()), &particles){
                 println!("{}", err);
                 process::exit(1);
             }
@@ -111,7 +111,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //---------------------------------------------------------------------------------------------
 
     // Save final information
-    if let Err(err) = datafunctions::save_data_bin(&(String::from("./Data/results/toy_star/final")), &particles){
+    if let Err(err) = datafunctions::save_data_bin(&(String::from("./Toystar/Fin_00")), &particles){
         println!("{}", err);
         process::exit(1);
     }

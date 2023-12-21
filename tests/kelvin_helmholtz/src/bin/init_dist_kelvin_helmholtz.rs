@@ -14,7 +14,7 @@ use std::f64::consts::PI;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Files
-    let path = "./Data/initial_distribution/kelvin_helmholtz.csv";
+    let path = "./Kelvinhelmholtz/Ini_00.csv";
     let input_file = "./tests/kelvin_helmholtz/input";
 
     // Parameters

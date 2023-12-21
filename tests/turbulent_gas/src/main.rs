@@ -24,7 +24,7 @@ use std::f64::consts::PI;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Files
-    let path_source = "./Data/initial_distribution/hydro32_00020.csv";
+    let path_source = "./Turbulence/hydro32_00020.csv";
     let input_file = "./tests/turbulent_gas/input";
 
     //---------------------------------------------------------------------------------------------
@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let n : usize   = particles.len(); // Number of particles
     let mut it: u32 = 0; // Time iterations
     // Save time evolution
-    let mut time_file = File::create("./Data/results/turbulent_gas/Time.txt").expect("creation failed");
+    let mut time_file = File::create("./Turbulence/Time.txt").expect("creation failed");
     
     //------------------------------------ kernel -------------------------------------------------
     let sigma :f64  = 1./(120.*PI);            // Normalization constant of kernel
@@ -97,7 +97,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         t += dt;
         if (it%it_save) == 0 {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Data/results/turbulent_gas/") + &(it/it_save).to_string()), &particles){
+            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Turbulence/Ev_") + &(it/it_save).to_string()), &particles){
                 println!("{}", err);
                 process::exit(1);
             }
@@ -109,7 +109,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Save final information
     time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-    if let Err(err) = datafunctions::save_data_bin(&(String::from("./Data/results/turbulent_gas/final")), &particles){
+    if let Err(err) = datafunctions::save_data_bin(&(String::from("./Turbulence/Fin_00")), &particles){
         println!("{}", err);
         process::exit(1);
     }

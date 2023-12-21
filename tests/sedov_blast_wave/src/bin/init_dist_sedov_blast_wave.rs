@@ -16,7 +16,7 @@ use datafunctions;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Files
-    let path = "./Data/initial_distribution/sedov_blast_wave.csv";
+    let path = "./Sedov/Ini_00.csv";
     let input_file = "./tests/sedov_blast_wave/input";
     
     // Parameters

@@ -19,7 +19,7 @@ use std::f64::consts::PI;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Files
-    let path = "./Data/initial_distribution/toy_star.csv";
+    let path = "./Toystar/Ini_00.csv";
     let input_file = "./tests/toy_star/input";
 
     // Parameters

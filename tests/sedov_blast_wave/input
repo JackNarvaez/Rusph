@@ -15,8 +15,8 @@
 # ---------- Simulation Parameters ---------- #
 0.0     # 12 t0: Initial time
 0.08    # 13 tf: Final time
-0.0001  # 14 dt: Initial time step
-50      # 15 it_save: Frequency of data saving
+0.001  # 14 dt: Initial time step
+5      # 15 it_save: Frequency of data saving
 32      # 16 nx: Particle resolution in the x direction
 32      # 17 ny: Particle resolution in the y direction
 32      # 18 nz: Particle resolution in the z direction
