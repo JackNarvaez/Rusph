@@ -1,6 +1,6 @@
 all: Toystar
 
-Sedov: ./tests/sedov_blast_wave/sedov.sh ./tests/sedov_blast_wave/input ./tests/sedov_blast_wave/Cargo.toml
+Sedov: ./tests/sedov_blast_wave/sedov.sh
 	@mkdir $@
 	@bash $<
 
