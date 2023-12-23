@@ -74,12 +74,23 @@ fn init_dist_sod_tube(particles: &mut Vec<Particle>, nxl: u32, nyl: u32, nzl: u3
 
     // Left State
     for kk in 0..nzl {
-        for jj in 0..nyl{
-            for ii in 0..nxl{
-                let xp: f64 = x0 + dxl*ii as f64;
-                let yp: f64 = y0 + dyl*jj as f64;
-                let zp: f64 = z0 + dzl*kk as f64;
-                particles.push(Particle{x:xp, y:yp, z:zp,
+        for jj in 0..nyl {
+            for ii in 0..4 {
+                let xp: f64 = x0 + dxl*(ii as f64+0.5);
+                let yp: f64 = y0 + dyl*(jj as f64+0.5);
+                let zp: f64 = z0 + dzl*(kk as f64+0.5);
+                particles.push(Particle{ptype:1,
+                                        x:xp, y:yp, z:zp,
+                                        vx: 0.0, vy: 0.0, vz: 0.0,
+                                        h:hpl, u: ul,
+                                        ..Default::default()});
+            }
+            for ii in 4..nxl{
+                let xp: f64 = x0 + dxl*(ii as f64+0.5);
+                let yp: f64 = y0 + dyl*(jj as f64+0.5);
+                let zp: f64 = z0 + dzl*(kk as f64+0.5);
+                particles.push(Particle{ptype:0, 
+                                        x:xp, y:yp, z:zp,
                                         vx: 0.0, vy: 0.0, vz: 0.0,
                                         h:hpl, u: ul,
                                         ..Default::default()});
@@ -89,13 +100,24 @@ fn init_dist_sod_tube(particles: &mut Vec<Particle>, nxl: u32, nyl: u32, nzl: u3
     // Right State
     for kk in 0..nzr {
         for jj in 0..nyr{
-            for ii in 0..nxr{
-                let xp: f64 = xm + dxr*ii as f64;
-                let yp: f64 = y0 + dyr*jj as f64;
-                let zp: f64 = z0 + dzr*kk as f64;
-                particles.push(Particle{x:xp, y:yp, z:zp,
+            for ii in 0..nxr-2{
+                let xp: f64 = xm + dxr*(ii as f64+0.5);
+                let yp: f64 = y0 + dyr*(jj as f64+0.5);
+                let zp: f64 = z0 + dzr*(kk as f64+0.5);
+                particles.push(Particle{ptype:0,
+                                        x:xp, y:yp, z:zp,
                                         vx: 0.0, vy: 0.0, vz: 0.0,
                                         h:hpr, u: ur,
+                                        ..Default::default()});
+            }
+            for ii in (nxr-2)..nxr {
+                let xp: f64 = xm + dxr*(ii as f64+0.5);
+                let yp: f64 = y0 + dyr*(jj as f64+0.5);
+                let zp: f64 = z0 + dzr*(kk as f64+0.5);
+                particles.push(Particle{ptype:1,
+                                        x:xp, y:yp, z:zp,
+                                        vx: 0.0, vy: 0.0, vz: 0.0,
+                                        h:hpr, u: ul,
                                         ..Default::default()});
             }
         }

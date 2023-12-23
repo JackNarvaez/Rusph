@@ -2,17 +2,17 @@
 1.2     # 0 eta: Dimensionless constant specifying the smoothing length
 1.667   # 1 gamma: Heat capacity ratio
 3       # 2 d: Number of spatial dimensions
--0.5    # 3 x0: Bottom left corner  (x-coordinate)
--0.162  # 4 y0: Bottom left corner  (y-coordinate)
--0.153  # 5 z0: Bottom left corner  (z-coordinate)
+0.0     # 3 x0: Bottom left corner  (x-coordinate)
+0.0     # 4 y0: Bottom left corner  (y-coordinate)
+0.0     # 5 z0: Bottom left corner  (z-coordinate)
 1.0     # 6 wd: Width of the system's domain
-0.324   # 7 lg: Length of the system's domain
-0.306   # 8 hg: Height of the system's domain
+0.75    # 7 lg: Length of the system's domain
+0.75    # 8 hg: Height of the system's domain
 1.0     # 9 rhol: Initial left density
 0.125   # 10 rhor: Initial right density
 1.0     # 11 Pl: Left initial pressure
 0.1     # 12 Pr: Right initial pressure
-0.0     # 13 xm: Discontinuity position
+0.5     # 13 xm: Discontinuity position
 
 # ---------- Simulation Parameters ---------- #
 0.0     # 14 t0: Initial time

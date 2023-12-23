@@ -54,6 +54,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let s_:i32      = input[24] as i32; // Bucket size
     let alpha_:f64  = input[25];        // Fraction of the bucket size
     let beta_:f64   = input[26];        // Maximum ratio of cells with less than alpha*s particles
+
+    // Boundary conditions
+    let xper:bool   = false;
+    let yper:bool   = true;
+    let zper:bool   = true;
     
     //---------------------------------------------------------------------------------------------
     
@@ -75,7 +80,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut time_file = File::create("./Sodtube/Time.txt").expect("creation failed");
     
     //------------------------------------ kernel -------------------------------------------------
-    let sigma :f64  = 1./(120.*PI);     // Normalization constant of kernel
+    let sigma :f64  = 1./PI;     // Normalization constant of kernel
     let rkern: f64  = 3.;               // Kernel radius
     //---------------------------------------------------------------------------------------------
     
@@ -89,12 +94,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start       = Instant::now();   // Runing time
     while t < tf  {
         sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
-                                       sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern,
+                                       sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern,
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
-                                       sphfunctions::periodic_boundary, wd, lg, hg, x0, y0, z0);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_ideal_gas_u);
+                                       sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg, x0, y0, z0);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_ideal_gas_u, xper, yper, zper);
         tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {
