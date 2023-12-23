@@ -59,6 +59,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let mut dt:f64  = 0.0001;           // Time step
     let mut it:u32  = 0;                // Time iterations
+
+    // Boundary conditions
+    let xper:bool   = true;
+    let yper:bool   = true;
+    let zper:bool   = true;
+
     //---------------------------------------------------------------------------------------------
     
     for ii in 0..n {
@@ -75,8 +81,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
-                                       sphfunctions::periodic_boundary, wd, lg, hg, x0, y0, z0);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_isothermal_dt);
+                                       sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg, x0, y0, z0);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_isothermal_dt, xper, yper, zper);
         tree.restart(n);
         it += 1;
     }

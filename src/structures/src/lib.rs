@@ -1,5 +1,6 @@
 #[derive(Debug)]
 pub struct Particle {
+    pub ptype: u8,
 	pub x: f64,
     pub y: f64,
     pub z: f64,
@@ -23,6 +24,7 @@ pub struct Particle {
 impl Default for Particle {
     fn default() -> Particle {
         Particle {
+            ptype: 0,
             x: 0.,
             y: 0.,
             z: 0.,

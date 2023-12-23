@@ -204,7 +204,7 @@ pub trait FindNeighbors {
 
     fn print_particles(&self);
 
-    fn find_neighbors(& self, p: usize, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, hrkern: f64);
+    fn find_neighbors(& self, p: usize, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, hrkern: f64, xperiodic:bool, yperiodic:bool, zperiodic:bool);
 }
 
 impl FindNeighbors for Node {
@@ -270,19 +270,19 @@ impl FindNeighbors for Node {
         }
     }
 
-    fn find_neighbors(& self, p: usize, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, x0:f64, y0:f64, z0:f64, hrkern: f64) {
+    fn find_neighbors(& self, p: usize, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg:f64, hg:f64, x0:f64, y0:f64, z0:f64, hrkern: f64, xperiodic:bool, yperiodic:bool, zperiodic:bool) {
         let b: i32 = (self.branches).cbrt();
         let cell_neighbors = self.range_neigh(particles[p].x, particles[p].y, particles[p].z, b as i32, hrkern, x0, y0, z0, wd, lg, hg);
         for ii in cell_neighbors {
             if self.children[ii].branches == 0 {
                 for q in &self.children[ii].particles {
-                    let norm: f64 = sq_periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, hrkern);
+                    let norm: f64 = sq_periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, hrkern, xperiodic, yperiodic, zperiodic);
                     if norm <= hrkern*hrkern {
                         neighbors_of_p.push(*q);
                     }
                 }
             } else {
-                self.children[ii].find_neighbors(p, s, particles, neighbors_of_p, wd, lg, hg, x0, y0, z0, hrkern);
+                self.children[ii].find_neighbors(p, s, particles, neighbors_of_p, wd, lg, hg, x0, y0, z0, hrkern, xperiodic, yperiodic, zperiodic);
             }
         }
     }
@@ -315,7 +315,7 @@ pub fn save_neighbors(path: &str, p: usize, neighbors: & Vec<usize>){
 
 
 // Periodic Distance
-pub fn sq_periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64, wd: f64, lg: f64, hg: f64, eps: f64) -> f64 {
+pub fn sq_periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64, wd: f64, lg: f64, hg: f64, eps: f64, xperiodic:bool, yperiodic:bool, zperiodic:bool) -> f64 {
     
     let mut x_temp: f64 = x1 - x2;
     let mut y_temp: f64 = y1 - y2;
@@ -323,21 +323,21 @@ pub fn sq_periodic_norm(x1: f64, x2: f64, y1: f64, y2: f64, z1: f64, z2: f64, wd
 
     let diam: f64 = 2.*eps;
 
-    if x_temp.abs() > wd-diam {
+    if xperiodic && x_temp.abs() > wd-diam {
         if x_temp > 0. {
             x_temp -= wd;
         } else {
             x_temp += wd;
         }
     }
-    if y_temp.abs() > lg-diam {
+    if yperiodic && y_temp.abs() > lg-diam {
         if y_temp > 0. {
             y_temp -= lg;
         } else {
             y_temp += lg;
         }
     }
-    if z_temp.abs() > hg-diam {
+    if zperiodic && z_temp.abs() > hg-diam {
         if z_temp > 0. {
             z_temp -= hg;
         } else {

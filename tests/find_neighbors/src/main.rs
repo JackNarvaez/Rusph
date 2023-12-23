@@ -34,6 +34,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let h :f64 = 0.1; // Smoothing length
     let rkern :f64 = 2.; // Smoothing length
 
+    let xper:bool = true;
+    let yper:bool = true;
+    let zper:bool = true;
+
+
     // Initialize system
     if let Err(err) = datafunctions::init_square(path, n, h, wd, lg, hg, x0, y0, z0){
         println!("{}", err);
@@ -62,11 +67,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start2 = Instant::now();
     let mut neighbors: Vec<usize> = Vec::new();
     for p in 0..n as usize {
-        root.find_neighbors(p, s, &particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[p].h*rkern);
+        root.find_neighbors(p, s, &particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[p].h*rkern, xper, yper, zper);
         neighbors = Vec::new();
     }
     let p: usize = 10000;
-    root.find_neighbors(p, s, &particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[p].h*rkern);
+    root.find_neighbors(p, s, &particles, &mut neighbors, wd, lg, hg, x0, y0, z0, particles[p].h*rkern, xper, yper, zper);
     
     println!("Neighbors Finder: {} s", start2.elapsed().as_secs());
     save_neighbors(path_neighbors, p, & neighbors);

@@ -53,6 +53,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let s_:i32      = input[19] as i32; // Bucket size
     let alpha_:f64  = input[20];        // Fraction of the bucket size
     let beta_:f64   = input[21];        // Maximum ratio of cells with less than alpha*s particles
+
+    // Boundary conditions
+    let xper:bool   = false;
+    let yper:bool   = false;
+    let zper:bool   = false;
     
     //---------------------------------------------------------------------------------------------
 
@@ -94,8 +99,8 @@ fn main() -> Result<(), Box<dyn Error>> {
                                                  eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                                  sphfunctions::mon97_art_vis,
                                                  sphfunctions::body_forces_toy_star, nu, lmbda, true,
-                                                 sphfunctions::periodic_boundary, 4.*r, 4.*r, 4.*r, x0-2.*r, y0-2.*r, z0-2.*r);
-        dt = sphfunctions::time_step_mon(&particles, n, gamm, rkern, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_polytropic);
+                                                 sphfunctions::periodic_boundary, xper, yper, zper, 4.*r, 4.*r, 4.*r, x0-2.*r, y0-2.*r, z0-2.*r);
+        dt = sphfunctions::time_step_mon(&particles, n, gamm, rkern, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_polytropic, xper, yper, zper);
         tree.restart(n);
         t += dt;
         if (it%it_save) == 0 {

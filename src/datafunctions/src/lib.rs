@@ -57,9 +57,9 @@ pub fn init_square(path: &str, n: u32, h:f64, wd:f64, lg:f64, hg: f64, x0: f64, 
 
 pub fn save_data(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
-    wtr.write_record(&["x", "y", "z", "vx", "vy", "vz", "h", "u"])?;
+    wtr.write_record(&["ptype", "x", "y", "z", "vx", "vy", "vz", "h", "u"])?;
     for particle in particles {
-        wtr.write_record(&[particle.x.to_string(), particle.y.to_string(), particle.z.to_string(),
+        wtr.write_record(&[particle.ptype.to_string(), particle.x.to_string(), particle.y.to_string(), particle.z.to_string(),
                            particle.vx.to_string(), particle.vy.to_string(), particle.vz.to_string(),
                            particle.h.to_string(), particle.u.to_string()])?;
     }
@@ -92,9 +92,9 @@ pub fn read_data(path: &str, particles: &mut Vec<Particle>) -> Result<(), Box<dy
         .from_path(path)?;
     for result in rdr.records() {
         let record = result?;
-        particles.push(Particle{x:(&record[0]).parse::<f64>().unwrap(), y:(&record[1]).parse::<f64>().unwrap(), z:(&record[2]).parse::<f64>().unwrap(),
-                                vx:(&record[3]).parse::<f64>().unwrap(), vy:(&record[4]).parse::<f64>().unwrap(), vz:(&record[5]).parse::<f64>().unwrap(),
-                                h:(&record[6]).parse::<f64>().unwrap(), u:(&record[7]).parse::<f64>().unwrap(),
+        particles.push(Particle{ptype:(&record[0]).parse::<u8>().unwrap(), x:(&record[1]).parse::<f64>().unwrap(), y:(&record[2]).parse::<f64>().unwrap(), z:(&record[3]).parse::<f64>().unwrap(),
+                                vx:(&record[4]).parse::<f64>().unwrap(), vy:(&record[5]).parse::<f64>().unwrap(), vz:(&record[6]).parse::<f64>().unwrap(),
+                                h:(&record[7]).parse::<f64>().unwrap(), u:(&record[8]).parse::<f64>().unwrap(),
                                 ..Default::default()});
     }
     Ok(())
