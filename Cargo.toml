@@ -7,6 +7,7 @@ members = [
     "./src/structures",
     "speed_up",
     "./tests/sedov_blast_wave",
+    "./tests/sod_shock_tube",
     "./tests/kelvin_helmholtz",
     "./tests/toy_star",
     "./tests/turbulent_gas",
