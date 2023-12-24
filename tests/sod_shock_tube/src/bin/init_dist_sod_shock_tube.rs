@@ -71,11 +71,12 @@ fn init_dist_sod_tube(particles: &mut Vec<Particle>, nxl: u32, nyl: u32, nzl: u3
     let dzr: f64 = hg/nzr as f64;
     let hpl: f64 = h_by_density(dm, rhol, eta);
     let hpr: f64 = h_by_density(dm, rhor, eta);
-
+    let bnxl: u32= nxl/4;
+    let bnxr: u32= nxr/4;
     // Left State
     for kk in 0..nzl {
         for jj in 0..nyl {
-            for ii in 0..4 {
+            for ii in 0..bnxl {
                 let xp: f64 = x0 + dxl*(ii as f64+0.5);
                 let yp: f64 = y0 + dyl*(jj as f64+0.5);
                 let zp: f64 = z0 + dzl*(kk as f64+0.5);
@@ -85,7 +86,7 @@ fn init_dist_sod_tube(particles: &mut Vec<Particle>, nxl: u32, nyl: u32, nzl: u3
                                         h:hpl, u: ul,
                                         ..Default::default()});
             }
-            for ii in 4..nxl{
+            for ii in bnxl..nxl{
                 let xp: f64 = x0 + dxl*(ii as f64+0.5);
                 let yp: f64 = y0 + dyl*(jj as f64+0.5);
                 let zp: f64 = z0 + dzl*(kk as f64+0.5);
@@ -100,7 +101,7 @@ fn init_dist_sod_tube(particles: &mut Vec<Particle>, nxl: u32, nyl: u32, nzl: u3
     // Right State
     for kk in 0..nzr {
         for jj in 0..nyr{
-            for ii in 0..nxr-2{
+            for ii in 0..(nxr-bnxr){
                 let xp: f64 = xm + dxr*(ii as f64+0.5);
                 let yp: f64 = y0 + dyr*(jj as f64+0.5);
                 let zp: f64 = z0 + dzr*(kk as f64+0.5);
@@ -110,7 +111,7 @@ fn init_dist_sod_tube(particles: &mut Vec<Particle>, nxl: u32, nyl: u32, nzl: u3
                                         h:hpr, u: ur,
                                         ..Default::default()});
             }
-            for ii in (nxr-2)..nxr {
+            for ii in (nxr-bnxr)..nxr {
                 let xp: f64 = xm + dxr*(ii as f64+0.5);
                 let yp: f64 = y0 + dyr*(jj as f64+0.5);
                 let zp: f64 = z0 + dzr*(kk as f64+0.5);

@@ -80,7 +80,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut time_file = File::create("./Sodtube/Time.txt").expect("creation failed");
     
     //------------------------------------ kernel -------------------------------------------------
-    let sigma :f64  = 1./PI;     // Normalization constant of kernel
+    let sigma :f64  = 1./(120.*PI);     // Normalization constant of kernel
     let rkern: f64  = 3.;               // Kernel radius
     //---------------------------------------------------------------------------------------------
     
@@ -94,7 +94,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start       = Instant::now();   // Runing time
     while t < tf  {
         sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
-                                       sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern,
+                                       sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern,
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, 0.0, 0.0, false,
