@@ -3,6 +3,7 @@
 members = [
     "./src/sphfunctions",
     "./src/datafunctions",
+    "./src/partdistribution",
     "./src/tree_algorithm",
     "./src/structures",
     "speed_up",

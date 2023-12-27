@@ -1,5 +1,5 @@
 [package]
-name = "datafunctions"
+name = "partdistribution"
 version.workspace = true
 edition = "2021"
 authors.workspace = true
@@ -8,4 +8,8 @@ authors.workspace = true
 
 [dependencies]
 csv.workspace = true
+rand = { version = "0.8.5", default-features = false }
+rand_pcg = "0.3.1"
+rand_core = "0.6.4"
 structures = { path = "../structures" }
+sphfunctions = { path = "../sphfunctions" }

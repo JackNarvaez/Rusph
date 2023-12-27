@@ -7,6 +7,7 @@ use std::{
 };
 
 use datafunctions;
+use partdistribution;
 
 use tree_algorithm::{
     BuildTree,
@@ -40,7 +41,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
 
     // Initialize system
-    if let Err(err) = datafunctions::init_square(path, n, h, wd, lg, hg, x0, y0, z0){
+    if let Err(err) = partdistribution::init_square(path, n, h, wd, lg, hg, x0, y0, z0){
         println!("{}", err);
         process::exit(1);
     }
