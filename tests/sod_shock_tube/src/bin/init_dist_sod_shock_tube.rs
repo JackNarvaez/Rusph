@@ -7,8 +7,8 @@ use std::{
 };
 
 use structures::Particle;
-use sphfunctions::h_by_density;
 use datafunctions;
+
 
 fn main() -> Result<(), Box<dyn Error>> {
 
@@ -49,93 +49,34 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let vol: f64 = wd*lg*hg;                    // Volumen
     let dm: f64  = 0.5*vol*(rhol+rhor)/n as f64;// Particles' mass
+    let bxl: f64 = (xm-x0)/6.;
+    let bxr: f64 = (x0+wd-xm)/6.;
     
     let mut particles :Vec<Particle> = Vec::new();
 
-    init_dist_sod_tube(&mut particles, nxl, nyl, nzl, nxr, nyr, nzr, rhol, rhor, ul, ur, xm, eta, wd, lg, hg, x0, y0, z0, dm);
+    // Left State
+    partdistribution::init_dist_cubic(&mut particles, nxl, nyl, nzl, rhol, eta, xm-x0, lg, hg, x0, y0, z0, dm);
 
+    // Right State
+    partdistribution::init_dist_cubic(&mut particles, nxr, nyr, nzr, rhor, eta, x0+wd-xm, lg, hg, xm, y0, z0, dm);
+
+    for ii in 0..n as usize {
+        if particles[ii].x <= xm {
+            particles[ii].u = ul;
+            if particles[ii].x <= x0 + bxl {
+                particles[ii].ptype = 1;
+            }
+        } else {
+            particles[ii].u = ur;
+            if particles[ii].x >= wd - bxr {
+                particles[ii].ptype = 1;
+            }
+        }
+    }
     if let Err(err) = datafunctions::save_data(path, &particles){
         println!("{}", err);
         process::exit(1);
     }
 
     Ok(())
-}
-
-fn init_dist_sod_tube(particles: &mut Vec<Particle>, nxl: u32, nyl: u32, nzl: u32, nxr: u32, nyr: u32, nzr: u32, rhol: f64, rhor: f64,
-                      ul: f64, ur: f64, xm: f64, eta: f64, wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64, dm: f64){
-    let dxl: f64 = (xm-x0)/nxl as f64;
-    let dyl: f64 = lg/nyl as f64;
-    let dzl: f64 = hg/nzl as f64;
-    let dxr: f64 = (x0+wd-xm)/nxr as f64;
-    let dyr: f64 = lg/nyr as f64;
-    let dzr: f64 = hg/nzr as f64;
-    let hpl: f64 = h_by_density(dm, rhol, eta);
-    let hpr: f64 = h_by_density(dm, rhor, eta);
-    let bnxl: u32= nxl/6;
-    let bnxr: u32= nxr/6;
-
-    let mut xp: f64;
-    let mut yp: f64;
-    let mut zp: f64;
-
-    let mut xstart: f64;
-    let mut ystart: f64;
-    let mut zstart: f64;
-    
-    xstart = x0 + 0.5*dxl;
-    ystart = y0 + 0.5*dyl;
-    zstart = z0 + 0.5*dzl;
-
-    // Left State
-    for kk in 0..nzl {
-        zp = zstart + dzl*(kk as f64);
-        for jj in 0..nyl {
-            yp = ystart + dyl*(jj as f64);
-            for ii in 0..bnxl {
-                xp = xstart + dxl*(ii as f64);
-                particles.push(Particle{ptype:1,
-                                        x:xp, y:yp, z:zp,
-                                        vx: 0.0, vy: 0.0, vz: 0.0,
-                                        h:hpl, u: ul,
-                                        ..Default::default()});
-            }
-            for ii in bnxl..nxl{
-                xp = xstart + dxl*(ii as f64);
-                particles.push(Particle{ptype:0, 
-                                        x:xp, y:yp, z:zp,
-                                        vx: 0.0, vy: 0.0, vz: 0.0,
-                                        h:hpl, u: ul,
-                                        ..Default::default()});
-            }
-        }
-    }
-
-    xstart = xm + 0.5*dxr;
-    ystart = y0 + 0.5*dyr;
-    zstart = z0 + 0.5*dzr;
-
-    // Right State
-    for kk in 0..nzr {
-        zp = zstart + dzr*(kk as f64);
-        for jj in 0..nyr{
-            yp = ystart + dyr*(jj as f64);
-            for ii in 0..(nxr-bnxr){
-                xp = xstart + dxr*(ii as f64);
-                particles.push(Particle{ptype:0,
-                                        x:xp, y:yp, z:zp,
-                                        vx: 0.0, vy: 0.0, vz: 0.0,
-                                        h:hpr, u: ur,
-                                        ..Default::default()});
-            }
-            for ii in (nxr-bnxr)..nxr {
-                xp = xstart + dxr*(ii as f64);
-                particles.push(Particle{ptype:1,
-                                        x:xp, y:yp, z:zp,
-                                        vx: 0.0, vy: 0.0, vz: 0.0,
-                                        h:hpr, u: ur,
-                                        ..Default::default()});
-            }
-        }
-    }
 }
