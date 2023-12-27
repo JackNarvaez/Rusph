@@ -19,8 +19,8 @@
 0.2     # 15 tf: Final time
 0.0001  # 16 dt: Initial time step
 10      # 17 it_save: Frequency of data saving
-128      # 18 nxl: Particle resolution in the x direction (left)
-64      # 19 nxr: Particle resolution in the x direction (right)
+32      # 18 nxl: Particle resolution in the x direction (left)
+16      # 19 nxr: Particle resolution in the x direction (right)
 24      # 20 nyl: Particle resolution in the y direction (left)
 12      # 21 nyr: Particle resolution in the y direction (right)
 24      # 22 nzl: Particle resolution in the z direction (left)

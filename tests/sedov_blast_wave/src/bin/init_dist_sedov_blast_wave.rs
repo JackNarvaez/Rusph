@@ -78,12 +78,21 @@ fn init_dist_sedov(particles: &mut Vec<Particle>, rad_part: &mut Vec<usize>, u_n
     let yc: f64 = lg/2.;
     let zc: f64 = hg/2.;
     let hp: f64 = h_by_density(dm, rho, eta);
+
+    let mut xp: f64;
+    let mut yp: f64;
+    let mut zp: f64;
+
+    let xstart: f64 = x0 + 0.5*dx;
+    let ystart: f64 = y0 + 0.5*dy;
+    let zstart: f64 = z0 + 0.5*dz;
+
     for kk in 0..nz {
+        zp = zstart + dz*kk as f64;
         for jj in 0..ny{
+            yp = ystart + dy*jj as f64;
             for ii in 0..nx{
-                let xp: f64 = x0 + dx*ii as f64;
-                let yp: f64 = y0 + dy*jj as f64;
-                let zp: f64 = z0 + dz*kk as f64;
+                xp = xstart + dx*ii as f64;
                 let mut up: f64 = 0.0;
                 let r: f64 = ((xp-xc)*(xp-xc) + (yp-yc)*(yp-yc) + (zp-zc)*(zp-zc)).sqrt()/ r0;
                 if r <= 1.{
