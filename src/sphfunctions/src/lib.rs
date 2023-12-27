@@ -232,6 +232,11 @@ pub fn newton_raphson(ii: usize, particles: & Vec<Particle>, dm:f64, h_guess: f6
         tree.find_neighbors(ii, s_, particles, &mut neighbors, wd, lg, hg, x0, y0, z0, h_old*rkern, xperiodic, yperiodic, zperiodic);
         // Obtain h_new
         h_new = nr_iter(particles, ii, &neighbors, dm, h_old, eta, f, dfdq, sigma, rkern, wd, lg, hg, xperiodic, yperiodic, zperiodic);
+        if h_new > 1.2*particles[ii].h {
+            h_new = 1.2*particles[ii].h;
+        } else if h_new < 0.8*particles[ii].h {
+            h_new = 0.8*particles[ii].h;
+        }
         if ((h_new - h_old)/h_old).abs() <=  tol {
             i = it + 2;
         } else if h_new < 0. || h_new > wd {
