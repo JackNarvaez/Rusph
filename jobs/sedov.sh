@@ -3,4 +3,4 @@
 #BSUB -n 40
 #BSUB -q gpu
 #BSUB -o Sedov.%J
-bash Sedov
+make Sedov
