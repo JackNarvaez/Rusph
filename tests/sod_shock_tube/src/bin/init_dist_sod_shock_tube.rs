@@ -45,7 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let ul:f64   = pl/((gamma - 1.)*rhol);      // Left initial energy
     let ur:f64   = pr/((gamma - 1.)*rhor);      // Right initial energy
-    let n:u32  = nxl*nyl*nzl + nxr*nyr*nzr;   // Fluid particles
+    let mut n:u32  = nxl*nyl*nzl + nxr*nyr*nzr;   // Fluid particles
     
     let vol: f64 = wd*lg*hg;                    // Volumen
     let dm: f64  = 0.5*vol*(rhol+rhor)/n as f64;// Particles' mass
@@ -55,11 +55,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut particles :Vec<Particle> = Vec::new();
 
     // Left State
-    partdistribution::init_dist_cubic(&mut particles, nxl, nyl, nzl, rhol, eta, xm-x0, lg, hg, x0, y0, z0, dm);
+    // partdistribution::init_dist_cubic(&mut particles, nxl, nyl, nzl, rhol, eta, xm-x0, lg, hg, x0, y0, z0, dm);
+    partdistribution::init_dist_hcp(&mut particles, nxl, nyl, nzl, rhol, eta, xm-x0, lg, hg, x0, y0, z0, dm);
 
     // Right State
-    partdistribution::init_dist_cubic(&mut particles, nxr, nyr, nzr, rhor, eta, x0+wd-xm, lg, hg, xm, y0, z0, dm);
+    // partdistribution::init_dist_cubic(&mut particles, nxr, nyr, nzr, rhor, eta, x0+wd-xm, lg, hg, xm, y0, z0, dm);
+    partdistribution::init_dist_hcp(&mut particles, nxr, nyr, nzr, rhor, eta, x0+wd-xm, lg, hg, xm, y0, z0, dm);
 
+    n = particles.len() as u32;
+    
     for ii in 0..n as usize {
         if particles[ii].x <= xm {
             particles[ii].u = ul;

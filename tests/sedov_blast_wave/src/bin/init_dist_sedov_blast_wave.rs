@@ -37,20 +37,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let nx:u32   = input[16] as u32; // Particle resolution in the x direction
     let ny:u32   = input[17] as u32; // Particle resolution in the y direction
     let nz:u32   = input[18] as u32; // Particle resolution in the z direction
-    let n: u32   = nx*ny*nz;         // Total number of particles
+    let mut n: u32   = nx*ny*nz;         // Total number of particles
     
     let rkern: f64 = 2.;             // Kernel radius
     
     let vol: f64 = wd*lg*hg;         // Volumen
-    let dm: f64  = rho*vol/n as f64; // Particles' mass
+    let mut dm: f64  = rho*vol/n as f64; // Particles' mass
     let h0: f64  = 2.*eta*(wd/nx as f64);
     
     let mut u_norm:f64 = 0.0;        // Normalization's constant for the initial energy
     let mut rad_part: Vec<usize> = Vec::new(); // Particles inside the initial sphere
     let mut particles :Vec<Particle> = Vec::new();
 
-    partdistribution::init_dist_cubic(&mut particles, nx, ny, nz, rho, eta, wd, lg, hg, x0, y0, z0, dm);
-
+    partdistribution::init_dist_hcp(&mut particles, nx, ny, nz, rho, eta, wd, lg, hg, x0, y0, z0, dm);
+    n = particles.len() as u32;
+    dm = rho*vol/n as f64;
     init_dist_sedov(&mut particles, &mut rad_part, &mut u_norm, n as usize, rkern, h0, wd, lg, hg, f_cubic_kernel);
     norm_energy(&mut particles, &mut rad_part, e0, u_norm, dm);
 

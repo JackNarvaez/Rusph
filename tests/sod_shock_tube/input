@@ -6,8 +6,8 @@
 0.0     # 4 y0: Bottom left corner  (y-coordinate)
 0.0     # 5 z0: Bottom left corner  (z-coordinate)
 1.0     # 6 wd: Width of the system's domain
-0.75    # 7 lg: Length of the system's domain
-0.75    # 8 hg: Height of the system's domain
+0.376   # 7 lg: Length of the system's domain
+0.376   # 8 hg: Height of the system's domain
 1.0     # 9 rhol: Initial left density
 0.125   # 10 rhor: Initial right density
 1.0     # 11 Pl: Left initial pressure

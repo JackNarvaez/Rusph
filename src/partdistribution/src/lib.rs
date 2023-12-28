@@ -82,3 +82,60 @@ pub fn init_dist_cubic(particles: &mut Vec<Particle>, nx: u32, ny: u32, nz: u32,
         }
     }
 }
+
+pub fn init_dist_hcp(particles: &mut Vec<Particle>, nx: u32, _ny: u32, _nz: u32, rho: f64,
+                   eta: f64, wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64, _dm: f64){
+    // Based on the Phantom implementation
+    let mut dx: f64 = wd/nx as f64;
+    let mut dy: f64 = (0.75_f64).sqrt()*dx;
+    let mut dz: f64 = (2./3.0_f64).sqrt()*dx;
+
+    let dxp: f64= 0.5*dx;
+    let dyp: f64= dy/3.;
+
+    let nxnew: u32 = 2_u32*(((wd/dx)as u32 + 1_u32)/2);
+    let nynew: u32 = 2_u32*(((lg/dy)as u32 + 1_u32)/2);
+    let nznew: u32 = 2_u32*(((hg/dz)as u32 + 1_u32)/2);
+
+    let nnew: u32 = nxnew*nynew*nznew;
+
+    dx = wd/nxnew as f64;
+    dy = lg/nynew as f64;
+    dz = hg/nznew as f64;
+
+    let dmp: f64  = rho*wd*lg*hg/nnew as f64;
+
+    let hp: f64 = h_by_density(dmp, rho, eta);
+
+    let mut xp: f64;
+    let mut yp: f64;
+    let mut zp: f64;
+
+    let mut xstart: f64;
+    let mut ystart: f64;
+    let zstart: f64 = z0 + 0.5*dz;
+
+    for kk in 0..nznew {
+        zp = zstart + dz*kk as f64;
+        for jj in 0..nynew{
+            ystart = y0 + 0.5*dyp;
+            xstart = x0 + 0.5*dxp;
+            if (kk%2) == 0 {
+                ystart += dyp;
+                if (jj%2) == 1 {
+                    xstart += dxp;
+                }
+            } else {
+                if (jj%2) == 0 {
+                    xstart += dxp;
+                }
+            }
+            yp = ystart + dy*jj as f64;
+            for ii in 0..nxnew{
+                xp = xstart + dx*ii as f64;
+                particles.push(Particle{x:xp, y:yp, z:zp, h:hp,
+                                        ..Default::default()});
+            }
+        }
+    }
+}
