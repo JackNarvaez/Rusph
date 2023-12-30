@@ -61,16 +61,14 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 fn delta_vy(x: f64, y: f64, y1: f64, y2: f64) -> f64 {
-    let a: f64 = 0.025;
-    let ld: f64 = 1./6.;
-    if (y-y1).abs() < a {
-        return a*(-2.*PI*(x+0.5)/ld).sin();
-    } else if (y-y2).abs() < a {
-        return a*(2.*PI*(x+0.5)/ld).sin();
-    } else {
-        return 0.0;
-    }
-} 
+    let w0: f64 = 0.1;
+    let lamd: f64 = 0.5;
+    let sigm: f64 = 0.05;
+    let exp1: f64 = (y-y1)/sigm;
+    let exp2: f64 = (y-y2)/sigm;
+    let vy: f64 = w0*(2.*PI *x / lamd).sin()*((-exp1*exp1).exp()+(-exp2*exp2).exp());
+    return vy;
+}
 
 
 fn kh_init_setup(particles: &mut Vec<Particle>, nx: usize, ny: usize, nz: usize, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64, y1: f64, y2: f64, rho1: f64, rho2: f64, vx1: f64, vx2: f64, p:f64, gamma: f64, eta: f64, dm: f64) {
