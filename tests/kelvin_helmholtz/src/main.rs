@@ -73,7 +73,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
 
     let mut t:f64   = t0;               // Time
-    let m:f64       = (rho1 *(y2-y1) + rho2*(lg-y2+y1))*wd*hg;
+    let m:f64       = (rho2 *(y2-y1) + rho1*(lg-y2+y1))*wd*hg;
     let n: usize    = particles.len();
     let dm: f64     = m/n as f64;       // Particles' mass
     let mut it: u32 = 0;                // Time iterations

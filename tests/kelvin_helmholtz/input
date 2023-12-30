@@ -7,7 +7,7 @@
 0.0     # 5 z0: Bottom left corner  (z-coordinate)
 1.0     # 6 wd: Width of the system's domain
 1.0     # 7 lg: Length of the system's domain
-0.25    # 8 hg: Height of the system's domain
+0.306   # 8 hg: Height of the system's domain
 0.25    # 9 y1: Y-lower edge of fluid 2 
 0.75    # 10 y2: Y-upper edge of fluid 2
 1.0     # 11 rho1: Initial density fluid 1
@@ -21,9 +21,9 @@
 1.0     # 17 tf: Final time
 0.001   # 18 dt: Initial time step
 10     # 19 it_save: Frequency of data saving
-24      # 20 nx: Particle resolution in the x direction
-24      # 21 ny: Particle resolution in the y direction
-16      # 22 nz: Particle resolution in the z direction
+64      # 20 nx: Particle resolution in the x direction
+37      # 21 ny: Particle resolution in the y direction
+12      # 22 nz: Particle resolution in the z direction
 
 # ------------- Tree parameters ------------- #
 10      # 23 s: Maximum number of particles in a leaf (Bucket size)

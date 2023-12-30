@@ -6,6 +6,7 @@ use std::{
 };
 
 use datafunctions;
+use partdistribution;
 
 use structures::Particle;
 
@@ -38,19 +39,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vx2:f64  = input[14];        // Initial x velocity fluid 2
     let p0:f64   = input[15];        // Initial pressure
     
-    let nx:usize = input[20] as usize;// Particle resolution in the x direction
-    let ny:usize = input[21] as usize;// Particle resolution in the y direction
-    let nz:usize = input[22] as usize;// Particle resolution in the z direction
+    let nx:u32   = input[20] as u32;        // Particle resolution in the x direction
+    let ny:u32   = input[21] as u32;        // Particle resolution in the y direction
+    let nz:u32   = input[22] as u32;        // Particle resolution in the z direction
     
-
-    let m:f64    = (rho1 *(y2-y1) + rho2*(lg-y2+y1))*wd*hg; // Total mass
-    let n:usize  = 3*nx*ny*nz;        // Total number of particles
+    let m:f64    = (rho2 *(y2-y1) + rho1*(lg-y2+y1))*wd*hg; // Total mass  #### Check THIS!!!!! ####
+    let mut n:usize  = (3*nx*ny*nz) as usize;        // Total number of particles
     let dm: f64  = m/n as f64;        // Particles' mass
     
     let mut particles :Vec<Particle> = Vec::new();
 
+    partdistribution::init_dist_hcp(&mut particles, nx, ny, nz, rho1, eta, wd, 0.25*lg, hg, x0, y0, z0, dm);
+    partdistribution::init_dist_hcp(&mut particles, (1.25*nx as f64) as u32, ny, nz, rho2, eta, wd, 0.5*lg, hg, x0, y0+0.25*lg, z0, dm);
+    partdistribution::init_dist_hcp(&mut particles, nx, ny, nz, rho1, eta, wd, 0.25*lg, hg, x0, y0+0.75*lg, z0, dm);
 
-    kh_init_setup(&mut particles, nx, ny, nz, wd, lg, hg, x0, y0, z0, y1, y2, rho1, rho2, vx1, vx2, p0, gamma, eta, dm);
+    n = particles.len();
+
+    kh_init_setup(&mut particles, n,  0.25*lg, y1, y2, rho1, rho2, vx1, vx2, p0, gamma-1.);
     
     if let Err(err) = datafunctions::save_data(path, &particles){
         println!("{}", err);
@@ -71,31 +76,19 @@ fn delta_vy(x: f64, y: f64, y1: f64, y2: f64) -> f64 {
 }
 
 
-fn kh_init_setup(particles: &mut Vec<Particle>, nx: usize, ny: usize, nz: usize, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64, y1: f64, y2: f64, rho1: f64, rho2: f64, vx1: f64, vx2: f64, p:f64, gamma: f64, eta: f64, dm: f64) {
-    let dx = wd/nx as f64;
-    let dy = 0.5*lg/ny as f64;
-    let dy2 = 0.5*dy;
-    let dz = hg/nz as f64;
-    let h01: f64 = sphfunctions::h_by_density(dm, rho1, eta);
-    let h02: f64 = sphfunctions::h_by_density(dm, rho2, eta);
-    for kk in 0..nz{
-        for ii in 0..nx {
-            for jj in 0..(ny/2) {
-                particles.push(Particle{x:x0+(dx*ii as f64), y:y0+(dy*jj as f64), z:z0+(dz*kk as f64),
-                                        vx: vx1, vy: delta_vy(x0+(dx*ii as f64), y0+(dy*jj as f64), y1, y2),
-                                        h:h01, u: p/((gamma - 1.)*rho1),
-                                        ..Default::default()});
-                particles.push(Particle{x:x0+(dx*ii as f64), y:y0+y2+(dy*jj as f64), z:z0+(dz*kk as f64),
-                                        vx: vx1, vy: delta_vy(x0+(dx*ii as f64), y0+y2+(dy*jj as f64), y1, y2),
-                                        h:h01, u: p/((gamma - 1.)*rho1),
-                                        ..Default::default()});
-            }
-            for jj in 0..(2*ny) {
-                particles.push(Particle{x:x0+(dx*ii as f64), y:y0+y1+(dy2*jj as f64), z:z0+(dz*kk as f64),
-                                        vx: vx2, vy: delta_vy(x0+(dx*ii as f64), y0+y1+(dy2*jj as f64), y1, y2),
-                                        h:h02, u: p/((gamma - 1.)*rho2),
-                                        ..Default::default()});
-            }
+fn kh_init_setup(particles: &mut Vec<Particle>, n: usize, lgmid: f64, y1: f64, y2: f64, rho1: f64, rho2: f64, vx1: f64, vx2: f64, p:f64, gamm1: f64) {
+    let u1 = p/(gamm1*rho1);
+    let u2 = p/(gamm1*rho2);
+    let ym: f64 = 0.5*(y1+y2); 
+    for ii in 0..n {
+        // If Centre Zone
+        if (particles[ii].y - ym).abs() <= lgmid {
+            particles[ii].vx = vx2;
+            particles[ii].u  = u2;
+        } else {
+            particles[ii].vx = vx1;
+            particles[ii].u  = u1;
         }
+        particles[ii].vy = delta_vy(particles[ii].x, particles[ii].y, y1, y2);
     }
 }
