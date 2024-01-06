@@ -7,8 +7,9 @@ Rusph is a Smoothed Particle Hydrodynamics code implemented in Rust, a low-level
 Test systems
 ------------
 
-- The Sedov blast wave problem
-- The Kelvin-Helmholtz problem
+- Sedov blast wave
+- Sod shock tube
+- Kelvin-Helmholtz instability
 - Toy star
 - Turbulent Gas
 
