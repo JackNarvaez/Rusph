@@ -8,6 +8,7 @@ authors.workspace = true
 
 [dependencies]
 tree_algorithm = { path = "../../src/tree_algorithm" }
+sphfunctions = { path = "../../src/sphfunctions" }
 datafunctions = { path = "../../src/datafunctions" }
 partdistribution = { path = "../../src/partdistribution" }
 structures = { path = "../../src/structures" }
