@@ -1,22 +1,21 @@
 # ------------ System Parameters ------------ #
 1.2     # 0 eta: Dimensionless constant specifying the smoothing length
 1.      # 1 gamma: Heat capacity ratio
-3       # 2 d: Number of spatial dimensions
-0.0     # 3 x0: Bottom left corner  (x-coordinate)
-0.0     # 4 y0: Bottom left corner  (y-coordinate)
-0.0     # 5 z0: Bottom left corner  (z-coordinate)
-1.0     # 6 wd: Width of the system's domain
-1.0     # 7 lg: Length of the system's domain
-1.0     # 8 hg: Height of the system's domain
-3.0517578125e-05 # 9 dm: particle mass (32K Particles)
+0.0     # 2 x0: Bottom left corner  (x-coordinate)
+0.0     # 3 y0: Bottom left corner  (y-coordinate)
+0.0     # 4 z0: Bottom left corner  (z-coordinate)
+1.0     # 5 wd: Width of the system's domain
+1.0     # 6 lg: Length of the system's domain
+1.0     # 7 hg: Height of the system's domain
+3.0517578125e-05 # 8 dm: particle mass (32K Particles)
 
 # ---------- Simulation Parameters ---------- #
-0.0     # 10 t0: Initial time
-1.0     # 11 tf: Final time
-0.0001  # 12 dt: Initial time step
-100     # 13 it_save: Frequency of data saving
+0.0     # 9 t0: Initial time
+1.0     # 10 tf: Final time
+0.0001  # 11 dt: Initial time step
+100     # 12 it_save: Frequency of data saving
 
 # ------------- Tree parameters ------------- #
-10      # 14 s: Maximum number of particles in a leaf (Bucket size)
-0.5     # 15 alpha: Fraction of the bucket size s
-0.5     # 16 Maximum ratio of cells with less than alpha*s particles
+10      # 13 s: Maximum number of particles in a leaf (Bucket size)
+0.5     # 14 alpha: Fraction of the bucket size s
+0.5     # 15 Maximum ratio of cells with less than alpha*s particles

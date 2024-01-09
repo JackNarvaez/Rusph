@@ -9,6 +9,8 @@ use csv::Writer;
 
 use structures::Particle;
 
+// -------- Write data --------
+
 pub fn save_data(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dyn Error>>{
     let mut wtr = Writer::from_path(path)?;
     wtr.write_record(&["ptype", "x", "y", "z", "vx", "vy", "vz", "h", "u"])?;
@@ -36,7 +38,6 @@ pub fn save_data_bin(path: &str, particles: & Vec<Particle>)-> Result<(), Box<dy
     wtr.flush()?;
     Ok(())
 }
-
 
 // -------- Read data --------
 

@@ -9,62 +9,52 @@ use std::{
 use structures::Particle;
 use datafunctions;
 
-
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Files
-    let path = "./Sodtube/Ini_00.csv";
-    let input_file = "./tests/sod_shock_tube/input";
+    let path: &str      = "./Sodtube/Ini_00.csv";
+    let input_file: &str= "./tests/sod_shock_tube/input";
     
     // Parameters
     let input: Vec<f64> = datafunctions::read_input(input_file);
     
-    let eta: f64 = input[0];         // Dimensionless constant specifying the smoothing length
-    let gamma:f64= input[1];         // Heat capacity ratio
-    let _d: i32  = input[2] as i32;  // Dimensions
+    let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length
+    let gamma: f64  = input[1];         // Heat capacity ratio
     
-    let x0:f64   = input[3];         // Bottom left corner  (x-coordinate)
-    let y0:f64   = input[4];         // Bottom left corner  (y-coordinate)
-    let z0:f64   = input[5];         // Bottom left corner  (z-coordinate)
-    let wd:f64   = input[6];         // Width (x)
-    let lg:f64   = input[7];         // Length (y)
-    let hg:f64   = input[8];         // Heigth (z)
+    let x0: f64     = input[2];         // Bottom left corner  (x-coordinate)
+    let y0: f64     = input[3];         // Bottom left corner  (y-coordinate)
+    let z0: f64     = input[4];         // Bottom left corner  (z-coordinate)
+    let wd: f64     = input[5];         // Width (x)
+    let lg: f64     = input[6];         // Length (y)
+    let hg: f64     = input[7];         // Height (z)
 
-    let rhol:f64 = input[9];         // Left density
-    let rhor:f64 = input[10];        // Right density
-    let pl:f64   = input[11];        // Left initial pressure
-    let pr:f64   = input[12];        // Right initial pressure
-    let xm: f64  = input[13];        // Discontinuity position
+    let rhol: f64   = input[8];         // Left density
+    let rhor: f64   = input[9];         // Right density
+    let pl: f64     = input[10];        // Left initial pressure
+    let pr: f64     = input[11];        // Right initial pressure
+    let xm: f64     = input[12];        // Discontinuity position
     
-    let nxl:u32  = input[18] as u32; // Particle resolution in the x direction (left)
-    let nxr:u32  = input[19] as u32; // Particle resolution in the x direction (right)
-    let nyl:u32  = input[20] as u32; // Particle resolution in the y direction (left)
-    let nyr:u32  = input[21] as u32; // Particle resolution in the y direction (right)
-    let nzl:u32  = input[22] as u32; // Particle resolution in the z direction (left)
-    let nzr:u32  = input[23] as u32; // Particle resolution in the z direction (right)
+    let nxl: u32    = input[17] as u32; // Particle resolution in the x direction (left)
+    let nxr: u32    = input[18] as u32; // Particle resolution in the x direction (right)
 
-    let ul:f64   = pl/((gamma - 1.)*rhol);      // Left initial energy
-    let ur:f64   = pr/((gamma - 1.)*rhor);      // Right initial energy
-    let mut n:u32  = nxl*nyl*nzl + nxr*nyr*nzr;   // Fluid particles
+    let ul: f64     = pl/((gamma - 1.)*rhol);      // Left initial energy
+    let ur: f64     = pr/((gamma - 1.)*rhor);      // Right initial energy
     
-    let vol: f64 = wd*lg*hg;                    // Volumen
-    let dm: f64  = 0.5*vol*(rhol+rhor)/n as f64;// Particles' mass
-    let bxl: f64 = (xm-x0)/6.;
-    let bxr: f64 = (x0+wd-xm)/6.;
+    let bxl: f64    = (xm-x0)/6.;       // Left boundary region
+    let bxr: f64    = (x0+wd-xm)/6.;    // Right boundary region
     
-    let mut particles :Vec<Particle> = Vec::new();
+    let mut particles : Vec<Particle> = Vec::new();
 
     // Left State
-    // partdistribution::init_dist_cubic(&mut particles, nxl, nyl, nzl, rhol, eta, xm-x0, lg, hg, x0, y0, z0, dm);
-    partdistribution::init_dist_hcp(&mut particles, nxl, nyl, nzl, rhol, eta, xm-x0, lg, hg, x0, y0, z0, dm);
+    partdistribution::init_dist_hcp(&mut particles, nxl, rhol, eta, xm-x0, lg, hg, x0, y0, z0);
 
     // Right State
-    // partdistribution::init_dist_cubic(&mut particles, nxr, nyr, nzr, rhor, eta, x0+wd-xm, lg, hg, xm, y0, z0, dm);
-    partdistribution::init_dist_hcp(&mut particles, nxr, nyr, nzr, rhor, eta, x0+wd-xm, lg, hg, xm, y0, z0, dm);
+    partdistribution::init_dist_hcp(&mut particles, nxr, rhor, eta, x0+wd-xm, lg, hg, xm, y0, z0);
 
-    n = particles.len() as u32;
+    let n: usize    = particles.len();
     
-    for ii in 0..n as usize {
+    // Boundary particles
+    for ii in 0..n {
         if particles[ii].x <= xm {
             particles[ii].u = ul;
             if particles[ii].x <= x0 + bxl {
