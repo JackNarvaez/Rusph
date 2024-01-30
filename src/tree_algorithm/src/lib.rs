@@ -202,8 +202,6 @@ impl BuildTree for Node {
 pub trait FindNeighbors {
     fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, b: i32, hrkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> Vec<usize>;
 
-    fn print_particles(&self);
-
     fn find_neighbors(& self, p: usize, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, hrkern: f64, xperiodic:bool, yperiodic:bool, zperiodic:bool);
 }
 
@@ -216,7 +214,7 @@ impl FindNeighbors for Node {
         
         let (xlow, xup) =  limits(x_p-hrkern, x_p+hrkern, x0, wd, self.xmin, self.depth);
         let (ylow, yup) =  limits(y_p-hrkern, y_p+hrkern, y0, lg, self.ymin, self.depth);
-        let (zlow, zup) =  limits(z_p-hrkern, z_p+hrkern,  z0, hg, self.zmin, self.depth);
+        let (zlow, zup) =  limits(z_p-hrkern, z_p+hrkern, z0, hg, self.zmin, self.depth);
 
         let mut x_min: i32 = ((xlow - self.xmin) * factorx).floor() as i32;
         let mut x_max: i32 = ((xup - self.xmin) * factorx).floor() as i32;
@@ -235,7 +233,6 @@ impl FindNeighbors for Node {
             set_limits(&mut y_max, 0, up);
             set_limits(&mut z_min, 0, up);
             set_limits(&mut z_max, 0, up);
-            
             for kk in z_min..z_max+1{
                 for jj in y_min..y_max+1{
                     for ii in x_min..x_max+1{
@@ -253,20 +250,6 @@ impl FindNeighbors for Node {
                 }
             }
             return neighbors;
-        }
-    }
-
-    fn print_particles(&self) {
-        if self.children.len() == 0 {
-            println!("{} {}", self.depth, self.id);
-            for ii in &self.particles {
-                println!("p:{}.", ii);
-                }
-        } else {
-            println!("{} {}", self.depth, self.id);
-            for child in &self.children{
-                child.print_particles();
-            }
         }
     }
 
@@ -353,13 +336,13 @@ fn limits(low_lim: f64, up_lim: f64, l0: f64, l: f64, lmin: f64, depth: i32) -> 
     } else {
         if low_lim < l0 {
             if lmin < (l0 + 0.5 * l) {
-                return (0., up_lim);
+                return (l0, up_lim);
             } else {
                 return (low_lim + l, l0 + l);
             }
         } else if up_lim > (l0 + l) {
             if lmin < (l0 + 0.5 * l) {
-                return (0., up_lim-l);
+                return (l0, up_lim-l);
             } else {
                 return (low_lim, l0 + l);
             }
