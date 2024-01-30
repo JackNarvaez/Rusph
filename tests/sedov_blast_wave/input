@@ -1,9 +1,9 @@
 # ------------ System Parameters ------------ #
 1.2     # 0 eta: Dimensionless constant specifying the smoothing length
 1.667   # 1 gamma: Heat capacity ratio
-0.0     # 2 x0: Bottom left corner  (x-coordinate)
-0.0     # 3 y0: Bottom left corner  (y-coordinate)
-0.0     # 4 z0: Bottom left corner  (z-coordinate)
+-0.5    # 2 x0: Bottom left corner  (x-coordinate)
+-0.5    # 3 y0: Bottom left corner  (y-coordinate)
+-0.5    # 4 z0: Bottom left corner  (z-coordinate)
 1.0     # 5 wd: Width of the system's domain
 1.0     # 6 lg: Length of the system's domain
 1.0     # 7 hg: Height of the system's domain

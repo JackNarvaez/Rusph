@@ -46,7 +46,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     partdistribution::init_dist_hcp(&mut particles, nx, rho, eta, wd, lg, hg, x0, y0, z0);
     let n: usize    = particles.len();
     let dm: f64     = rho*vol/n as f64;
-    init_dist_sedov(&mut particles, &mut rad_part, &mut u_norm, n, rkern, h0, wd, lg, hg, f_cubic_kernel);
+    init_dist_sedov(&mut particles, &mut rad_part, &mut u_norm, n, rkern, h0, x0, y0, z0, wd, lg, hg, f_cubic_kernel);
     norm_energy(&mut particles, &mut rad_part, e0, u_norm, dm);
 
     if let Err(err) = datafunctions::save_data(path, &particles){
@@ -66,11 +66,11 @@ fn norm_energy(particles: &mut Vec<Particle>, rad_part: & Vec<usize>, e0: f64, u
 
 fn init_dist_sedov(
     particles: &mut Vec<Particle>, rad_part: &mut Vec<usize>, u_norm: &mut f64, n: usize,
-    rkern: f64, h0: f64, wd:f64, lg:f64, hg: f64, kernel: fn(f64) -> f64
+    rkern: f64, h0: f64, x0:f64, y0:f64, z0: f64, wd:f64, lg:f64, hg: f64, kernel: fn(f64) -> f64
 ) {
-    let xc: f64 = 0.5*wd;
-    let yc: f64 = 0.5*lg;
-    let zc: f64 = 0.5*hg;
+    let xc: f64 = x0+0.5*wd;
+    let yc: f64 = y0+0.5*lg;
+    let zc: f64 = z0+0.5*hg;
 
     let mut q: f64;
     let mut up: f64;
