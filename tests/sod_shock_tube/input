@@ -1,7 +1,7 @@
 # ------------ System Parameters ------------ #
 1.2     # 0 eta: Dimensionless constant specifying the smoothing length
 1.667   # 1 gamma: Heat capacity ratio
-0.0     # 2 x0: Bottom left corner  (x-coordinate)
+-0.5    # 2 x0: Bottom left corner  (x-coordinate)
 0.0     # 3 y0: Bottom left corner  (y-coordinate)
 0.0     # 4 z0: Bottom left corner  (z-coordinate)
 1.0     # 5 wd: Width of the system's domain
@@ -11,15 +11,15 @@
 0.125   # 9 rhor: Initial right density
 1.0     # 10 Pl: Left initial pressure
 0.1     # 11 Pr: Right initial pressure
-0.5     # 12 xm: Discontinuity position
+0.0     # 12 xm: Discontinuity position
 
 # ---------- Simulation Parameters ---------- #
 0.0     # 13 t0: Initial time
 0.2     # 14 tf: Final time
 0.0001  # 15 dt: Initial time step
 10      # 16 it_save: Frequency of data saving
-64      # 17 nxl: Particle resolution in the x direction (left)
-32      # 18 nxr: Particle resolution in the x direction (right)
+32      # 17 nxl: Particle resolution in the x direction (left)
+16      # 18 nxr: Particle resolution in the x direction (right)
 
 # ------------- Tree parameters ------------- #
 10      # 19 s: Maximum number of particles in a leaf (Bucket size)

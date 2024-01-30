@@ -62,7 +62,7 @@ fn main() -> Result<(), Box<dyn Error>> {
             }
         } else {
             particles[ii].u = ur;
-            if particles[ii].x >= wd - bxr {
+            if particles[ii].x >= x0 + wd - bxr {
                 particles[ii].ptype = 1;
             }
         }
