@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vz0: f64    = input[10];        // Star's velocity (z-coordinate)
     let u0: f64     = input[11];        // Initial energy
     
-    let nx: u32     = input[16] as u32; // Resolution
+    let nx: u32     = input[15] as u32; // Resolution
 
     let mut particles :Vec<Particle> = Vec::new();
     let x_i: f64    = x0-r;

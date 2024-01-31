@@ -34,8 +34,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let pr: f64     = input[11];        // Right initial pressure
     let xm: f64     = input[12];        // Discontinuity position
     
-    let nxl: u32    = input[17] as u32; // Particle resolution in the x direction (left)
-    let nxr: u32    = input[18] as u32; // Particle resolution in the x direction (right)
+    let nxl: u32    = input[16] as u32; // Particle resolution in the x direction (left)
+    let nxr: u32    = input[17] as u32; // Particle resolution in the x direction (right)
 
     let ul: f64     = pl/((gamma - 1.)*rhol);      // Left initial energy
     let ur: f64     = pr/((gamma - 1.)*rhor);      // Right initial energy

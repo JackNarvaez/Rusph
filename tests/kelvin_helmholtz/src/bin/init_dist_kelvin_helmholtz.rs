@@ -38,7 +38,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vx2: f64    = input[13];        // Initial x velocity fluid 2
     let p0: f64     = input[14];        // Initial pressure
 
-    let nx: u32     = input[19] as u32; // Particle resolution
+    let nx: u32     = input[18] as u32; // Particle resolution
         
     let mut particles: Vec<Particle> = Vec::new();
 

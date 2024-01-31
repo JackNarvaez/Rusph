@@ -16,12 +16,11 @@
 # ---------- Simulation Parameters ---------- #
 0.0     # 13 t0: Initial time
 0.2     # 14 tf: Final time
-0.0001  # 15 dt: Initial time step
-10      # 16 it_save: Frequency of data saving
-32      # 17 nxl: Particle resolution in the x direction (left)
-16      # 18 nxr: Particle resolution in the x direction (right)
+0.01    # 15 dt_sav: Recording time step
+32      # 16 nxl: Particle resolution in the x direction (left)
+16      # 17 nxr: Particle resolution in the x direction (right)
 
 # ------------- Tree parameters ------------- #
-10      # 19 s: Maximum number of particles in a leaf (Bucket size)
-0.5     # 20 alpha: Fraction of the bucket size s
-0.5     # 21 beta: Maximum ratio of cells with less than alpha*s particles
+10      # 18 s: Maximum number of particles in a leaf (Bucket size)
+0.5     # 19 alpha: Fraction of the bucket size s
+0.5     # 20 beta: Maximum ratio of cells with less than alpha*s particles

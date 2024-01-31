@@ -33,7 +33,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let rho: f64    = input[8];         // Density
     let e0: f64     = input[9];         // Initial energy
     
-    let nx: u32     = input[14] as u32; // Particle resolution
+    let nx: u32     = input[13] as u32; // Particle resolution
     
     let rkern: f64  = 2.;               // Cubic Kernel radius
     let vol: f64    = wd*lg*hg;         // Volumen

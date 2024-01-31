@@ -46,18 +46,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let t0: f64     = input[15];        // Initial time
     let tf: f64     = input[16];        // Final time
-    let mut dt: f64 = input[17];        // Initial time step
-    let it_save: u32= input[18] as u32; // Frequency of data saving
+    let dt_sav: f64 = input[17];        // Recording time step
     
     // Tree's parameters
-    let s_: i32     = input[20] as i32; // Bucket size
-    let alpha_: f64 = input[21];        // Fraction of the bucket size
-    let beta_: f64  = input[22];        // Maximum ratio of cells with less than alpha*s particles
+    let s_: i32     = input[19] as i32; // Bucket size
+    let alpha_: f64 = input[20];        // Fraction of the bucket size
+    let beta_: f64  = input[21];        // Maximum ratio of cells with less than alpha*s particles
     
     // Boundary conditions
     let xper: bool  = true;
     let yper: bool  = true;
     let zper: bool  = true;
+
+    let mut dt: f64     = 0.01*dt_sav;  // Initial time step
+    let mut sav: bool   = false;        // Save data
+    let mut it_sav: u32 = 1;            // Save data iteration
 
     //---------------------------------------------------------------------------------------------
 
@@ -99,10 +102,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
         dt = sphfunctions::time_step_bale(&particles, n, gamma, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_ideal_gas_u);
         tree.restart(n);
-        t += dt;
-        if (it%it_save) == 0 {
+        datafunctions::time_step(&mut t, dt, dt_sav, &mut sav, &mut it_sav);
+        if sav {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Kelvinhelmholtz/Ev_") + &(it/it_save).to_string()), &particles){
+            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Kelvinhelmholtz/Ev_") + &(it_sav-2).to_string()), &particles){
                 println!("{}", err);
                 process::exit(1);
             }

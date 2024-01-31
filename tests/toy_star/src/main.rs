@@ -43,18 +43,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let t0: f64     = input[12];        // Initial time
     let tf: f64     = input[13];        // Final time
-    let mut dt: f64 = input[14];        // Initial time step
-    let it_save: u32= input[15] as u32; // Frequency of data saving
+    let dt_sav: f64 = input[14];        // Recording time step
     
     // Tree's parameters
-    let s_: i32     = input[17] as i32; // Bucket size
-    let alpha_: f64 = input[18];        // Fraction of the bucket size
-    let beta_: f64  = input[19];        // Maximum ratio of cells with less than alpha*s particles
+    let s_: i32     = input[16] as i32; // Bucket size
+    let alpha_: f64 = input[17];        // Fraction of the bucket size
+    let beta_: f64  = input[18];        // Maximum ratio of cells with less than alpha*s particles
 
     // Boundary conditions
     let xper: bool  = false;
     let yper: bool  = false;
     let zper: bool  = false;
+
+    let mut dt: f64     = 0.01*dt_sav;  // Initial time step
+    let mut sav: bool   = false;        // Save data
+    let mut it_sav: u32 = 1;            // Save data iteration
     
     //---------------------------------------------------------------------------------------------
 
@@ -99,10 +102,10 @@ fn main() -> Result<(), Box<dyn Error>> {
                                                  sphfunctions::periodic_boundary, xper, yper, zper, 4.*r, 4.*r, 4.*r, x0-2.*r, y0-2.*r, z0-2.*r);
         dt = sphfunctions::time_step_mon(&particles, n, gamm, rkern, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_polytropic, xper, yper, zper);
         tree.restart(n);
-        t += dt;
-        if (it%it_save) == 0 {
+        datafunctions::time_step(&mut t, dt, dt_sav, &mut sav, &mut it_sav);
+        if sav {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
-            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Toystar/Ev_") + &(it/it_save).to_string()), &particles){
+            if let Err(err) = datafunctions::save_data_bin(&(String::from("./Toystar/Ev_") + &(it_sav-2).to_string()), &particles){
                 println!("{}", err);
                 process::exit(1);
             }

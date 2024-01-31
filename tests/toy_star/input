@@ -15,11 +15,10 @@
 # ---------- Simulation Parameters ---------- #
 0.0     # 12 t0: Initial time
 16.0    # 13 tf: Final time
-0.04    # 14 dt: Initial time step
-10      # 15 it_save: Frequency of data saving
-24      # 16 n: Total number of particles
+1.0     # 14 dt_sav: Recording time step
+24      # 15 n: Total number of particles
 
 # ------------- Tree parameters ------------- #
-10      # 17 s: Maximum number of particles in a leaf (Bucket size)
-0.5     # 18 alpha: Fraction of the bucket size s
-0.5     # 19 beta: Maximum ratio of cells with less than alpha*s particles
+10      # 16 s: Maximum number of particles in a leaf (Bucket size)
+0.5     # 17 alpha: Fraction of the bucket size s
+0.5     # 18 beta: Maximum ratio of cells with less than alpha*s particles
