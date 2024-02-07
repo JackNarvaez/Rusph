@@ -16,7 +16,7 @@
 0.0     # 12 t0: Initial time
 16.0    # 13 tf: Final time
 1.0     # 14 dt_sav: Recording time step
-24      # 15 n: Total number of particles
+32      # 15 n: Total number of particles
 
 # ------------- Tree parameters ------------- #
 10      # 16 s: Maximum number of particles in a leaf (Bucket size)

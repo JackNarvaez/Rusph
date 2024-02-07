@@ -14,7 +14,7 @@
 0.0     # 10 t0: Initial time
 0.1     # 11 tf: Final time
 0.005   # 12 dt_sav: Recording time step
-32      # 13 nx: Particle resolution
+64      # 13 nx: Particle resolution
 
 # ------------- Tree parameters ------------- #
 10      # 14 s: Maximum number of particles in a leaf (Bucket size)

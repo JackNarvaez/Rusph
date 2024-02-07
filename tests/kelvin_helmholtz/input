@@ -17,8 +17,8 @@
 
 # ---------- Simulation Parameters ---------- #
 0.0     # 15 t0: Initial time
-1.0     # 16 tf: Final time
-0.05    # 17 dt_sav: Recording time step
+4.0     # 16 tf: Final time
+0.02    # 17 dt_sav: Recording time step
 64      # 18 nx: Particle resolution
 
 # ------------- Tree parameters ------------- #

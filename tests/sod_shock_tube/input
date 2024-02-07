@@ -17,8 +17,8 @@
 0.0     # 13 t0: Initial time
 0.2     # 14 tf: Final time
 0.01    # 15 dt_sav: Recording time step
-32      # 16 nxl: Particle resolution in the x direction (left)
-16      # 17 nxr: Particle resolution in the x direction (right)
+64      # 16 nxl: Particle resolution in the x direction (left)
+32      # 17 nxr: Particle resolution in the x direction (right)
 
 # ------------- Tree parameters ------------- #
 10      # 18 s: Maximum number of particles in a leaf (Bucket size)
