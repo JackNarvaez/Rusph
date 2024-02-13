@@ -24,7 +24,7 @@ use std::f64::consts::PI;
 fn main() -> Result<(), Box<dyn Error>> {
 
     // Files
-    let path_source: &str   = "./Turbulence/hydro32_00020.csv";
+    let path_source: &str   = "./hydro32_00020.csv";
     let input_file: &str    = "./tests/turbulent_gas/input";
 
     //---------------------------------------------------------------------------------------------

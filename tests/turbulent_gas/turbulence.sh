@@ -1,1 +1,1 @@
-cargo run -p turbulent_gas --bin turbulent_gas
+cargo run --release -p turbulent_gas --bin turbulent_gas
