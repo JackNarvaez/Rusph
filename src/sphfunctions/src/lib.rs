@@ -56,6 +56,8 @@ pub fn periodic_norm(p1: &Particle, p2: &Particle, wd: f64, lg: f64, hg: f64, ep
 
 // -------- Kernel functions --------
 
+// *** B-Spline Kernels *** //
+
 // Cubic Kernel
 pub fn f_cubic_kernel(q:f64) -> f64 {
     if q < 1. {
@@ -74,44 +76,6 @@ pub fn dfdq_cubic_kernel(q:f64) -> f64 {
         return (2.25*q-3.)*q;
     } else if q < 2.{
         return -3.*(0.25*q*q-q+1.);
-    } else {
-        return 0.;
-    }
-}
-
-// Gaussian Kernel
-pub fn f_gaussian_kernel(q:f64) -> f64 {
-    if q < 3. {
-        return (-q*q).exp();
-    } else {
-        return 0.;
-    }
-}
-
-// Derivative of Gaussian Kernel
-pub fn dfdq_gaussian_kernel(q:f64) -> f64 {
-    if q < 3. {
-        return -2.0*q*(-q*q).exp();
-    } else {
-        return 0.;
-    }
-}
-
-// C2 Wendland kernel
-pub fn f_wendland_kernel(q:f64) -> f64 {
-    if q < 2. {
-        let f1: f64 = 1.-0.5*q;
-        return f1*f1*f1*f1*(2.*q+1.);
-    } else {
-        return 0.;
-    }
-}
-
-// Derivative of C2 Wendland kernel
-pub fn dfdq_wendland_kernel(q:f64) -> f64 {
-    if q < 2.{
-        let f1: f64 = 1.-0.5*q;
-        return -5.*q*f1*f1*f1;
     } else {
         return 0.;
     }
@@ -159,6 +123,50 @@ pub fn dfdq_quintic_kernel(q:f64) -> f64 {
     }
 }
 
+// *** Gaussian Kernels *** //
+
+// Gaussian Kernel
+pub fn f_gaussian_kernel(q:f64) -> f64 {
+    if q < 3. {
+        return (-q*q).exp();
+    } else {
+        return 0.;
+    }
+}
+
+// Derivative of Gaussian Kernel
+pub fn dfdq_gaussian_kernel(q:f64) -> f64 {
+    if q < 3. {
+        return -2.0*q*(-q*q).exp();
+    } else {
+        return 0.;
+    }
+}
+
+// *** Wendland Kernels *** //
+
+// C2 Wendland kernel
+pub fn f_c2wendland_kernel(q:f64) -> f64 {
+    if q < 2. {
+        let f1: f64 = 1.-0.5*q;
+        return f1*f1*f1*f1*(2.*q+1.);
+    } else {
+        return 0.;
+    }
+}
+
+// Derivative of C2 Wendland kernel
+pub fn dfdq_c2wendland_kernel(q:f64) -> f64 {
+    if q < 2.{
+        let f1: f64 = 1.-0.5*q;
+        return -5.*q*f1*f1*f1;
+    } else {
+        return 0.;
+    }
+}
+
+// ----------------------------------
+
 // Derivative of kernel w.r.t the smoothing length
 pub fn dwdh(q: f64, f: fn(f64) -> f64, df: fn(f64) -> f64) -> f64 {
     3. *f(q) + q*df(q)
@@ -177,15 +185,15 @@ pub fn density_kernel(particles: & Vec<Particle>, ii:usize, neigh_particles: & V
     rho * dm * sigma / (h*h*h)
 }
 
-// Density calculated by smoothing function
-pub fn density_by_smoothing_length(m:f64, h:f64, eta:f64) -> f64{
+// Density calculated from smoothing length
+pub fn density_by_smoothing_length(dm:f64, h:f64, eta:f64) -> f64{
     let vol: f64 = eta/h;
-    m*vol*vol*vol
+    dm*vol*vol*vol
 }
 
-// Density calculated by smoothing function
-pub fn h_by_density(m:f64, rho:f64, eta:f64) -> f64{
-    eta*(m/rho).cbrt()
+// Smoothing length calculated from density number
+pub fn h_by_density(dm:f64, rho:f64, eta:f64) -> f64{
+    eta*(dm/rho).cbrt()
 }
 
 // Omega operator
