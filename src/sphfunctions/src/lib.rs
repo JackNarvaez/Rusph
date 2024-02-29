@@ -452,25 +452,15 @@ pub fn body_forces_toy_star(particle: &mut Particle, nu: f64, lmbda: f64) {
     particle.az -= nu * particle.vz + lmbda*particle.z; 
 }
 
-// Gravitational Force due to two massive objects
-pub fn body_forces_grav_2obj(particle: &mut Particle, m1: & Star, m2: & Star, omega: f64) {
-    let x_1: f64 = particle.x - m1.x;
-    let y_1: f64 = particle.y - m1.y;
-    let z_1: f64 = particle.z - m1.z;
-    let x_2: f64 = particle.x - m2.x;
-    let y_2: f64 = particle.y - m2.y;
-    let z_2: f64 = particle.z - m2.z;
-    let mr_1: f64 = m1.m * (x_1*x_1 + y_1*y_1 + z_1*z_1).powf(-1.5);
-    let mr_2: f64 = m2.m * (x_2*x_2 + y_2*y_2 + z_2*z_2).powf(-1.5);
-
-    // Gravitational Force
-    particle.ax -= mr_1 * x_1  + mr_2 * x_2;
-    particle.ay -= mr_1 * y_1  + mr_2 * y_2;
-    particle.az -= mr_1 * z_1  + mr_2 * z_2;
-
-    // Coriolis and Centripetal Forces
-    particle.ax += omega * (omega * particle.x + 2.*particle.vy);
-    particle.ay += omega * (omega * particle.y - 2.*particle.vx);
+// Newtonian Gravitational Force
+pub fn body_forces_gravitation(particle: &mut Particle, m_star: & Star) {
+    let x_r: f64 = particle.x - m_star.x;
+    let y_r: f64 = particle.y - m_star.y;
+    let z_r: f64 = particle.z - m_star.z;
+    let f_grav: f64 = m_star.m * (x_r*x_r + y_r*y_r + z_r*z_r+0.000625).powf(-1.5);
+    particle.ax += f_grav*x_r;
+    particle.ay += f_grav*y_r;
+    particle.az += f_grav*z_r;
 }
 
 // Calculate acceleration for each particle in the system
