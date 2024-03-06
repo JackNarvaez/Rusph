@@ -11,6 +11,7 @@ members = [
     "./tests/sod_shock_tube",
     "./tests/kelvin_helmholtz",
     "./tests/toy_star",
+    "./tests/accretion_disc",
     "./tests/turbulent_gas",
     "./tests/find_neighbors",
 ]

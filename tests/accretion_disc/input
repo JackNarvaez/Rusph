@@ -1,0 +1,23 @@
+# ------------ System Parameters ------------ #
+1.2     # 0 eta: Dimensionless constant specifying the smoothing length
+1.667   # 1 gamma: Heat capacity ratio
+-0.5    # 2 x0: Bottom left corner  (x-coordinate)
+-0.5    # 3 y0: Bottom left corner  (y-coordinate)
+-0.05   # 4 z0: Bottom left corner  (z-coordinate)
+1.0     # 5 wd: Width of the system's domain
+1.0     # 6 lg: Length of the system's domain
+0.1     # 7 hg: Height of the system's domain
+1.0     # 8 rho0: Initial density
+1.0     # 9 m: Initial energy
+0.4     # 10 r_disc: external radius of the acc. disc
+
+# ---------- Simulation Parameters ---------- #
+0.0     # 11 t0: Initial time
+0.01    # 12 tf: Final time
+0.0005   # 13 dt_sav: Recording time step
+32      # 14 nx: Particle resolution
+
+# ------------- Tree parameters ------------- #
+10      # 15 s: Maximum number of particles in a leaf (Bucket size)
+0.5     # 16 alpha: Fraction of the bucket size s
+0.5     # 17 beta: Maximum ratio of cells with less than alpha*s particles
