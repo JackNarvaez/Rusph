@@ -12,11 +12,12 @@ use structures::{
     Particle,
     Node,
     Pointer,
+    Star,
 };
 
 use datafunctions;
 use sphfunctions;
-use spfunc::gamma::*;
+// use spfunc::gamma::*;
 
 use tree_algorithm::BuildTree;
 use std::f64::consts::PI;
@@ -33,7 +34,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length
     let gamm: f64   = input[1];         // Heat capacity ratio
-    let nu: f64     = input[2];         // Viscocity parameter
+    // let nu: f64     = input[2];         // Viscocity parameter
     let m: f64      = input[3];         // Star's mass
     let r: f64      = input[4];         // Star's radius
     
@@ -63,6 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Create Particles
     let mut particles: Vec<Particle> = Vec::new();
+    let star : Star = Star{..Default::default()};
     if let Err(err) = datafunctions::read_data(path_source, &mut particles) {
         println!("{}", err);
         process::exit(1);
@@ -73,7 +75,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut t: f64  = t0;               // Time
     let n: usize    = particles.len();
     let dm: f64     = m/n as f64;       // Particles' mass
-    let lmbda: f64  = coeff_static_grav_potential(0.05, gamm, m, r);
+    //let lmbda: f64  = coeff_static_grav_potential(0.05, gamm, m, r);
     let mut it: u32 = 0;                // Time iterations
     // Save time evolution
     let mut time_file = File::create("./Toystar/Time.txt").expect("creation failed"); // Save time steps
@@ -98,7 +100,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                                  sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern,
                                                  eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                                  sphfunctions::mon97_art_vis,
-                                                 sphfunctions::body_forces_toy_star, nu, lmbda, true,
+                                                 sphfunctions::body_forces_toy_star, &star, true,
                                                  sphfunctions::periodic_boundary, xper, yper, zper, 4.*r, 4.*r, 4.*r, x0-2.*r, y0-2.*r, z0-2.*r);
         dt = sphfunctions::time_step_mon(&particles, n, gamm, rkern, 4.*r, 4.*r, 4.*r,  x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_polytropic, xper, yper, zper);
         tree.restart(n);
@@ -124,7 +126,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 // Coefficient of gravital force
-fn coeff_static_grav_potential(k:f64, gamm:f64, m:f64, r:f64) -> f64 {
-    let gamma_func: f64 = gamma(1.5 + gamm/(gamm-1.))/gamma(gamm/(gamm-1.));
-    return 2.*k*(gamm/(gamm-1.))/PI.powf(1.5*(gamm-1.)) * (gamma_func* m/(r*r*r)).powf(gamm-1.)/(r*r);
-}
+// fn coeff_static_grav_potential(k:f64, gamm:f64, m:f64, r:f64) -> f64 {
+//     let gamma_func: f64 = gamma(1.5 + gamm/(gamm-1.))/gamma(gamm/(gamm-1.));
+//     return 2.*k*(gamm/(gamm-1.))/PI.powf(1.5*(gamm-1.)) * (gamma_func* m/(r*r*r)).powf(gamm-1.)/(r*r);
+// }

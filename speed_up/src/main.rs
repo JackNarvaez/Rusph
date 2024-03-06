@@ -15,6 +15,7 @@ use structures::{
     Particle,
     Node,
     Pointer,
+    Star,
 };
 
 use std::f64::consts::PI;
@@ -75,12 +76,13 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     //------------------------------------ Main Loop ----------------------------------------------
     let start       = Instant::now();   // Runing time
+    let star : Star = Star{..Default::default()};
     while it < it_tot  {
         sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, sphfunctions::eos_isothermal, sphfunctions::sound_speed_isothermal, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern,
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
-                                       sphfunctions::body_forces_null, 0.0, 0.0, false,
+                                       sphfunctions::body_forces_null, &star, false,
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg, x0, y0, z0);
         dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_isothermal_dt, xper, yper, zper);
         tree.restart(n);

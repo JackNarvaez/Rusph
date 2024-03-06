@@ -442,11 +442,13 @@ pub fn acceleration_ab(particle_a: &Particle, particle_b: &Particle, x_rel: f64,
 }
 
 // No body forces
-pub fn body_forces_null(_particles: &mut Particle, _nu: f64, _lmbda: f64) {
+pub fn body_forces_null(_particles: &mut Particle, _m_star: & Star) {
 }
 
 // Body forces for a toy star in 2D
-pub fn body_forces_toy_star(particle: &mut Particle, nu: f64, lmbda: f64) {
+pub fn body_forces_toy_star(particle: &mut Particle, _m_star: &Star) {
+    let nu: f64 = 1.0;
+    let lmbda: f64 = 0.5030082152040148;
     particle.ax -= nu * particle.vx + lmbda*particle.x;
     particle.ay -= nu * particle.vy + lmbda*particle.y; 
     particle.az -= nu * particle.vz + lmbda*particle.z; 
@@ -458,9 +460,9 @@ pub fn body_forces_gravitation(particle: &mut Particle, m_star: & Star) {
     let y_r: f64 = particle.y - m_star.y;
     let z_r: f64 = particle.z - m_star.z;
     let f_grav: f64 = m_star.m * (x_r*x_r + y_r*y_r + z_r*z_r+0.000625).powf(-1.5);
-    particle.ax += f_grav*x_r;
-    particle.ay += f_grav*y_r;
-    particle.az += f_grav*z_r;
+    particle.ax += -f_grav*x_r;
+    particle.ay += -f_grav*y_r;
+    particle.az += -f_grav*z_r;
 }
 
 // Calculate acceleration for each particle in the system
@@ -468,7 +470,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
                      dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
                      tree: &Node, s_: i32, n: usize, ptr : Pointer, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64,
                      artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
-                     body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool, xperiodic: bool, yperiodic:bool, zperiodic:bool){
+                     body_forces: fn(&mut Particle, &Star), star: &Star, bf: bool, xperiodic: bool, yperiodic:bool, zperiodic:bool){
     
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
@@ -544,7 +546,7 @@ pub fn accelerations(particles: &mut Vec<Particle>, dm:f64, eos: fn(f64, f64, f6
             particle_i.du -= (p_i/particles[ii].rho)*particle_i.divv;
             // Body forces
             if bf {
-                body_forces(particle_i, nu, lmbda);
+                body_forces(particle_i, star);
             }
         }
     });
@@ -556,12 +558,12 @@ pub fn euler_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, eos: fn(f
                         dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
                         eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
                         artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
-                        body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
+                        body_forces: fn(&mut Particle, &Star), star: &Star, bf: bool,
                         boundary: fn(&mut Vec<Particle>, f64, f64,f64, f64, f64, f64), xperiodic: bool, yperiodic:bool, zperiodic:bool, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) {
     
     tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
     smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 10, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, xperiodic, yperiodic, zperiodic);
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf, xperiodic, yperiodic, zperiodic);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, star, bf, xperiodic, yperiodic, zperiodic);
     particles.par_iter_mut().for_each(|particle|{
         if particle.ptype==0 {
             particle.x += dt * particle.vx;
@@ -581,7 +583,7 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
                                   dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
                                   eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
                                   artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
-                                  body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
+                                  body_forces: fn(&mut Particle, &Star), star: &Star, bf: bool,
                                   boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64, f64, f64), xperiodic: bool, yperiodic:bool, zperiodic:bool, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) {
     
     particles.par_iter_mut().for_each(|particle|{
@@ -602,7 +604,7 @@ pub fn velocity_verlet_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64,
     tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
     smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 30, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, xperiodic, yperiodic, zperiodic);
 
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf, xperiodic, yperiodic, zperiodic);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, star, bf, xperiodic, yperiodic, zperiodic);
     particles.par_iter_mut().for_each(|particle|{
         if particle.ptype==0 {
             particle.vx += 0.5 * dt * particle.ax;
@@ -618,7 +620,7 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
                                   dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
                                   eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
                                   artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
-                                  body_forces: fn(&mut Particle, f64, f64), nu:f64, lmbda: f64, bf: bool,
+                                  body_forces: fn(&mut Particle, &Star), star: &Star, bf: bool,
                                   boundary: fn(&mut Vec<Particle>, f64, f64, f64, f64, f64, f64), xperiodic: bool, yperiodic:bool, zperiodic:bool, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64) {
     
     particles.par_iter_mut().for_each(|particle|{
@@ -650,7 +652,7 @@ pub fn predictor_kdk_integrator(particles: &mut Vec<Particle>, dt:f64, dm:f64, e
     boundary(particles, wd, lg, hg, x0, y0, z0);
     tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
     smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 30, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, xperiodic, yperiodic, zperiodic);
-    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, nu, lmbda, bf, xperiodic, yperiodic, zperiodic);
+    accelerations(particles, dm, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, star, bf, xperiodic, yperiodic, zperiodic);
     particles.par_iter_mut().for_each(|particle|{
         if particle.ptype==0 {
             particle.vx = particle.vx_star + 0.5 * dt * particle.ax;

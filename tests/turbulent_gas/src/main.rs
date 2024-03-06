@@ -17,6 +17,7 @@ use structures::{
     Particle,
     Node,
     Pointer,
+    Star,
 };
 
 use std::f64::consts::PI;
@@ -64,6 +65,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     // Create particles
     let mut particles: Vec<Particle> = Vec::new();
+    let star : Star = Star{..Default::default()};
     if let Err(err) = datafunctions::read_data_iso(path_source, &mut particles) {
         println!("{}", err);
         process::exit(1);
@@ -96,7 +98,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern,
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
-                                       sphfunctions::body_forces_null, 0.0, 0.0, false,
+                                       sphfunctions::body_forces_null, &star, false,
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg, x0, y0, z0);
         dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_isothermal_dt, xper, yper, zper);
         tree.restart(n);
