@@ -8,14 +8,14 @@
 1.0     # 6 lg: Length of the system's domain
 0.1     # 7 hg: Height of the system's domain
 1.0     # 8 rho0: Initial density
-1.0     # 9 m: Initial energy
+1.0     # 9 m: Star's mass
 0.4     # 10 r_disc: external radius of the acc. disc
 
 # ---------- Simulation Parameters ---------- #
 0.0     # 11 t0: Initial time
-0.01    # 12 tf: Final time
-0.0005   # 13 dt_sav: Recording time step
-32      # 14 nx: Particle resolution
+1.0     # 12 tf: Final time
+0.05    # 13 dt_sav: Recording time step
+48      # 14 nx: Particle resolution
 
 # ------------- Tree parameters ------------- #
 10      # 15 s: Maximum number of particles in a leaf (Bucket size)

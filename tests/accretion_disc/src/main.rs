@@ -17,7 +17,6 @@ use structures::{
 
 use datafunctions;
 use sphfunctions;
-// use spfunc::gamma::*;
 
 use tree_algorithm::BuildTree;
 use std::f64::consts::PI;
@@ -45,7 +44,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let rho: f64    = input[8];         // Density
     let m: f64      = input[9];         // Star's mass
     let r_disc: f64 = input[10];
-    let r_in: f64   = 0.4*r_disc;
+    let r_in: f64   = 0.5*r_disc;
     
     let t0: f64     = input[11];        // Initial time
     let tf: f64     = input[12];        // Final time
@@ -61,7 +60,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let yper: bool  = false;
     let zper: bool  = false;
 
-    let mut dt: f64     = 0.01*dt_sav;  // Initial time step
+    let mut dt: f64     = 0.1*dt_sav;  // Initial time step
     let mut sav: bool   = false;        // Save data
     let mut it_sav: u32 = 1;            // Save data iteration
     
@@ -104,11 +103,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     //------------------------------------ Main Loop ----------------------------------------------
     let start = Instant::now();   // Runing time
     while t < tf {
-        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamm,
+        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamm,
                                        sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern, 
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
-                                       sphfunctions::body_forces_null, &star, false,
+                                       sphfunctions::body_forces_gravitation, &star, true,
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
         dt = sphfunctions::time_step_bale(&particles, n, gamm, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_ideal_gas_u);
         tree.restart(n);

@@ -224,8 +224,8 @@ pub fn f_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize
 
 // Calculate a new value of 'h'
 fn nr_iter(particles: & Vec<Particle>, ii:usize, neigh_particles: & Vec<usize>, dm:f64, h_old: f64, eta:f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma:f64, rkern: f64, wd: f64, lg: f64, hg: f64, xperiodic: bool, yperiodic:bool, zperiodic:bool) -> f64 {
-    let (f, df) = f_iter(particles, ii, neigh_particles, dm, h_old, eta, f, dfdq, sigma, rkern, wd, lg, hg, xperiodic, yperiodic, zperiodic);
-    h_old - f / df
+    let (f_i, df_i) = f_iter(particles, ii, neigh_particles, dm, h_old, eta, f, dfdq, sigma, rkern, wd, lg, hg, xperiodic, yperiodic, zperiodic);
+    h_old - f_i / df_i
 }
 
 // Newton raphson solver to find the value of 'h' for particle 'ii'

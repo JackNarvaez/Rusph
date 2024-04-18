@@ -34,9 +34,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     let r_disc: f64 = input[10];
     let nx: u32     = input[14] as u32; // Particle resolution
     
-    let r_in: f64   = 0.2*r_disc;
+    let r_in: f64   = 0.5*r_disc;
     let r2_in: f64  = r_in*r_in;
-    let r2_out: f64  = r_disc*r_disc;
+    let r2_out: f64 = r_disc*r_disc;
 
     let x_c: f64 = x0 + 0.5*wd;
     let y_c: f64 = y0 + 0.5*lg;
@@ -51,7 +51,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let h: f64      = h_by_density(dm, rho, eta);
     let m_t: f64    = m + dm;
     for ii in 0..n {
-        let omega: f64 = keplerian_velocity(&particles[ii], m_t);
+        let omega: f64 = keplerian_velocity(&particles[ii], m_t, x_c, y_c);
         particles[ii].h  = h;
         particles[ii].vx = -particles[ii].y * omega;
         particles[ii].vy = particles[ii].x * omega;
@@ -74,6 +74,9 @@ fn distance_center(particle: &Particle, x0: f64, y0: f64, r2_in: f64, r2_out: f6
     return (r2_in < r2) && (r2 < r2_out);
 }
 
-fn keplerian_velocity(particle: &Particle, m_t: f64) -> f64 {
-    return m_t*(particle.x*particle.x + particle.y*particle.y).powf(-1.5);
+fn keplerian_velocity(particle: &Particle, m_t: f64, x0: f64, y0: f64) -> f64 {
+    let xtem: f64 = particle.x - x0;
+    let ytem: f64 = particle.y - y0;
+    let r2: f64   = xtem*xtem + ytem*ytem;
+    return (m_t/(r2).powf(1.5)).sqrt();
 }
