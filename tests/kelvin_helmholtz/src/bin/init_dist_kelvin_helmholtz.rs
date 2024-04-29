@@ -1,5 +1,6 @@
-// Initial setting for the Kelvin Helmholtz problem in 3D
-
+// ------------------------------------------------------------------------- //
+// Initial setup for the Kelvin-Helmholtz Problem                            //
+// ------------------------------------------------------------------------- //
 use std::{
     error::Error,
     process,

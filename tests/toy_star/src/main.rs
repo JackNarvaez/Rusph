@@ -1,4 +1,6 @@
-// The Toy Star Problem in 3D
+// ------------------------------------------------------------------------- //
+// The Toy Star Problem in 3D                                                //
+// ------------------------------------------------------------------------- //
 
 use std::{
     fs::File,
@@ -86,7 +88,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //---------------------------------------------------------------------------------------------
 
     for ii in 0..n {
-        particles[ii].rho = sphfunctions::density_by_smoothing_length(dm, particles[ii].h, eta);
+        particles[ii].rho = sphfunctions::density_from_h(dm, particles[ii].h, eta);
     }
 
     let mut tree: Node = <Node as BuildTree>::new(n as i32, x0-2.*r, y0-2.*r, z0-2.*r, 4.*r, 4.*r, 4.*r);
@@ -96,7 +98,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     while t < tf {
         // In toy star, body forces depend on the particles' velocity.
         // Therefore, it is not straightforward to use the basic LF integrator.
-        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_ideal_gas, gamm,
+        sphfunctions::velocity_verlet_integrator(&mut particles, dt, dm, sphfunctions::eos_polytropic, sphfunctions::sound_speed_polytropic, gamm,
                                                  sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern,
                                                  eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                                  sphfunctions::mon97_art_vis,
@@ -111,7 +113,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 println!("{}", err);
                 process::exit(1);
             }
-        } 
+        }
         it += 1;
     }
     println!("Simulation run successfully.\n Time {} s.\n Iterations: {}.", start.elapsed().as_secs(), it);

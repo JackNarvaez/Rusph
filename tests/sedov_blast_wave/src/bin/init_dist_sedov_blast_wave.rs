@@ -1,4 +1,6 @@
-// Initial setting for the Sedov Blast Wave Problem in 3D
+// ------------------------------------------------------------------------- //
+// Initial setup for the Sedov Blast Wave Problem in 3D                      //
+// ------------------------------------------------------------------------- //
 
 use std::{
     error::Error,

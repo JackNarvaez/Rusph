@@ -1,4 +1,6 @@
-// The Kelvin Helmholtz Instability in 3D
+// ------------------------------------------------------------------------- //
+// The Kelvin-Helmholtz Instabilities in 3D                                  //
+// ------------------------------------------------------------------------- //
 
 use std::{
     fs::File,
@@ -88,7 +90,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //---------------------------------------------------------------------------------------------
     
     for ii in 0..n {
-        particles[ii].rho = sphfunctions::density_by_smoothing_length(dm, particles[ii].h, eta);
+        particles[ii].rho = sphfunctions::density_from_h(dm, particles[ii].h, eta);
     }
 
     let mut tree: Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
@@ -102,7 +104,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, &star, false,
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_ideal_gas_u);
+        dt = sphfunctions::time_step_bale(&particles, n, gamma, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_ideal_gas);
         tree.restart(n);
         datafunctions::time_step(&mut t, dt, dt_sav, &mut sav, &mut it_sav);
         if sav {

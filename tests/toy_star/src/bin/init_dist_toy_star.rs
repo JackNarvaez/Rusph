@@ -1,4 +1,6 @@
-// Initial setting for the Toy Star Problem in 3D.
+// ------------------------------------------------------------------------- //
+// Initial setup for the Toy Star Problem in 3D                              //
+// ------------------------------------------------------------------------- // 
 
 use std::{
     error::Error,
@@ -6,14 +8,13 @@ use std::{
 };
 
 use structures::Particle;
-use sphfunctions::h_by_density;
+use sphfunctions::h_from_density;
 use datafunctions;
 use partdistribution;
 
 use std::f64::consts::PI;
 
 fn main() -> Result<(), Box<dyn Error>> {
-
     // Files
     let path: &str      = "./Toystar/Ini_00.csv";
     let input_file: &str= "./tests/toy_star/input";
@@ -29,7 +30,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0: f64     = input[6];         // Star's center (y-coordinate)
     let z0: f64     = input[7];         // Star's center (z-coordinate)
     let vx0: f64    = input[8];         // Star's velocity (x-coordinate)
-    let vy0: f64    = input[9];        // Star's velocity (y-coordinate)
+    let vy0: f64    = input[9];         // Star's velocity (y-coordinate)
     let vz0: f64    = input[10];        // Star's velocity (z-coordinate)
     let u0: f64     = input[11];        // Initial energy
     
@@ -48,7 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let n: usize    = particles.len();
     let dm:f64      = m/n as f64;
-    let h: f64      = h_by_density(dm, rho, eta);
+    let h: f64      = h_from_density(dm, rho, eta);
     for ii in 0..n {
         particles[ii].h  = h;
         particles[ii].vx = vx0;

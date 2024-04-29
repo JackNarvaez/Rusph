@@ -69,7 +69,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //---------------------------------------------------------------------------------------------
     
     for ii in 0..n {
-        particles[ii].rho = sphfunctions::density_by_smoothing_length(dm, particles[ii].h, eta);
+        particles[ii].rho = sphfunctions::density_from_h(dm, particles[ii].h, eta);
     }
     
     let mut tree:Node= <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
@@ -78,13 +78,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start       = Instant::now();   // Runing time
     let star : Star = Star{..Default::default()};
     while it < it_tot  {
-        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, sphfunctions::eos_isothermal, sphfunctions::sound_speed_isothermal, gamma,
+        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_isothermal, sound_speed_isothermal, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern,
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, &star, false,
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg, x0, y0, z0);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_isothermal_dt, xper, yper, zper);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sound_speed_isothermal, xper, yper, zper);
         tree.restart(n);
         it += 1;
     }
@@ -92,4 +92,30 @@ fn main() -> Result<(), Box<dyn Error>> {
     //---------------------------------------------------------------------------------------------
 
     Ok(())
+}
+
+// ------------------------------------------------------------------------- //
+// The Polytropic equation of state.                                         //
+// Returns the pressure                                                      //
+//      P = rho^gamm                                                       //
+// where rho is the density, K is the polytropic constant, and gamm is the   //
+// adiabatic index.                                                          //
+// ------------------------------------------------------------------------- //
+fn eos_isothermal(
+    rho:f64, _u:f64, gamma:f64, _x: f64, _y: f64, _z: f64
+) -> f64 {
+    rho.powf(gamma)
+}
+
+// ------------------------------------------------------------------------- //
+// The Polytropic equation of state.                                         //
+// Returns the speed of sound                                                //
+//      Cs = sqrt[gamm * rho^(gamm-1)]                                     //
+// where rho is the density, K is the polytropic constant, and gamm is the   //
+// adiabatic index.                                                          //
+// ------------------------------------------------------------------------- //
+fn sound_speed_isothermal(
+    rho: f64, _u:f64, gamma: f64, _x: f64, _y: f64, _z: f64
+) -> f64 {
+    (gamma*rho.powf(gamma-1.)).sqrt()
 }

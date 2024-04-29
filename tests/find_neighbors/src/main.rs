@@ -59,7 +59,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let n: u32  = particles.len() as u32;
     let dm: f64 = rho*wd*lg*hg/n as f64;
-    let h: f64  = sphfunctions::h_by_density(dm, rho, eta);
+    let h: f64  = sphfunctions::h_from_density(dm, rho, eta);
 
     // Tree parameters
     let s: i32      = 4;

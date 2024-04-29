@@ -1,5 +1,6 @@
-// Initial setting for the Sod Shock Tube Problem in 3D
-
+// ------------------------------------------------------------------------- //
+// Initial setup for Shock tests in 3D                                       //
+// ------------------------------------------------------------------------- //
 use std::{
     f64,
     error::Error,
