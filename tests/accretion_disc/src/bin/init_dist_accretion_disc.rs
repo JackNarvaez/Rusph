@@ -49,6 +49,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let sigma0: f64 = m_disc/m0_disc;
 
     let cs0: f64    = h_r*(G*m_star/r_ref).sqrt()*r_ref.powf(q_index);
+    println!("{}", cs0);
     
     let mut particles :Vec<Particle> = Vec::new();
 

@@ -86,15 +86,15 @@ pub fn read_input(path: &str) -> Vec<f64> {
 
 // -------- Time step --------
 
-pub fn time_step(t: & mut f64, dt: f64, dt_sav: f64, sav:& mut bool, it_sav: & mut u32) {
+pub fn time_step(t: & mut f64, dt: & mut f64, dt_sav: f64, sav:& mut bool, it_sav: & mut u32) {
     let temp: f64 = (*it_sav as f64)*dt_sav;
-    let t_dif: f64 = temp - (*t + dt);
-    if (t_dif).abs() <= 0.5*dt {
+    if *t + 1.5* *dt >= temp {
         *sav = true;
+        *dt = temp-*t;
         *t = temp;
         *it_sav += 1;
     } else {
         *sav = false;
-        *t += dt;
+        *t += *dt;
     }
 }

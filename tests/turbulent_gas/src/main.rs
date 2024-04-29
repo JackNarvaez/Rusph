@@ -104,7 +104,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg, x0, y0, z0);
         dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sound_speed_isothermal, xper, yper, zper);
         tree.restart(n);
-        datafunctions::time_step(&mut t, dt, dt_sav, &mut sav, &mut it_sav);
+        datafunctions::time_step(&mut t, &mut dt, dt_sav, &mut sav, &mut it_sav);
         println!("{} \n", t);
         if sav {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");

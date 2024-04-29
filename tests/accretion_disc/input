@@ -14,7 +14,7 @@
 
 # ---------- Simulation Parameters ---------- #
 0.0     # 12 t0: Initial time
-20.0    # 13 tf: Final time
+150.0   # 13 tf: Final time
 1.0     # 14 dt_sav: Recording time step
 10000   # 15 n: Number of Particles
 
