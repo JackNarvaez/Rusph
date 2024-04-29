@@ -1,4 +1,6 @@
-// Initial setting for the Toy Star Problem in 3D.
+// ------------------------------------------------------------------------- //
+// Initial Setup for a 3D accretion Disc                                     //
+// ------------------------------------------------------------------------- //
 
 use std::{
     error::Error,
@@ -6,11 +8,10 @@ use std::{
 };
 
 use structures::Particle;
-use sphfunctions::h_by_density;
 use datafunctions;
 use partdistribution;
 
-use std::f64::consts::PI;
+const G: f64    = 1.0;
 
 fn main() -> Result<(), Box<dyn Error>> {
 
@@ -21,43 +22,39 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Parameters
     let input: Vec<f64> = datafunctions::read_input(input_file);
 
-    let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length
-    let x0: f64     = input[2];         // Bottom left corner  (x-coordinate)
-    let y0: f64     = input[3];         // Bottom left corner  (y-coordinate)
-    let z0: f64     = input[4];         // Bottom left corner  (z-coordinate)
-    let wd: f64     = input[5];         // Width (x)
-    let lg: f64     = input[6];         // Length (y)
-    let hg: f64     = input[7];         // Height (z)
+    let eta: f64    = input[0];         // eta: dimensionless constant specifying the smoothing length
+    let gamm: f64   = input[1];         // gamma: Heat capacity ratio
+    let x_c: f64    = input[2];         // x_c: center (x-coordinate)
+    let y_c: f64    = input[3];         // y_c: center (y-coordinate)
+    let z_c: f64    = input[4];         // z_c: center (z-coordinate)
+    let r_in: f64   = input[5];         // inner radius of the acc. disc
+    let r_out: f64  = input[6];         // outer radius of the acc. disc
+    let m_dc: f64   = input[7];         // portion of the disc's mass w.r.t. the star mass
+    let m_star: f64 = input[8];         // star's mass
+    let p_index: f64    = input[9];     // p index - density profile 
+    let q_index: f64    = input[10];    // q index - density profile 
+    let h_r: f64    = input[11];        // H over r_ref
     
-    let rho: f64    = input[8];         // Density
-    let m: f64      = input[9];         // Star's mass
-    let r_disc: f64 = input[10];
-    let nx: u32     = input[14] as u32; // Particle resolution
+    let n: u32      = input[15] as u32; // Particle resolution
     
-    let r_in: f64   = 0.5*r_disc;
-    let r2_in: f64  = r_in*r_in;
-    let r2_out: f64 = r_disc*r_disc;
+    let m_disc: f64 = m_dc*m_star;      // Disc's mass
+    let dm: f64     = m_disc/n as f64;  // Particle's mass
+    let r_ref: f64  = r_in;             // Reference radius 
+    let vx0: f64    = 0.0;              // x velocity in CoM
+    let vy0: f64    = 0.0;              // y velocity in CoM
+    let vz0: f64    = 0.0;              // z velocity in CoM
+    let nbins: usize= 1000;             // Number of bins for integration
 
-    let x_c: f64 = x0 + 0.5*wd;
-    let y_c: f64 = y0 + 0.5*lg;
+    let m0_disc: f64= partdistribution::disc_mass(r_in, r_out, r_ref, p_index, 1.0, nbins);
+    let sigma0: f64 = m_disc/m0_disc;
 
+    let cs0: f64    = h_r*(G*m_star/r_ref).sqrt()*r_ref.powf(q_index);
     
-    let mut particles :Vec<Particle> = Vec::new();    
-    partdistribution::init_dist_hcp(&mut particles, nx, rho, eta, wd, lg, hg, x0, y0, z0);
-    particles.retain(|particle| distance_center(&particle, x_c, y_c, r2_in, r2_out));
+    let mut particles :Vec<Particle> = Vec::new();
 
-    let n: usize    = particles.len();
-    let dm:f64      = PI*rho*hg*(r_disc-r_in)*(r_disc+r_in)/n as f64;
-    let h: f64      = h_by_density(dm, rho, eta);
-    let m_t: f64    = m + dm;
-    for ii in 0..n {
-        let omega: f64 = keplerian_velocity(&particles[ii], m_t, x_c, y_c);
-        particles[ii].h  = h;
-        particles[ii].vx = -particles[ii].y * omega;
-        particles[ii].vy = particles[ii].x * omega;
-        particles[ii].vz = 0.0;
-        particles[ii].u  = 0.0;
-    }
+    partdistribution::init_dist_disc1(&mut particles, n, m_star, r_in, r_out, m_disc, p_index, q_index, r_ref, sigma0, cs0, eta, nbins, x_c, y_c, z_c);
+    partdistribution::init_dist_disc_velocities(&mut particles, n, m_star, p_index, q_index, cs0, gamm);
+    partdistribution::com_frame(&mut particles, n, dm, x_c, y_c, z_c, vx0, vy0, vz0);
 
     if let Err(err) = datafunctions::save_data(path, &particles){
         println!("{}", err);
@@ -65,18 +62,4 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     Ok(())
-}
-
-fn distance_center(particle: &Particle, x0: f64, y0: f64, r2_in: f64, r2_out: f64) -> bool {
-    let xtem: f64 = particle.x - x0;
-    let ytem: f64 = particle.y - y0;
-    let r2: f64  = xtem*xtem + ytem*ytem;
-    return (r2_in < r2) && (r2 < r2_out);
-}
-
-fn keplerian_velocity(particle: &Particle, m_t: f64, x0: f64, y0: f64) -> f64 {
-    let xtem: f64 = particle.x - x0;
-    let ytem: f64 = particle.y - y0;
-    let r2: f64   = xtem*xtem + ytem*ytem;
-    return (m_t/(r2).powf(1.5)).sqrt();
 }

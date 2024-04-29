@@ -20,6 +20,10 @@ Turbulence: ./tests/turbulent_gas/turbulence.sh
 	@mkdir $@
 	@bash $<
 
+Accretiondiscuniform: ./tests/accretion_disc_uniform/accretion_disc.sh
+	@mkdir $@
+	@bash $<
+
 Accretiondisc: ./tests/accretion_disc/accretion_disc.sh
 	@mkdir $@
 	@bash $<
