@@ -130,15 +130,20 @@ pub fn init_dist_hcp(
 
 // -------- Accretion disc distributions --------
 
-pub fn sigma_profile(r: f64, p: f64, r_ref:f64) -> f64 {
+pub fn sigma_profile(
+    r: f64, p: f64, r_ref:f64
+) -> f64 {
     (r/r_ref).powf(-p)
 }
 
-pub fn cs_disc(r:f64, q: f64, cs0: f64) -> f64 {
+pub fn cs_disc(
+    r:f64, q: f64, cs0: f64
+) -> f64 {
     cs0*r.powf(-q)
 }
 
-pub fn disc_mass(r_in: f64, r_out: f64, r_ref: f64,
+pub fn disc_mass(
+    r_in: f64, r_out: f64, r_ref: f64,
     p_index:f64, sigm0: f64, nbins: usize
 ) -> f64 {
     let mut r   : f64;
@@ -148,7 +153,7 @@ pub fn disc_mass(r_in: f64, r_out: f64, r_ref: f64,
     let dr      : f64 = r_wd/nbins as f64;
     let mut m_disc: f64 = 0.0;
     for ii in 0..nbins {
-        r = r_in + r_wd*ii as f64;
+        r = r_in + dr*ii as f64;
         sigm = sigm0*sigma_profile(r, p_index, r_ref);
         dm = 2.0*PI*r*sigm*dr;
         m_disc += dm;
@@ -177,6 +182,7 @@ pub fn init_dist_disc1(
     let mut cs  : f64;
     let mut h2  : f64;
     let mut s2h2: f64;
+    let mut fz_max: f64;
     
     let mut f_max   : f64 = 0.0;
     let mut sigm: f64 = 0.0;
@@ -218,11 +224,12 @@ pub fn init_dist_disc1(
         zmax    = -zmin;
         z_wd    = zmax - zmin;
 
+        fz_max  = sigm/(s2h2*PI.sqrt());
         f = 0.0;
         f_ii = 1.0;
         while f_ii > f {
             z   = zmin + z_wd*rng.gen::<f64>();         // z
-            f_ii= f_max*rng.gen::<f64>();               // u3
+            f_ii= fz_max*rng.gen::<f64>();               // u3
             f = sigm*(-(z/(s2h2)).powi(2)).exp()/(s2h2*PI.sqrt());  // rho(x, y, z)
             rho= f;
         }
@@ -257,7 +264,7 @@ pub fn init_dist_disc_velocities(
         cs = cs_disc(r, q_index, cs0);
         cs2 = cs*cs;
         f_p = -cs2*(1.5+p_index+q_index);
-        vphi = (kepl - f_p).sqrt();
+        vphi = (kepl + f_p).sqrt();
         particles[ii].vx = -vphi* phi.sin();
         particles[ii].vy = vphi* phi.cos();
         particles[ii].vz = 0.0_f64;
