@@ -131,15 +131,15 @@ pub fn init_dist_hcp(
 // -------- Accretion disc distributions --------
 
 pub fn sigma_profile(
-    r: f64, p: f64, r_ref:f64
+    r: f64, p: f64, r_ref:f64, r_in: f64
 ) -> f64 {
-    (r/r_ref).powf(-p)
+    (r/r_ref).powf(-p)*(1.0 -(r_in/r).sqrt())
 }
 
 pub fn cs_disc(
-    r:f64, q: f64, cs0: f64
+    r:f64, r_in: f64, q: f64, cs0: f64
 ) -> f64 {
-    cs0*r.powf(-q)
+    cs0*(r/r_in).powf(-q)
 }
 
 pub fn disc_mass(
@@ -154,7 +154,7 @@ pub fn disc_mass(
     let mut m_disc: f64 = 0.0;
     for ii in 0..nbins {
         r = r_in + dr*ii as f64;
-        sigm = sigm0*sigma_profile(r, p_index, r_ref);
+        sigm = sigm0*sigma_profile(r, p_index, r_ref, r_in);
         dm = 2.0*PI*r*sigm*dr;
         m_disc += dm;
     }
@@ -194,7 +194,7 @@ pub fn init_dist_disc1(
     // Calculate f_max = r*SIGMA(r)
     for ii in 0..nbins {
         r = r_in + dr*ii as f64;
-        f_ii = r * sigma0 * sigma_profile(r, p_index, r_ref);
+        f_ii = r * sigma0 * sigma_profile(r, p_index, r_ref, r_in);
         if f_ii > f_max {
             f_max = f_ii;
         }
@@ -210,27 +210,27 @@ pub fn init_dist_disc1(
         while f_ii > f {
             r   = r_in + r_wd*rng.gen::<f64>();             // r
             f_ii= f_max*rng.gen::<f64>();                   // u2
-            f   = r*sigma0*sigma_profile(r, p_index, r_ref); // f = r*SIGMA(r)
+            f   = r*sigma0*sigma_profile(r, p_index, r_ref, r_in); // f = r*SIGMA(r)
             sigm= f/r;
         }
         // find z
         // the rejection method
-        cs      = cs_disc(r, q_index,cs0);
+        cs      = cs_disc(r, r_in, q_index,cs0);
         omeg    = (G*m_star/r.powi(3)).sqrt();
         h2      = cs/omeg;
         s2h2    = 2.0_f64.sqrt()*h2;
 
         zmin    = -3.0_f64.sqrt()*s2h2;
-        zmax    = -zmin;
+        zmax    = 3.0_f64.sqrt()*s2h2;
         z_wd    = zmax - zmin;
 
-        fz_max  = sigm/(s2h2*PI.sqrt());
+        fz_max  = sigm/(s2h2 * PI.sqrt());
         f = 0.0;
         f_ii = 1.0;
         while f_ii > f {
             z   = zmin + z_wd*rng.gen::<f64>();         // z
             f_ii= fz_max*rng.gen::<f64>();               // u3
-            f = sigm*(-(z/(s2h2)).powi(2)).exp()/(s2h2*PI.sqrt());  // rho(x, y, z)
+            f = sigm*(-(z/(s2h2)).powi(2)).exp()/(s2h2 * PI.sqrt());  // rho(x, y, z)
             rho= f;
         }
 
@@ -246,7 +246,7 @@ pub fn init_dist_disc1(
 }
 
 pub fn init_dist_disc_velocities(
-    particles: &mut Vec<Particle>, n: u32, m_star: f64,
+    particles: &mut Vec<Particle>, n: u32, m_star: f64, r_in: f64,
     p_index: f64, q_index: f64, cs0: f64, gamm: f64
 ) {
     let mut kepl: f64;
@@ -261,7 +261,7 @@ pub fn init_dist_disc_velocities(
         r = (particles[ii].x * particles[ii].x + particles[ii].y*particles[ii].y).sqrt();
         kepl = G*m_star/r;
         phi = (particles[ii].y).atan2(particles[ii].x);
-        cs = cs_disc(r, q_index, cs0);
+        cs = cs_disc(r, r_in, q_index, cs0);
         cs2 = cs*cs;
         f_p = -cs2*(1.5+p_index+q_index);
         vphi = (kepl + f_p).sqrt();
