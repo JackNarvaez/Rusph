@@ -28,18 +28,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y_c: f64    = input[3];         // y_c: center (y-coordinate)
     let z_c: f64    = input[4];         // z_c: center (z-coordinate)
     let r_in: f64   = input[5];         // inner radius of the acc. disc
-    let r_out: f64  = input[6];         // outer radius of the acc. disc
-    let m_dc: f64   = input[7];         // portion of the disc's mass w.r.t. the star mass
-    let m_star: f64 = input[8];         // star's mass
-    let p_index: f64    = input[9];     // p index - density profile 
-    let q_index: f64    = input[10];    // q index - density profile 
-    let h_r: f64    = input[11];        // H over r_ref
+    let r_ref: f64  = input[6];         // reference radius of the acc. disc
+    let r_out: f64  = input[7];         // outer radius of the acc. disc
+    let m_dc: f64   = input[8];         // portion of the disc's mass w.r.t. the star mass
+    let m_star: f64 = input[9];         // star's mass
+    let p_index: f64= input[10];        // p index - density profile 
+    let q_index: f64= input[11];        // q index - density profile 
+    let h_r: f64    = input[12];        // H over r_ref
     
-    let n: u32      = input[15] as u32; // Particle resolution
+    let n: u32      = input[16] as u32; // Particle resolution
     
     let m_disc: f64 = m_dc*m_star;      // Disc's mass
     let dm: f64     = m_disc/n as f64;  // Particle's mass
-    let r_ref: f64  = r_in;             // Reference radius 
     let vx0: f64    = 0.0;              // x velocity in CoM
     let vy0: f64    = 0.0;              // y velocity in CoM
     let vz0: f64    = 0.0;              // z velocity in CoM
@@ -49,11 +49,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let sigma0: f64 = m_disc/m0_disc;
 
     let cs0: f64    = h_r*(G*m_star/r_ref).sqrt()*r_ref.powf(q_index);
-    
+
     let mut particles :Vec<Particle> = Vec::new();
 
     partdistribution::init_dist_disc1(&mut particles, n, m_star, r_in, r_out, m_disc, p_index, q_index, r_ref, sigma0, cs0, eta, nbins, x_c, y_c, z_c);
-    partdistribution::init_dist_disc_velocities(&mut particles, n, m_star, p_index, q_index, cs0, gamm);
+    partdistribution::init_dist_disc_velocities(&mut particles, n, m_star, r_in, p_index, q_index, cs0, gamm);
     partdistribution::com_frame(&mut particles, n, dm, x_c, y_c, z_c, vx0, vy0, vz0);
 
     if let Err(err) = datafunctions::save_data(path, &particles){

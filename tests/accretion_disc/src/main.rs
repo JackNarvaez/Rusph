@@ -39,27 +39,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     let x_c: f64    = input[2];         // x_c: center (x-coordinate)
     let y_c: f64    = input[3];         // y_c: center (y-coordinate)
     let z_c: f64    = input[4];         // z_c: center (z-coordinate)
-    //let r_in: f64   = input[5];         // inner radius of the acc. disc
-    let r_out: f64  = input[6];         // outer radius of the acc. disc
-    let m_dc: f64   = input[7];         // portion of the disc's mass w.r.t. the star mass
-    let m_star: f64 = input[8];         // star's mass
-    //let p_index: f64    = input[9];     // p index - density profile 
-    //let q_index: f64    = input[10];    // q index - density profile 
-    let h_r: f64    = input[11];        // H over r_ref
+    let r_out: f64  = input[7];         // outer radius of the acc. disc
+    let m_dc: f64   = input[8];         // portion of the disc's mass w.r.t. the star mass
+    let m_star: f64 = input[9];         // star's mass
+    let h_r: f64    = input[12];        // H over r_ref
     
-    let t0: f64     = input[12];        // Initial time
-    let tf: f64     = input[13];        // Final time
-    let dt_sav: f64 = input[14];        // Recording time step
-    let n: usize    = input[15] as usize; // Particle resolution
+    let t0: f64     = input[13];        // Initial time
+    let tf: f64     = input[14];        // Final time
+    let dt_sav: f64 = input[15];        // Recording time step
+    let n: usize    = input[16] as usize; // Particle resolution
     
     // Tree's parameters
-    let s_: i32     = input[16] as i32; // Bucket size
-    let alpha_: f64 = input[17];        // Fraction of the bucket size
-    let beta_: f64  = input[18];        // Maximum ratio of cells with less than alpha*s particles
+    let s_: i32     = input[17] as i32; // Bucket size
+    let alpha_: f64 = input[18];        // Fraction of the bucket size
+    let beta_: f64  = input[19];        // Maximum ratio of cells with less than alpha*s particles
     
     let m_disc: f64 = m_dc*m_star;      // Disc's mass
     let dm: f64     = m_disc/n as f64;  // Particle's mass
-    //let r_ref: f64  = r_in;             // Reference radius 
 
     // Boundary conditions
     let xper: bool  = false;
