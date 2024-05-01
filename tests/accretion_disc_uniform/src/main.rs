@@ -34,29 +34,32 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Parameters
     let input: Vec<f64> = datafunctions::read_input(input_file);
     
-    let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length
+    let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length   
     let gamm: f64   = input[1];         // Heat capacity ratio
+    let m_star: f64 = input[2];         // Star's mass
+    let m_disc: f64 = input[3];         // Disc's mass
+    let r_out: f64  = input[5];         // Outer radius
 
-    let x0: f64     = input[2];         // Bottom left corner  (x-coordinate)
-    let y0: f64     = input[3];         // Bottom left corner  (y-coordinate)
-    let z0: f64     = input[4];         // Bottom left corner  (z-coordinate)
-    let wd: f64     = input[5];         // Width (x)
-    let lg: f64     = input[6];         // Length (y)
-    let hg: f64     = input[7];         // Height (z)
-    
-    let rho: f64    = input[8];         // Density
-    let m: f64      = input[9];         // Star's mass
-    let r_disc: f64 = input[10];
-    let r_in: f64   = 0.5*r_disc;
-    
-    let t0: f64     = input[11];        // Initial time
-    let tf: f64     = input[12];        // Final time
-    let dt_sav: f64 = input[13];        // Recording time step
+    let t0: f64     = input[7];         // Initial time
+    let tf: f64     = input[8];         // Final time
+    let dt_sav: f64 = input[9];         // Recording time step
     
     // Tree's parameters
-    let s_: i32     = input[15] as i32; // Bucket size
-    let alpha_: f64 = input[16];        // Fraction of the bucket size
-    let beta_: f64  = input[17];        // Maximum ratio of cells with less than alpha*s particles
+    let s_: i32     = input[11] as i32; // Bucket size
+    let alpha_: f64 = input[12];        // Fraction of the bucket size
+    let beta_: f64  = input[13];        // Maximum ratio of cells with less than alpha*s particles
+    
+    let x_c: f64    = 0.0;
+    let y_c: f64    = 0.0;
+    let z_c: f64    = 0.0;
+
+    let wd: f64 = 3.0*r_out;            // Width (x)
+    let lg: f64 = 3.0*r_out;            // Length (y)
+    let hg: f64 = 1.0*r_out;           // Height (z)
+
+    let x0: f64 = x_c - 0.5*wd;         // Bottom left corner  (x-coordinate)
+    let y0: f64 = y_c - 0.5*lg;         // Bottom left corner  (y-coordinate)
+    let z0: f64 = z_c - 0.5*hg;         // Bottom left corner  (z-coordinate)        
 
     // Boundary conditions
     let xper: bool  = false;
@@ -70,13 +73,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     //---------------------------------------------------------------------------------------------
 
     // Create Particles
-    let x_c: f64 = x0 + 0.5*wd;
-    let y_c: f64 = y0 + 0.5*lg;
-    let z_c: f64 = z0 + 0.5*hg;
-
-    
+  
     let mut particles :Vec<Particle> = Vec::new();
-    let star: Star = Star{ m: m, x: x_c, y: y_c, z: z_c, ..Default::default()};
+    let star: Star = Star{ m: m_star, x: x_c, y: y_c, z: z_c, ..Default::default()};
     if let Err(err) = datafunctions::read_data(path_source, &mut particles) {
         println!("{}", err);
         process::exit(1);
@@ -86,9 +85,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut t: f64  = t0;               // Time
     let n: usize    = particles.len();
-    let dm:f64      = PI*rho*hg*(r_disc-r_in)*(r_disc+r_in)/n as f64;
-    //let lmbda: f64  = coeff_static_grav_potential(0.05, gamm, m, r);
+    let dm:f64      = m_disc/n as f64;
     let mut it: u32 = 0;                // Time iterations
+
     // Save time evolution
     let mut time_file = File::create("./Accretiondiscuniform/Time.txt").expect("creation failed"); // Save time steps
     
@@ -100,9 +99,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     for ii in 0..n {
         particles[ii].rho = sphfunctions::density_from_h(dm, particles[ii].h, eta);
     }
-
     let mut tree: Node = <Node as BuildTree>::new(n as i32, x0, y0, z0, wd, lg, hg);
-
+    
     //------------------------------------ Main Loop ----------------------------------------------
     let start = Instant::now();   // Runing time
     while t < tf {

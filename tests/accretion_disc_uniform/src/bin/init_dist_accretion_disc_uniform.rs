@@ -23,35 +23,38 @@ fn main() -> Result<(), Box<dyn Error>> {
     // Parameters
     let input: Vec<f64> = datafunctions::read_input(input_file);
 
-    let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length
-    let x0: f64     = input[2];         // Bottom left corner  (x-coordinate)
-    let y0: f64     = input[3];         // Bottom left corner  (y-coordinate)
-    let z0: f64     = input[4];         // Bottom left corner  (z-coordinate)
-    let wd: f64     = input[5];         // Width (x)
-    let lg: f64     = input[6];         // Length (y)
-    let hg: f64     = input[7];         // Height (z)
+    let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length   
+    let m_star: f64 = input[2];         // Star's mass
+    let m_disc: f64 = input[3];         // Disc's mass
+    let r_in: f64   = input[4];        // Inner radius
+    let r_out: f64  = input[5];        // Outer radius
+    let h_disc: f64 = input[6];        // Hight
+    let nx: u32     = input[10] as u32; // Particle resolution
     
-    let rho: f64    = input[8];         // Density
-    let m: f64      = input[9];         // Star's mass
-    let r_disc: f64 = input[10];
-    let nx: u32     = input[14] as u32; // Particle resolution
-    
-    let r_in: f64   = 0.5*r_disc;
     let r2_in: f64  = r_in*r_in;
-    let r2_out: f64 = r_disc*r_disc;
+    let r2_out: f64 = r_out*r_out;
 
-    let x_c: f64 = x0 + 0.5*wd;
-    let y_c: f64 = y0 + 0.5*lg;
+    let x_c: f64    = 0.0;
+    let y_c: f64    = 0.0;
+    let z_c: f64    = 0.0;
 
+    let wd: f64 = 2.0*r_out;            // Width (x)
+    let lg: f64 = 2.0*r_out;            // Length (y)
+
+    let x0: f64 = x_c - r_out;          // Bottom left corner  (x-coordinate)
+    let y0: f64 = y_c - r_out;          // Bottom left corner  (y-coordinate)
+    let z0: f64 = z_c - 0.5*h_disc;         // Bottom left corner  (z-coordinate)        
+
+    let rho: f64    = m_disc/(PI*h_disc*(r_out-r_in)*(r_out+r_in));
     
     let mut particles :Vec<Particle> = Vec::new();    
-    partdistribution::init_dist_hcp(&mut particles, nx, rho, eta, wd, lg, hg, x0, y0, z0);
+    partdistribution::init_dist_hcp(&mut particles, nx, rho, eta, wd, lg, h_disc, x0, y0, z0);
     particles.retain(|particle| distance_center(&particle, x_c, y_c, r2_in, r2_out));
 
     let n: usize    = particles.len();
-    let dm:f64      = PI*rho*hg*(r_disc-r_in)*(r_disc+r_in)/n as f64;
+    let dm: f64     = m_disc/n as f64;
     let h: f64      = h_from_density(dm, rho, eta);
-    let m_t: f64    = m + dm;
+    let m_t: f64    = m_star + dm;
     for ii in 0..n {
         let omega: f64 = keplerian_velocity(&particles[ii], m_t, x_c, y_c);
         particles[ii].h  = h;
