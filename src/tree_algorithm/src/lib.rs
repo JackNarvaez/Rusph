@@ -11,6 +11,7 @@ use csv::Writer;
 use structures::{
     Particle,
     Node,
+    Star,
 };
 
 use rayon::prelude::*;
@@ -117,6 +118,7 @@ impl BuildTree for Node {
             self.branches = b*b*b;
             self.create_sub_cells(b);
             for p in &self.particles {
+            if particles[*p].ptype != 2 {
                 let mut x_p:i32 = ((particles[*p].x - self.xmin) as f64/ self.sidex * b as f64).floor() as i32;
                 if x_p == b {
                     x_p -= 1;
@@ -140,6 +142,7 @@ impl BuildTree for Node {
                 }
                 let j :usize = (x_p + (y_p  + z_p * b) * b) as usize;
                 self.children[j].add_particle(*p);
+            }
             }
             let mut r: f64 = 0.0;
             if b != 2 {
@@ -169,6 +172,7 @@ impl BuildTree for Node {
         self.branches = b*b*b;
         self.create_sub_cells(b);
         for p in &self.particles {
+        if particles[*p].ptype != 2 {
             let mut x_p: i32 = ((particles[*p].x - self.xmin) / self.sidex * b as f64).floor() as i32;
             if x_p == b {
                 x_p -= 1;
@@ -183,6 +187,7 @@ impl BuildTree for Node {
             }
             let j :usize = (x_p + (y_p + z_p * b) * b) as usize;
             self.children[j].add_particle(*p);
+        }
         }
         self.delete_particles();
         (self.children).par_iter_mut().for_each(|child| {
@@ -203,6 +208,8 @@ pub trait FindNeighbors {
     fn range_neigh(&self, x_p: f64, y_p: f64, z_p: f64, b: i32, hrkern: f64, x0: f64, y0: f64, z0: f64, wd: f64, lg: f64, hg: f64,) -> Vec<usize>;
 
     fn find_neighbors(& self, p: usize, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, hrkern: f64, xperiodic:bool, yperiodic:bool, zperiodic:bool);
+    
+    fn find_neighbors_star(& self, star: & Star, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, radius: f64, xperiodic:bool, yperiodic:bool, zperiodic:bool);
 }
 
 impl FindNeighbors for Node {
@@ -259,13 +266,34 @@ impl FindNeighbors for Node {
         for ii in cell_neighbors {
             if self.children[ii].branches == 0 {
                 for q in &self.children[ii].particles {
+                    if particles[*q].ptype != 2 {
                     let norm: f64 = sq_periodic_norm(particles[p].x, particles[*q].x, particles[p].y, particles[*q].y, particles[p].z, particles[*q].z, wd, lg, hg, hrkern, xperiodic, yperiodic, zperiodic);
                     if norm <= hrkern*hrkern {
                         neighbors_of_p.push(*q);
                     }
+                    }
                 }
             } else {
                 self.children[ii].find_neighbors(p, s, particles, neighbors_of_p, wd, lg, hg, x0, y0, z0, hrkern, xperiodic, yperiodic, zperiodic);
+            }
+        }
+    }
+
+    fn find_neighbors_star(& self, star: & Star, s: i32, particles: & Vec<Particle>, neighbors_of_p: &mut Vec<usize>, wd: f64, lg: f64, hg: f64, x0:f64, y0: f64, z0:f64, radius: f64, xperiodic:bool, yperiodic:bool, zperiodic:bool) {
+        let b: i32 = (self.branches).cbrt();
+        let cell_neighbors = self.range_neigh(star.x, star.y, star.z, b as i32, radius, x0, y0, z0, wd, lg, hg);
+        for ii in cell_neighbors {
+            if self.children[ii].branches == 0 {
+                for q in &self.children[ii].particles {
+                    if particles[*q].ptype != 2 {
+                    let norm: f64 = sq_periodic_norm(star.x, particles[*q].x, star.y, particles[*q].y, star.z, particles[*q].z, wd, lg, hg, radius, xperiodic, yperiodic, zperiodic);
+                    if norm <= radius*radius {
+                        neighbors_of_p.push(*q);
+                    }
+                    }
+                }
+            } else {
+                self.children[ii].find_neighbors_star(star, s, particles, neighbors_of_p, wd, lg, hg, x0, y0, z0, radius, xperiodic, yperiodic, zperiodic);
             }
         }
     }
