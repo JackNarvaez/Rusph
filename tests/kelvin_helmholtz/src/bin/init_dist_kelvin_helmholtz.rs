@@ -25,21 +25,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length
     let gamma: f64  = input[1];         // Heat capacity ratio
     
-    let x0: f64     = input[2];         // Bottom left corner  (x-coordinate)
-    let y0: f64     = input[3];         // Bottom left corner  (y-coordinate)
-    let z0: f64     = input[4];         // Bottom left corner  (z-coordinate)
-    let wd: f64     = input[5];         // Width (x)
-    let lg: f64     = input[6];         // Length (y)
-    let hg: f64     = input[7];         // Height (z)
-    let y1: f64     = input[8];         // Y-lower edge of fluid 2 
-    let y2: f64     = input[9];         // Y-upper edge of fluid 2
-    let rho1: f64   = input[10];        // Initial density fluid 1
-    let rho2: f64   = input[11];        // Initial density fluid 2
-    let vx1: f64    = input[12];        // Initial x velocity fluid 1
-    let vx2: f64    = input[13];        // Initial x velocity fluid 2
-    let p0: f64     = input[14];        // Initial pressure
+    let x0: f64     = input[3];         // Bottom left corner  (x-coordinate)
+    let y0: f64     = input[4];         // Bottom left corner  (y-coordinate)
+    let z0: f64     = input[5];         // Bottom left corner  (z-coordinate)
+    let wd: f64     = input[6];         // Width (x)
+    let lg: f64     = input[7];         // Length (y)
+    let hg: f64     = input[8];         // Height (z)
+    let y1: f64     = input[9];         // Y-lower edge of fluid 2 
+    let y2: f64     = input[10];         // Y-upper edge of fluid 2
+    let rho1: f64   = input[11];        // Initial density fluid 1
+    let rho2: f64   = input[12];        // Initial density fluid 2
+    let vx1: f64    = input[13];        // Initial x velocity fluid 1
+    let vx2: f64    = input[14];        // Initial x velocity fluid 2
+    let p0: f64     = input[15];        // Initial pressure
 
-    let nx: u32     = input[18] as u32; // Particle resolution
+    let nx: u32     = input[19] as u32; // Particle resolution
         
     let mut particles: Vec<Particle> = Vec::new();
 

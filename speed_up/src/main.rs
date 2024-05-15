@@ -47,6 +47,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0:f64      = 0.;               // y-coordinate of the bottom left corner
     let z0:f64      = 0.;               // y-coordinate of the bottom left corner
     let gamma:f64   = 1.;               // Gamma factor (heat capacity ratio)
+    let eos_t: bool = true;             // EoS (0=isoth[No u]; 1=adiab[u])
     let dm:f64      = 3.0517578125e-05; // Particles' mass (32K Particles)
     // SBW let gamma:f64   = 5./3.;         // Gamma factor (heat capacity ratio)
     // SBW let rho0:f64    = 1.;             // Initial density
@@ -78,7 +79,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let start       = Instant::now();   // Runing time
     let star : Star = Star{..Default::default()};
     while it < it_tot  {
-        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_isothermal, sound_speed_isothermal, gamma,
+        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_t, eos_isothermal, sound_speed_isothermal, gamma,
                                        sphfunctions::dwdh, sphfunctions::f_cubic_kernel, sphfunctions::dfdq_cubic_kernel, sigma, rkern,
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,

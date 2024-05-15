@@ -22,21 +22,21 @@ fn main() -> Result<(), Box<dyn Error>> {
     let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length
     let gamma: f64  = input[1];         // Heat capacity ratio
     
-    let x0: f64     = input[2];         // Bottom left corner  (x-coordinate)
-    let y0: f64     = input[3];         // Bottom left corner  (y-coordinate)
-    let z0: f64     = input[4];         // Bottom left corner  (z-coordinate)
-    let wd: f64     = input[5];         // Width (x)
-    let lg: f64     = input[6];         // Length (y)
-    let hg: f64     = input[7];         // Height (z)
+    let x0: f64     = input[3];         // Bottom left corner  (x-coordinate)
+    let y0: f64     = input[4];         // Bottom left corner  (y-coordinate)
+    let z0: f64     = input[5];         // Bottom left corner  (z-coordinate)
+    let wd: f64     = input[6];         // Width (x)
+    let lg: f64     = input[7];         // Length (y)
+    let hg: f64     = input[8];         // Height (z)
 
-    let rhol: f64   = input[8];         // Left density
-    let rhor: f64   = input[9];         // Right density
-    let pl: f64     = input[10];        // Left initial pressure
-    let pr: f64     = input[11];        // Right initial pressure
-    let xm: f64     = input[12];        // Discontinuity position
+    let rhol: f64   = input[9];         // Left density
+    let rhor: f64   = input[10];        // Right density
+    let pl: f64     = input[11];        // Left initial pressure
+    let pr: f64     = input[12];        // Right initial pressure
+    let xm: f64     = input[13];        // Discontinuity position
     
-    let nxl: u32    = input[16] as u32; // Particle resolution in the x direction (left)
-    let nxr: u32    = input[17] as u32; // Particle resolution in the x direction (right)
+    let nxl: u32    = input[17] as u32; // Particle resolution in the x direction (left)
+    let nxr: u32    = input[18] as u32; // Particle resolution in the x direction (right)
 
     let ul: f64     = pl/((gamma - 1.)*rhol);      // Left initial energy
     let ur: f64     = pr/((gamma - 1.)*rhor);      // Right initial energy

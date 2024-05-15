@@ -23,18 +23,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input: Vec<f64> = datafunctions::read_input(input_file);
 
     let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length
-    let m: f64      = input[3];         // Star's mass
-    let r: f64      = input[4];         // Star's radius
+    let m: f64      = input[4];         // Star's mass
+    let r: f64      = input[5];         // Star's radius
     
-    let x0: f64     = input[5];         // Star's center (x-coordinate)
-    let y0: f64     = input[6];         // Star's center (y-coordinate)
-    let z0: f64     = input[7];         // Star's center (z-coordinate)
-    let vx0: f64    = input[8];         // Star's velocity (x-coordinate)
-    let vy0: f64    = input[9];         // Star's velocity (y-coordinate)
-    let vz0: f64    = input[10];        // Star's velocity (z-coordinate)
-    let u0: f64     = input[11];        // Initial energy
+    let x0: f64     = input[6];         // Star's center (x-coordinate)
+    let y0: f64     = input[7];         // Star's center (y-coordinate)
+    let z0: f64     = input[8];         // Star's center (z-coordinate)
+    let vx0: f64    = input[9];         // Star's velocity (x-coordinate)
+    let vy0: f64    = input[10];         // Star's velocity (y-coordinate)
+    let vz0: f64    = input[11];        // Star's velocity (z-coordinate)
+    let u0: f64     = input[12];        // Initial energy
     
-    let nx: u32     = input[15] as u32; // Resolution
+    let nx: u32     = input[16] as u32; // Resolution
 
     let mut particles :Vec<Particle> = Vec::new();
     let x_i: f64    = x0-r;

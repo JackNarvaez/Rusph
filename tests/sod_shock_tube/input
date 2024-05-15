@@ -1,26 +1,27 @@
 # ------------ System Parameters ------------ #
 1.2     # 0 eta: Dimensionless constant specifying the smoothing length
 1.667   # 1 gamma: Heat capacity ratio
--0.5    # 2 x0: Bottom left corner  (x-coordinate)
-0.0     # 3 y0: Bottom left corner  (y-coordinate)
-0.0     # 4 z0: Bottom left corner  (z-coordinate)
-1.0     # 5 wd: Width of the system's domain
-0.376   # 6 lg: Length of the system's domain
-0.376   # 7 hg: Height of the system's domain
-1.0     # 8 rhol: Initial left density
-0.125   # 9 rhor: Initial right density
-1.0     # 10 Pl: Left initial pressure
-0.1     # 11 Pr: Right initial pressure
-0.0     # 12 xm: Discontinuity position
+1       # 2 eos_type: EoS (0=isoth[No u]; 1=adiab[u])
+-0.5    # 3 x0: Bottom left corner  (x-coordinate)
+0.0     # 4 y0: Bottom left corner  (y-coordinate)
+0.0     # 5 z0: Bottom left corner  (z-coordinate)
+1.0     # 6 wd: Width of the system's domain
+0.376   # 7 lg: Length of the system's domain
+0.376   # 8 hg: Height of the system's domain
+1.0     # 9 rhol: Initial left density
+0.125   # 10 rhor: Initial right density
+1.0     # 11 Pl: Left initial pressure
+0.1     # 12 Pr: Right initial pressure
+0.0     # 13 xm: Discontinuity position
 
 # ---------- Simulation Parameters ---------- #
-0.0     # 13 t0: Initial time
-0.2     # 14 tf: Final time
-0.01    # 15 dt_sav: Recording time step
-64      # 16 nxl: Particle resolution in the x direction (left)
-32      # 17 nxr: Particle resolution in the x direction (right)
+0.0     # 14 t0: Initial time
+0.2     # 15 tf: Final time
+0.01    # 16 dt_sav: Recording time step
+64      # 17 nxl: Particle resolution in the x direction (left)
+32      # 18 nxr: Particle resolution in the x direction (right)
 
 # ------------- Tree parameters ------------- #
-10      # 18 s: Maximum number of particles in a leaf (Bucket size)
-0.5     # 19 alpha: Fraction of the bucket size s
-0.5     # 20 beta: Maximum ratio of cells with less than alpha*s particles
+10      # 19 s: Maximum number of particles in a leaf (Bucket size)
+0.5     # 20 alpha: Fraction of the bucket size s
+0.5     # 21 beta: Maximum ratio of cells with less than alpha*s particles

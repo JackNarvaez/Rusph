@@ -25,17 +25,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     
     let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length
     
-    let x0: f64     = input[2];         // Bottom left corner  (x-coordinate)
-    let y0: f64     = input[3];         // Bottom left corner  (y-coordinate)
-    let z0: f64     = input[4];         // Bottom left corner  (z-coordinate)
-    let wd: f64     = input[5];         // Width (x)
-    let lg: f64     = input[6];         // Length (y)
-    let hg: f64     = input[7];         // Height (z)
+    let x0: f64     = input[3];         // Bottom left corner  (x-coordinate)
+    let y0: f64     = input[4];         // Bottom left corner  (y-coordinate)
+    let z0: f64     = input[5];         // Bottom left corner  (z-coordinate)
+    let wd: f64     = input[6];         // Width (x)
+    let lg: f64     = input[7];         // Length (y)
+    let hg: f64     = input[8];         // Height (z)
 
-    let rho: f64    = input[8];         // Density
-    let e0: f64     = input[9];         // Initial energy
+    let rho: f64    = input[9];         // Density
+    let e0: f64     = input[10];        // Initial energy
     
-    let nx: u32     = input[13] as u32; // Particle resolution
+    let nx: u32     = input[14] as u32; // Particle resolution
     
     let rkern: f64  = 2.;               // Cubic Kernel radius
     let vol: f64    = wd*lg*hg;         // Volumen
