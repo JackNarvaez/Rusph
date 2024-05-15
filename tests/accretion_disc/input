@@ -1,25 +1,26 @@
 # ------------ System Parameters ------------ #
 1.2     # 0 eta: Dimensionless constant specifying the smoothing length
 1.4     # 1 gamma: Heat capacity ratio. 1.4 is appropriate for molecular hydrogen with rotovibrational transitions
-0.0     # 2 x0: center (x-coordinate)
-0.0     # 3 y0: center (y-coordinate)
-0.0     # 4 z0: center (z-coordinate)
-1.0     # 5 r_in: inner radius of the acc. disc
-10.0    # 6 r_ref: reference radius of the acc. disc
-150.0   # 7 r_out: outer radius of the acc. disc
-0.05    # 8 m_disc: portion of the disc's mass w.r.t. the star mass
-1.0     # 9 m_star: Star's mass
-1.0     # 10 p_index: for density profile
-0.25    # 11 q_index: for density profile
-0.050   # 12 h_r: heigth scale at r_ref
+0       # 2 eos_type: EoS (0=isoth[No u]; 1=adiab[u])
+0.0     # 3 x0: center (x-coordinate)
+0.0     # 4 y0: center (y-coordinate)
+0.0     # 5 z0: center (z-coordinate)
+1.0     # 6 r_in: inner radius of the acc. disc
+10.0    # 7 r_ref: reference radius of the acc. disc
+150.0   # 8 r_out: outer radius of the acc. disc
+0.05    # 9 m_disc: portion of the disc's mass w.r.t. the star mass
+1.0     # 10 m_star: Star's mass
+1.0     # 11 p_index: for density profile
+0.25    # 12 q_index: for density profile
+0.050   # 13 h_r: heigth scale at r_ref
 
 # ---------- Simulation Parameters ---------- #
-0.0     # 13 t0: Initial time
-150.0   # 14 tf: Final time
-5.0     # 15 dt_sav: Recording time step
-10000   # 16 n: Number of Particles
+0.0     # 14 t0: Initial time
+1500.0  # 15 tf: Final time
+10.0    # 16 dt_sav: Recording time step
+10000   # 17 n: Number of Particles
 
 # ------------- Tree parameters ------------- #
-10      # 17 s: Maximum number of particles in a leaf (Bucket size)
-0.5     # 18 alpha: Fraction of the bucket size s
-0.5     # 19 beta: Maximum ratio of cells with less than alpha*s particles
+10      # 18 s: Maximum number of particles in a leaf (Bucket size)
+0.5     # 19 alpha: Fraction of the bucket size s
+0.5     # 20 beta: Maximum ratio of cells with less than alpha*s particles

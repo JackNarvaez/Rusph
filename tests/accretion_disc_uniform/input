@@ -1,19 +1,20 @@
 # ------------ System Parameters ------------ #
 1.2     # 0 eta: Dimensionless constant specifying the smoothing length
 1.4     # 1 gamma: Heat capacity ratio. 1.4 is appropriate for molecular hydrogen with rotovibrational transitions
-1.0     # 2 m_star: Star's mass
-0.05    # 3 m_disc: Disc's mass
-0.2     # 4 r_in: Inner radius of the acc. disc
-1.0     # 5 r_out: Outer radius of the acc. disc
-0.1     # 6 H: Height of the disc
+1       # 2 eos_type: EoS (0=isoth[No u]; 1=adiab[u])
+1.0     # 3 m_star: Star's mass
+0.05    # 4 m_disc: Disc's mass
+0.2     # 5 r_in: Inner radius of the acc. disc
+1.0     # 6 r_out: Outer radius of the acc. disc
+0.1     # 7 H: Height of the disc
 
 # ---------- Simulation Parameters ---------- #
-0.0     # 7 t0: Initial time
-2.0     # 8 tf: Final time
-0.1     # 9 dt_sav: Recording time step
-64      # 10 nx: Particle resolution
+0.0     # 8 t0: Initial time
+10.0    # 9 tf: Final time
+0.1     # 10 dt_sav: Recording time step
+64      # 11 nx: Particle resolution
 
 # ------------- Tree parameters ------------- #
-10      # 11 s: Maximum number of particles in a leaf (Bucket size)
-0.5     # 12 alpha: Fraction of the bucket size s
-0.5     # 13 beta: Maximum ratio of cells with less than alpha*s particles
+10      # 12 s: Maximum number of particles in a leaf (Bucket size)
+0.5     # 13 alpha: Fraction of the bucket size s
+0.5     # 14 beta: Maximum ratio of cells with less than alpha*s particles

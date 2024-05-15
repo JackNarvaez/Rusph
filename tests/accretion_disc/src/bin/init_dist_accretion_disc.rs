@@ -24,19 +24,19 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let eta: f64    = input[0];         // eta: dimensionless constant specifying the smoothing length
     let gamm: f64   = input[1];         // gamma: Heat capacity ratio
-    let x_c: f64    = input[2];         // x_c: center (x-coordinate)
-    let y_c: f64    = input[3];         // y_c: center (y-coordinate)
-    let z_c: f64    = input[4];         // z_c: center (z-coordinate)
-    let r_in: f64   = input[5];         // inner radius of the acc. disc
-    let r_ref: f64  = input[6];         // reference radius of the acc. disc
-    let r_out: f64  = input[7];         // outer radius of the acc. disc
-    let m_dc: f64   = input[8];         // portion of the disc's mass w.r.t. the star mass
-    let m_star: f64 = input[9];         // star's mass
-    let p_index: f64= input[10];        // p index - density profile 
-    let q_index: f64= input[11];        // q index - density profile 
-    let h_r: f64    = input[12];        // H over r_ref
+    let x_c: f64    = input[3];         // x_c: center (x-coordinate)
+    let y_c: f64    = input[4];         // y_c: center (y-coordinate)
+    let z_c: f64    = input[5];         // z_c: center (z-coordinate)
+    let r_in: f64   = input[6];         // inner radius of the acc. disc
+    let r_ref: f64  = input[7];         // reference radius of the acc. disc
+    let r_out: f64  = input[8];         // outer radius of the acc. disc
+    let m_dc: f64   = input[9];         // portion of the disc's mass w.r.t. the star mass
+    let m_star: f64 = input[10];        // star's mass
+    let p_index: f64= input[11];        // p index - density profile 
+    let q_index: f64= input[12];        // q index - density profile 
+    let h_r: f64    = input[13];        // H over r_ref
     
-    let n: u32      = input[16] as u32; // Particle resolution
+    let n: u32      = input[17] as u32; // Particle resolution
     
     let m_disc: f64 = m_dc*m_star;      // Disc's mass
     let dm: f64     = m_disc/n as f64;  // Particle's mass

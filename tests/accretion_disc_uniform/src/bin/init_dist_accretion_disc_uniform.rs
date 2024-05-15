@@ -24,12 +24,12 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input: Vec<f64> = datafunctions::read_input(input_file);
 
     let eta: f64    = input[0];         // Dimensionless constant specifying the smoothing length   
-    let m_star: f64 = input[2];         // Star's mass
-    let m_disc: f64 = input[3];         // Disc's mass
-    let r_in: f64   = input[4];        // Inner radius
-    let r_out: f64  = input[5];        // Outer radius
-    let h_disc: f64 = input[6];        // Hight
-    let nx: u32     = input[10] as u32; // Particle resolution
+    let m_star: f64 = input[3];         // Star's mass
+    let m_disc: f64 = input[4];         // Disc's mass
+    let r_in: f64   = input[5];        // Inner radius
+    let r_out: f64  = input[6];        // Outer radius
+    let h_disc: f64 = input[7];        // Hight
+    let nx: u32     = input[11] as u32; // Particle resolution
     
     let r2_in: f64  = r_in*r_in;
     let r2_out: f64 = r_out*r_out;

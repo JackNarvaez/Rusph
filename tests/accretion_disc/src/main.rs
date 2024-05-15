@@ -18,7 +18,6 @@ use structures::{
 };
 
 use datafunctions;
-use sphfunctions;
 
 use tree_algorithm::BuildTree;
 use std::f64::consts::PI;
@@ -36,23 +35,24 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let eta: f64    = input[0];         // eta: dimensionless constant specifying the smoothing length
     let gamm: f64   = input[1];         // gamma: Heat capacity ratio
-    let x_c: f64    = input[2];         // x_c: center (x-coordinate)
-    let y_c: f64    = input[3];         // y_c: center (y-coordinate)
-    let z_c: f64    = input[4];         // z_c: center (z-coordinate)
-    let r_out: f64  = input[7];         // outer radius of the acc. disc
-    let m_dc: f64   = input[8];         // portion of the disc's mass w.r.t. the star mass
-    let m_star: f64 = input[9];         // star's mass
-    let h_r: f64    = input[12];        // H over r_ref
+    let eos_t: bool = input[2] != 0.0;  // EoS (0=isoth[No u]; 1=adiab[u])
+    let x_c: f64    = input[3];         // x_c: center (x-coordinate)
+    let y_c: f64    = input[4];         // y_c: center (y-coordinate)
+    let z_c: f64    = input[5];         // z_c: center (z-coordinate)
+    let r_out: f64  = input[8];         // outer radius of the acc. disc
+    let m_dc: f64   = input[9];         // portion of the disc's mass w.r.t. the star mass
+    let m_star: f64 = input[10];         // star's mass
+    let h_r: f64    = input[13];        // H over r_ref
     
-    let t0: f64     = input[13];        // Initial time
-    let tf: f64     = input[14];        // Final time
-    let dt_sav: f64 = input[15];        // Recording time step
-    let n: usize    = input[16] as usize; // Particle resolution
+    let t0: f64     = input[14];        // Initial time
+    let tf: f64     = input[15];        // Final time
+    let dt_sav: f64 = input[16];        // Recording time step
+    let mut n: usize= input[17] as usize; // Particle resolution
     
     // Tree's parameters
-    let s_: i32     = input[17] as i32; // Bucket size
-    let alpha_: f64 = input[18];        // Fraction of the bucket size
-    let beta_: f64  = input[19];        // Maximum ratio of cells with less than alpha*s particles
+    let s_: i32     = input[18] as i32; // Bucket size
+    let alpha_: f64 = input[19];        // Fraction of the bucket size
+    let beta_: f64  = input[20];        // Maximum ratio of cells with less than alpha*s particles
     
     let m_disc: f64 = m_dc*m_star;      // Disc's mass
     let dm: f64     = m_disc/n as f64;  // Particle's mass
@@ -76,12 +76,14 @@ fn main() -> Result<(), Box<dyn Error>> {
     let y0: f64 = y_c - 0.5*lg;
     let z0: f64 = z_c - 0.5*hg;
 
+    let hacc: f64 = 1.0;
+    let facc: f64 = 0.8;
 
     //let cs0: f64    = h_r*(G*m_star/r_ref).sqrt()*r_ref.powf(q_index);
     //let cs02: f64   = cs0*cs0;
 
     let mut particles :Vec<Particle> = Vec::new();
-    let star: Star = Star{ m: m_star, x: x_c, y: y_c, z: z_c, ..Default::default()};
+    let mut star: Star = Star{ m: m_star, x: x_c, y: y_c, z: z_c, hacc:hacc, facc: facc, ..Default::default()};
     if let Err(err) = datafunctions::read_data(path_source, &mut particles) {
         println!("{}", err);
         process::exit(1);
@@ -108,16 +110,18 @@ fn main() -> Result<(), Box<dyn Error>> {
     //------------------------------------ Main Loop ----------------------------------------------
     let start = Instant::now();   // Runing time
     while t < tf {
-        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_isothermal_disc, sound_speed_isothermal_disc, gamm,
+        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_t, eos_isothermal_disc, sound_speed_isothermal_disc, gamm,
                                        sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern, 
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_gravitation, &star, true,
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
+        sphfunctions::accretion_boundary(&mut star, &mut particles, dm, &mut n, & tree, s_, wd, lg, hg, x0, y0, z0, xper, yper, zper);
+        sphfunctions::star_integrator(&mut star, dt);
         dt = sphfunctions::time_step_bale(&particles, n, gamm, rkern, wd, lg, hg, &mut tree, s_, sound_speed_isothermal_disc);
         tree.restart(n);
         datafunctions::time_step(&mut t, &mut dt, dt_sav, &mut sav, &mut it_sav);
-        println!("dt: {}\tt: {}", dt, t);
+        println!("dt: {:.4}\tt: {:.4}\tn:{}", dt, t, n);
         if sav {
             time_file.write((t.to_string() + &"\n").as_bytes()).expect("write failed");
             if let Err(err) = datafunctions::save_data_bin(&(String::from("./Accretiondisc/Ev_") + &(it_sav-2).to_string()), &particles){
