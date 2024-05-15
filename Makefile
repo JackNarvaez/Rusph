@@ -27,6 +27,10 @@ Accretiondiscuniform: ./tests/accretion_disc_uniform/accretion_disc.sh
 Accretiondisc: ./tests/accretion_disc/accretion_disc.sh
 	@mkdir $@
 	@bash $<
+	
+Accretiondiscphantom: ./tests/accretion_disc_phantom/accretion_disc.sh
+	@mkdir $@
+	@bash $<
 
 clean:
 	@rm -rf target;\

@@ -13,6 +13,7 @@ members = [
     "./tests/toy_star",
     "./tests/accretion_disc_uniform",
     "./tests/accretion_disc",
+    "./tests/accretion_disc_phantom",
     "./tests/turbulent_gas",
     "./tests/find_neighbors",
 ]
