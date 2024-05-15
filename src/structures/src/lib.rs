@@ -99,6 +99,8 @@ pub struct Node {
 // ------------------------------------------------------------------------- //
 // Star                                                                      //
 //  m:          f64 - mass                                                   //
+//  hacc:       f64 - accretion radius                                       //
+//  facc:       f64 - factor of indiscriminate accretion                     //
 //  x, y, z:    f64 - position                                               //
 //  vx, vy, vz: f64 - velocity                                               //
 //  ax, ay, az: f64 - acceleration                                           //
@@ -108,6 +110,8 @@ pub struct Star {
     pub x: f64,
     pub y: f64,
     pub z: f64,
+    pub hacc: f64,
+    pub facc: f64,
     pub vx: f64,
     pub vy: f64,
     pub vz: f64,
@@ -123,6 +127,8 @@ impl Default for Star {
             x: 0.,
             y: 0.,
             z: 0.,
+            hacc: 0.,
+            facc: 0.,
             vx: 0.0,
             vy: 0.0,
             vz: 0.0,
