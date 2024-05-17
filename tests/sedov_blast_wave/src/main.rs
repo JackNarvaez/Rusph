@@ -62,6 +62,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let mut dt: f64     = 0.01*dt_sav;  // Initial time step
     let mut sav: bool   = false;        // Save data
     let mut it_sav: u32 = 1;            // Save data iteration
+
+    let coeff: f64      = 0.0;          // Not used parameter
     
     //---------------------------------------------------------------------------------------------
     
@@ -95,13 +97,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     //------------------------------------ Main Loop ----------------------------------------------
     let start = Instant::now();// Runing time
     while t < tf  {
-        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_t, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma,
+        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_t, sphfunctions::eos_ideal_gas, sphfunctions::sound_speed_ideal_gas, gamma, coeff,
                                        sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern,
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, &star, false,
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg, x0, y0, z0);
-        dt = sphfunctions::time_step_mon(&particles, n, gamma, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_ideal_gas, xper, yper, zper);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, coeff, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_ideal_gas, xper, yper, zper);
         tree.restart(n);
         datafunctions::time_step(&mut t, &mut dt, dt_sav, &mut sav, &mut it_sav);
         println!("dt: {:.4}\tt: {:.4}", dt, t);

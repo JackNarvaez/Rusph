@@ -21,7 +21,7 @@ use datafunctions;
 
 use tree_algorithm::BuildTree;
 use std::f64::consts::PI;
-//const G: f64 = 1.0;
+const G: f64 = 1.0;
 
 fn main() -> Result<(), Box<dyn Error>> {
 
@@ -39,9 +39,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let x_c: f64    = input[3];         // x_c: center (x-coordinate)
     let y_c: f64    = input[4];         // y_c: center (y-coordinate)
     let z_c: f64    = input[5];         // z_c: center (z-coordinate)
+    let r_ref: f64  = input[7];         // reference radius of the acc. disc
     let r_out: f64  = input[8];         // outer radius of the acc. disc
     let m_dc: f64   = input[9];         // portion of the disc's mass w.r.t. the star mass
     let m_star: f64 = input[10];         // star's mass
+    let q_index: f64= input[12];        // q index - density profile 
     let h_r: f64    = input[13];        // H over r_ref
     
     let t0: f64     = input[14];        // Initial time
@@ -79,8 +81,8 @@ fn main() -> Result<(), Box<dyn Error>> {
     let hacc: f64 = 1.0;
     let facc: f64 = 0.8;
 
-    //let cs0: f64    = h_r*(G*m_star/r_ref).sqrt()*r_ref.powf(q_index);
-    //let cs02: f64   = cs0*cs0;
+    let cs0: f64    = h_r*(G*m_star/r_ref).sqrt()*r_ref.powf(q_index);
+    let cs02: f64   = cs0*cs0;
 
     let mut particles :Vec<Particle> = Vec::new();
     let mut star: Star = Star{ m: m_star, x: x_c, y: y_c, z: z_c, hacc:hacc, facc: facc, ..Default::default()};
@@ -110,15 +112,15 @@ fn main() -> Result<(), Box<dyn Error>> {
     //------------------------------------ Main Loop ----------------------------------------------
     let start = Instant::now();   // Runing time
     while t < tf {
-        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_t, eos_isothermal_disc, sound_speed_isothermal_disc, gamm,
+        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_t, sphfunctions::eos_isothermal_disc, sphfunctions::sound_speed_isothermal_disc, gamm, cs02,
                                        sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern, 
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_gravitation, &star, true,
-                                       sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
+                                       sphfunctions::none_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
         sphfunctions::accretion_boundary(&mut star, &mut particles, dm, &mut n, & tree, s_, wd, lg, hg, x0, y0, z0, xper, yper, zper);
         sphfunctions::star_integrator(&mut star, dt);
-        dt = sphfunctions::time_step_bale(&particles, n, gamm, rkern, wd, lg, hg, &mut tree, s_, sound_speed_isothermal_disc);
+        dt = sphfunctions::time_step_bale(&particles, n, gamm, cs02, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_isothermal_disc);
         tree.restart(n);
         datafunctions::time_step(&mut t, &mut dt, dt_sav, &mut sav, &mut it_sav);
         println!("dt: {:.4}\tt: {:.4}\tn:{}", dt, t, n);
@@ -143,27 +145,6 @@ fn main() -> Result<(), Box<dyn Error>> {
 }
 
 // ------------------------------------------------------------------------- //
-// Locally isothermal equation of state                                      //
-// Returns the presure                                                       //
-//      P = Cs^2 * rho                                                       //
-// where Cs is the sound speed at R and rho is the density.                  //
-// Lodato & Pringle (2007)                                                   //
-// ------------------------------------------------------------------------- //
-fn eos_isothermal_disc(
-    rho:f64, _u:f64, _gamma:f64, x: f64, y: f64, z: f64
-) -> f64 {
-    0.0007905694150411133 * (x*x + y*y + z*z).powf(-0.25)*rho
-}
-
-// ------------------------------------------------------------------------- //
 //Locally isothermal equation of state                                       //
 // Returns the speed of sound                                                //
-//      Cs = Cs_0 R^(-q)                                                     //
-// where Cs_o is the sound speed at R_in, R = sqrt[x^2 + y^2 + z^2], and     //
-// q is a constant index.                                                    //
-// ------------------------------------------------------------------------- //
-fn sound_speed_isothermal_disc(
-    _rho: f64, _u:f64, _gamma: f64, x: f64, y: f64, z: f64
-) -> f64 {
-    (0.0007905694150411133 * (x*x + y*y + z*z).powf(-0.25)).sqrt()
-}
+//      Cs = Cs_0 R^(-q)     0.0007905694150411133                                                  //

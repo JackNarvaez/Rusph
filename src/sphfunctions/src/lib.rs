@@ -525,7 +525,7 @@ pub fn smoothing_length(
 
 // !!!----------------------- Equations of State ------------------------!!! //
 
-// ***--------------------------- Toy Star 2D ---------------------------*** //
+// ***------------------------- Polytropic EoS --------------------------*** //
 
 // ------------------------------------------------------------------------- //
 // The Polytropic equation of state.                                         //
@@ -535,10 +535,9 @@ pub fn smoothing_length(
 // adiabatic index.                                                          //
 // ------------------------------------------------------------------------- //
 pub fn eos_polytropic(
-    rho:f64, _u:f64, gamma:f64, _x: f64, _y: f64, _z: f64
+    rho:f64, _u:f64, gamma:f64, _x: f64, _y: f64, _z: f64, coeff: f64
 ) -> f64 {
-    let k: f64 = 0.05;
-    k * rho.powf(gamma)
+    coeff * rho.powf(gamma)
 }
 
 // ------------------------------------------------------------------------- //
@@ -549,10 +548,9 @@ pub fn eos_polytropic(
 // adiabatic index.                                                          //
 // ------------------------------------------------------------------------- //
 pub fn sound_speed_polytropic(
-    rho: f64, _u:f64, gamma: f64, _x: f64, _y: f64, _z: f64
+    rho: f64, _u:f64, gamma: f64, _x: f64, _y: f64, _z: f64, coeff: f64
 ) -> f64 {
-    let k: f64 = 0.05;
-    (gamma*k*rho.powf(gamma-1.)).sqrt()
+    (gamma*coeff*rho.powf(gamma-1.)).sqrt()
 }
 
 
@@ -566,7 +564,7 @@ pub fn sound_speed_polytropic(
 // adiabatic index.                                                          //
 // ------------------------------------------------------------------------- //
 pub fn eos_ideal_gas(
-    rho:f64, u:f64, gamma:f64, _x: f64, _y: f64, _z: f64
+    rho:f64, u:f64, gamma:f64, _x: f64, _y: f64, _z: f64, _coeff: f64
 ) -> f64 {
     (gamma-1.)*rho*u
 }
@@ -578,11 +576,39 @@ pub fn eos_ideal_gas(
 // where u is the internal energy and gamm is the adiabatic index.           //
 // ------------------------------------------------------------------------- //
 pub fn sound_speed_ideal_gas(
-    _rho: f64, u:f64, gamma:f64, _x: f64, _y: f64, _z: f64
+    _rho: f64, u:f64, gamma:f64, _x: f64, _y: f64, _z: f64, _coeff: f64
 ) -> f64 {
     ((gamma-1.)*gamma*u).sqrt()
 }
 
+
+// ***----------------------- Locally Isothermal ------------------------*** //
+
+// ------------------------------------------------------------------------- //
+// Locally isothermal equation of state                                      //
+// Returns the presure                                                       //
+//      P = Cs^2 * rho                                                       //
+// where Cs is the sound speed at R and rho is the density.                  //
+// Lodato & Pringle (2007)                                                   //
+// ------------------------------------------------------------------------- //
+pub fn eos_isothermal_disc(
+    rho:f64, _u:f64, _gamma:f64, x: f64, y: f64, z: f64, cs02: f64
+) -> f64 {
+    cs02 * (x*x + y*y + z*z).powf(-0.25)*rho
+}
+
+// ------------------------------------------------------------------------- //
+//Locally isothermal equation of state                                       //
+// Returns the speed of sound                                                //
+//      Cs = Cs_0 R^(-q)                                                     //
+// where Cs_o is the sound speed at R_in, R = sqrt[x^2 + y^2 + z^2], and     //
+// q is a constant index.                                                    //
+// ------------------------------------------------------------------------- //
+pub fn sound_speed_isothermal_disc(
+    _rho: f64, _u:f64, _gamma: f64, x: f64, y: f64, z: f64, cs02: f64
+) -> f64 {
+    (cs02 * (x*x + y*y + z*z).powf(-0.25)).sqrt()
+}
 
 // !!!---------------------- Artificial Viscosity -----------------------!!! //
 
@@ -708,17 +734,16 @@ pub fn body_forces_null(
 //      a_i = -nu * v_i - lambda * x_i                                       //
 // where nu is a damping coefficient for the equilibrium state, and the      //
 // lambda term is the simpliﬁed gravitational term.                          //
+// For this case, we use some features of star to save the nu and lmbda      //
+// parameters. star.hacc = nu; star.facc = lmbda.                            //
+// This is a temporal implementation. To be fixed in future versions.        //
 // ------------------------------------------------------------------------- //
 pub fn body_forces_toy_star(
-    particle: &mut Particle, _m_star: &Star
-) {
-    // parameters
-    let nu: f64 = 1.0;
-    let lmbda: f64 = 0.5030082152040148;
-    
-    particle.ax -= nu * particle.vx + lmbda*particle.x;
-    particle.ay -= nu * particle.vy + lmbda*particle.y; 
-    particle.az -= nu * particle.vz + lmbda*particle.z; 
+    particle: &mut Particle, star: &Star
+) { 
+    particle.ax -= star.hacc * particle.vx + star.facc*particle.x;
+    particle.ay -= star.hacc * particle.vy + star.facc*particle.y; 
+    particle.az -= star.hacc * particle.vz + star.facc*particle.z; 
 }
 
 // ------------------------------------------------------------------------- //
@@ -751,7 +776,7 @@ pub fn body_forces_gravitation(
 //      Delta u (du)                                                         //
 // ------------------------------------------------------------------------- //
 pub fn accelerations(
-    particles: &mut Vec<Particle>, dm:f64, eos_type: bool, eos: fn(f64, f64, f64, f64, f64, f64)->f64, cs: fn(f64, f64, f64, f64, f64, f64)->f64, gamma:f64,
+    particles: &mut Vec<Particle>, dm:f64, eos_type: bool, eos: fn(f64, f64, f64, f64, f64, f64, f64)->f64, cs: fn(f64, f64, f64, f64, f64, f64, f64)->f64, gamma: f64, coeff: f64,
     dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
     tree: &Node, s_: i32, n: usize, ptr : Pointer, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64,
     artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
@@ -777,8 +802,8 @@ pub fn accelerations(
             particle_i.divv = 0.;
             particle_i.du   = 0.;
 
-            let p_i: f64    = eos(particles[ii].rho, particles[ii].u, gamma, particles[ii].x, particles[ii].y, particles[ii].z);
-            let cs_i: f64   = cs(particles[ii].rho, particles[ii].u, gamma, particles[ii].x, particles[ii].y, particles[ii].z);
+            let p_i: f64    = eos(particles[ii].rho, particles[ii].u, gamma, particles[ii].x, particles[ii].y, particles[ii].z, coeff);
+            let cs_i: f64   = cs(particles[ii].rho, particles[ii].u, gamma, particles[ii].x, particles[ii].y, particles[ii].z, coeff);
             let omeg_i: f64 = omega(particles, ii, &neighbors[ii], dm, particles[ii].h, particles[ii].rho, dwdh_, f, dfdq, sigma, rkern, wd, lg, hg, xperiodic, yperiodic, zperiodic);
             
             for jj in 0..n {
@@ -797,8 +822,8 @@ pub fn accelerations(
                         grad_hj = dfdq(r_ij/particles[jj].h)*sigma/(r_ij*hjsq*hjsq);
                     }
                     if grad_hi != 0. || grad_hj != 0.0 {
-                        let p_j: f64    = eos(particles[jj].rho, particles[jj].u, gamma, particles[jj].x, particles[jj].y, particles[jj].z);
-                        let cs_j: f64   = cs(particles[jj].rho, particles[jj].u, gamma, particles[jj].x, particles[jj].y, particles[jj].z);
+                        let p_j: f64    = eos(particles[jj].rho, particles[jj].u, gamma, particles[jj].x, particles[jj].y, particles[jj].z, coeff);
+                        let cs_j: f64   = cs(particles[jj].rho, particles[jj].u, gamma, particles[jj].x, particles[jj].y, particles[jj].z, coeff);
                         let omeg_j: f64 = omega(particles, jj, &neighbors[jj], dm, particles[jj].h, particles[jj].rho, dwdh_, f, dfdq, sigma, rkern, wd, lg, hg, xperiodic, yperiodic, zperiodic);
 
                         // Velocity dot position
@@ -877,7 +902,7 @@ pub fn star_integrator(
 //      f(t + dt) = f(t) + dt * f'(t)                                        //
 // ------------------------------------------------------------------------- //
 pub fn euler_integrator(
-    particles: &mut Vec<Particle>, dt:f64, dm:f64, eos_type: bool, eos: fn(f64, f64, f64, f64, f64, f64)->f64, cs: fn(f64, f64, f64, f64, f64, f64)->f64, gamma:f64,
+    particles: &mut Vec<Particle>, dt:f64, dm:f64, eos_type: bool, eos: fn(f64, f64, f64, f64, f64, f64, f64)->f64, cs: fn(f64, f64, f64, f64, f64, f64, f64)->f64, gamma:f64, coeff: f64,
     dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
     eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
     artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
@@ -886,7 +911,7 @@ pub fn euler_integrator(
 ) {
     tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
     smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 30, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, xperiodic, yperiodic, zperiodic);
-    accelerations(particles, dm, eos_type, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, star, bf, xperiodic, yperiodic, zperiodic);
+    accelerations(particles, dm, eos_type, eos, cs, gamma, coeff, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, star, bf, xperiodic, yperiodic, zperiodic);
     particles.par_iter_mut().for_each(|particle|{
         if particle.ptype==0 {
             particle.x  += dt * particle.vx;
@@ -907,7 +932,7 @@ pub fn euler_integrator(
 // Verlet (1967)                                                             //
 // ------------------------------------------------------------------------- //
 pub fn velocity_verlet_integrator(
-    particles: &mut Vec<Particle>, dt:f64, dm:f64, eos_type: bool, eos: fn(f64, f64, f64, f64, f64, f64)->f64, cs: fn(f64, f64, f64, f64, f64, f64)->f64, gamma:f64,
+    particles: &mut Vec<Particle>, dt:f64, dm:f64, eos_type: bool, eos: fn(f64, f64, f64, f64, f64, f64, f64)->f64, cs: fn(f64, f64, f64, f64, f64, f64, f64)->f64, gamma:f64, coeff: f64,
     dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
     eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
     artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
@@ -932,7 +957,7 @@ pub fn velocity_verlet_integrator(
     tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
     smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 30, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, xperiodic, yperiodic, zperiodic);
 
-    accelerations(particles, dm, eos_type, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, star, bf, xperiodic, yperiodic, zperiodic);
+    accelerations(particles, dm, eos_type, eos, cs, gamma, coeff, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, star, bf, xperiodic, yperiodic, zperiodic);
     particles.par_iter_mut().for_each(|particle|{
         if particle.ptype==0 {
             particle.vx += 0.5 * dt * particle.ax;
@@ -951,7 +976,7 @@ pub fn velocity_verlet_integrator(
 //      velocities (half a step)                                             //
 // ------------------------------------------------------------------------- //
 pub fn predictor_kdk_integrator(
-    particles: &mut Vec<Particle>, dt:f64, dm:f64, eos_type: bool, eos: fn(f64, f64, f64, f64, f64, f64)->f64, cs: fn(f64, f64, f64, f64, f64, f64)->f64, gamma:f64,
+    particles: &mut Vec<Particle>, dt:f64, dm:f64, eos_type: bool, eos: fn(f64, f64, f64, f64, f64, f64, f64)->f64, cs: fn(f64, f64, f64, f64, f64, f64, f64)->f64, gamma:f64, coeff: f64,
     dwdh_: fn(f64, fn(f64) -> f64, fn(f64) -> f64) -> f64, f: fn(f64) -> f64, dfdq: fn(f64) -> f64, sigma: f64, rkern: f64,
     eta: f64, tree: &mut Node, s_: i32, alpha_: f64, beta_:f64, n: usize, ptr : Pointer,
     artificial_viscosity: fn(f64, f64, f64, f64, f64, f64, f64) -> (f64, f64),
@@ -986,7 +1011,7 @@ pub fn predictor_kdk_integrator(
     boundary(particles, wd, lg, hg, x0, y0, z0);
     tree.build_tree(s_, alpha_, beta_, particles, 1.0e-02);
     smoothing_length(particles, dm, eta, f, dfdq, sigma, rkern, 1e-03, 30, dt, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, xperiodic, yperiodic, zperiodic);
-    accelerations(particles, dm, eos_type, eos, cs, gamma, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, star, bf, xperiodic, yperiodic, zperiodic);
+    accelerations(particles, dm, eos_type, eos, cs, gamma, coeff, dwdh_, f, dfdq, sigma, rkern, tree, s_, n, ptr, wd, lg, hg, x0, y0, z0, artificial_viscosity, body_forces, star, bf, xperiodic, yperiodic, zperiodic);
     particles.par_iter_mut().for_each(|particle|{
         if particle.ptype==0 {
             particle.vx = particle.vx_star + 0.5 * dt * particle.ax;
@@ -999,6 +1024,14 @@ pub fn predictor_kdk_integrator(
 
 
 // ***----------------------- Boundary conditions -----------------------*** //
+
+// ------------------------------------------------------------------------- //
+// None Boundary Condition                                                   //
+// ------------------------------------------------------------------------- //
+pub fn none_boundary(
+    _particles: &mut Vec<Particle>, _wd: f64, _lg: f64, _hg: f64, _x0:f64, _y0: f64, _z0: f64
+){
+}
 
 // ------------------------------------------------------------------------- //
 // Periodic Boundary Conditions                                              //
@@ -1026,6 +1059,27 @@ pub fn periodic_boundary(
             }
         }
     });
+}
+
+// ------------------------------------------------------------------------- //
+// Open Boundary Conditions                                              //
+// ------------------------------------------------------------------------- //
+pub fn open_boundary(
+    particles: & Vec<Particle>, wd: &mut f64, lg: &mut f64, hg: &mut f64, x0: &mut f64, y0: &mut f64, z0: &mut f64
+){
+    let xmin: f64 = particles.iter().fold(*x0, |a, part| a.min(part.x));
+    let ymin: f64 = particles.iter().fold(*y0, |a, part| a.min(part.y));
+    let zmin: f64 = particles.iter().fold(*z0, |a, part| a.min(part.z));
+    let xmax: f64 = particles.iter().fold(*x0+*wd, |a, part| a.max(part.x));
+    let ymax: f64 = particles.iter().fold(*y0+*lg, |a, part| a.max(part.y));
+    let zmax: f64 = particles.iter().fold(*z0+*hg, |a, part| a.max(part.z));
+
+    if xmin < *x0 { *x0 = xmin - 0.1*xmin.abs();}
+    if ymin < *y0 { *y0 = ymin - 0.1*ymin.abs();}
+    if zmin < *z0 { *z0 = zmin - 0.1*zmin.abs();}
+    if xmax > *x0+*wd { *wd = (xmax-*x0) + 0.1*(xmax-*x0).abs();}
+    if ymax > *y0+*lg { *lg = (ymax-*y0) + 0.1*(ymax-*y0).abs();}
+    if zmax > *z0+*hg { *hg = (zmax-*z0) + 0.1*(zmax-*z0).abs();}
 }
 
 // ------------------------------------------------------------------------- //
@@ -1146,13 +1200,13 @@ pub fn force_dt(
 // Returns the minimum time step between the CFL and the force conditions.   //
 // ------------------------------------------------------------------------- //
 pub fn time_step_bale(
-    particles: & Vec<Particle>, n: usize, gamma: f64, _rkern: f64, _wd: f64, _lg: f64, _hg: f64,
-    _tree: &mut Node, _s_: i32, cs: fn(f64, f64, f64, f64, f64, f64) -> f64
+    particles: & Vec<Particle>, n: usize, gamma: f64, coeff: f64, _rkern: f64, _wd: f64, _lg: f64, _hg: f64,
+    _tree: &mut Node, _s_: i32, cs: fn(f64, f64, f64, f64, f64, f64, f64) -> f64
 ) -> f64 {
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
         if particles[ii].ptype == 0 {
         let a: f64 = (particles[ii].ax*particles[ii].ax + particles[ii].ay*particles[ii].ay + particles[ii].az*particles[ii].az).sqrt();
-        let cs: f64 = cs(particles[ii].rho, particles[ii].u, gamma, particles[ii].x, particles[ii].y, particles[ii].z);
+        let cs: f64 = cs(particles[ii].rho, particles[ii].u, gamma, particles[ii].x, particles[ii].y, particles[ii].z, coeff);
         let dt_a: f64 = force_dt(particles[ii].h, a, 0.3);
         let dt_cfl: f64 = cfl_dt(particles[ii].h, cs, particles[ii].divv, 1., 2.);
         return (dt_a).min(dt_cfl);}
@@ -1168,8 +1222,8 @@ pub fn time_step_bale(
 // Returns the minimum time step between the CFL and the force conditions.   //
 // ------------------------------------------------------------------------- //
 pub fn time_step_mon(
-    particles: & Vec<Particle>, n: usize, gamma: f64, rkern: f64, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64,
-    tree: &mut Node, s_: i32, cs: fn(f64, f64, f64, f64, f64, f64) -> f64, xperiodic: bool, yperiodic:bool, zperiodic:bool
+    particles: & Vec<Particle>, n: usize, gamma: f64, coeff: f64, rkern: f64, wd: f64, lg: f64, hg: f64, x0: f64, y0: f64, z0: f64,
+    tree: &mut Node, s_: i32, cs: fn(f64, f64, f64, f64, f64, f64, f64) -> f64, xperiodic: bool, yperiodic:bool, zperiodic:bool
 ) -> f64 {
     // Find every neighbor of every particle.
     let neighbors: Vec<Vec<usize>> = (0..n).into_par_iter().map(|ii: usize| {
@@ -1184,9 +1238,9 @@ pub fn time_step_mon(
         let alpha: f64  = 1.;
         let beta: f64   = 2.;
         let mut v_sig:f64 = 0.0;
-        let cs_i: f64 = cs(particles[ii].rho, particles[ii].u, gamma, particles[ii].x, particles[ii].y, particles[ii].z);
+        let cs_i: f64 = cs(particles[ii].rho, particles[ii].u, gamma, particles[ii].x, particles[ii].y, particles[ii].z, coeff);
         for jj in &neighbors[ii] {
-            let cs_j: f64 = cs(particles[*jj].rho, particles[*jj].u, gamma, particles[*jj].x, particles[*jj].y, particles[*jj].z);
+            let cs_j: f64 = cs(particles[*jj].rho, particles[*jj].u, gamma, particles[*jj].x, particles[*jj].y, particles[*jj].z, coeff);
 
             // Velocity dot position
             let (x_rel, y_rel, z_rel) = periodic_rel_vector(&particles[ii], &particles[*jj], wd, lg, hg, rkern*particles[ii].h, xperiodic, yperiodic, zperiodic);
