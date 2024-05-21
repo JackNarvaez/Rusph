@@ -641,7 +641,7 @@ pub fn mon92_art_vis(
     
         return (dvdt, dudt);
     } else {
-        // particles moving away
+        // particles receding
         return (0.0, 0.0);
     }
 }
@@ -671,9 +671,41 @@ pub fn mon97_art_vis(
 
         return (dvdt, dudt);
     } else {
-        // particles moving away
+        // particles receding
         return (0.0, 0.0);
     }
+}
+
+// ------------------------------------------------------------------------- //
+// Artificial Viscosity proposed by Lodato & Price (2010) - Accretion Discs  //
+// Returns:                                                                  //
+//      [PI_ab, 0.5*PI_ab*(V_ab \cdot r_ab)] if V_ab \cdot r_ab < 0          //
+//      [0.0, 0.0]                           if V_ab \cdot r_ab > 0          //
+// i.e., the contribution from artificial viscosity to the momentum and      //
+// energy equations. Note that this term have to be scaled by the kernel     //
+// gradient and the particle mass.                                           //
+// Note: dot_r_v = \vec_{v}_ab \cdot \vec{r}_ab. r_ab is not the unit vector //
+// ------------------------------------------------------------------------- //
+pub fn lodatoprice10_art_vis(
+    r_ij: f64, dot_r_v: f64, cs_i: f64, cs_j: f64, h_i: f64, h_j: f64, rho_mean: f64
+) -> (f64, f64) {
+    let alpha: f64 = 1.0;
+    let h_mean: f64 = 0.5*(h_i+h_j);
+    let v_sig: f64;
+    if dot_r_v <= 0. {
+        // particles approaching
+        // Parameters
+        let beta: f64 = 2.0;
+
+        v_sig = 0.5*alpha*(cs_i + cs_j - beta*dot_r_v/r_ij);
+    } else {
+        // particles receding
+        // Parameters
+        v_sig = 0.5*alpha*(cs_i + cs_j);
+    }
+    let dvdt: f64 = -h_mean*v_sig*dot_r_v/(r_ij*rho_mean*r_ij);
+    let dudt: f64 = 0.5*dvdt*dot_r_v;
+    return (dvdt, dudt);
 }
 
 

@@ -115,7 +115,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_t, sphfunctions::eos_isothermal_disc, sphfunctions::sound_speed_isothermal_disc, gamm, cs02,
                                        sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern, 
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
-                                       sphfunctions::mon97_art_vis,
+                                       sphfunctions::lodatoprice10_art_vis,
                                        sphfunctions::body_forces_gravitation, &star, true,
                                        sphfunctions::none_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
         sphfunctions::accretion_boundary(&mut star, &mut particles, dm, &mut n, & tree, s_, wd, lg, hg, x0, y0, z0, xper, yper, zper);
