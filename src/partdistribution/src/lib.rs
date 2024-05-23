@@ -3,7 +3,7 @@ use std::f64;
 use rand::{Rng, SeedableRng};
 use rand_pcg::Pcg64;
 
-const SEED: u64 = 123;
+const SEED: u64 = 1234;
 const G: f64    = 1.0;
 
 use structures::Particle;
@@ -11,6 +11,7 @@ use structures::Particle;
 use sphfunctions::h_from_density;
 
 use std::f64::consts::PI;
+const PI2:f64 = PI/2.0;
 
 // -------- Uniform distributions --------
 
@@ -164,7 +165,7 @@ pub fn disc_mass(
 pub fn init_dist_disc1(
     particles: &mut Vec<Particle>, n: u32, m_star: f64, r_in: f64, r_out: f64, m_disc: f64,
     p_index: f64, q_index: f64, r_ref: f64, sigma0: f64, cs0: f64,
-    eta: f64, nbins: usize, x_c: f64, y_c: f64, z_c: f64
+    eta: f64, nbins: usize
 ) {
     let mut r   : f64 = 0.0;
     let mut z   : f64 = 0.0;
@@ -192,7 +193,7 @@ pub fn init_dist_disc1(
     let dm      : f64 = m_disc/n as f64;
 
     // Calculate f_max = r*SIGMA(r)
-    for ii in 0..nbins {
+    for ii in 0..nbins+1 {
         r = r_in + dr*ii as f64;
         f_ii = r * sigma0 * sigma_profile(r, p_index, r_ref, r_in);
         if f_ii > f_max {
@@ -202,7 +203,7 @@ pub fn init_dist_disc1(
 
     let mut rng = Pcg64::seed_from_u64(SEED);
 
-    for _ii in 0..n {
+    for _ii in (0..n).step_by(2) {
         // find r
         // the rejection method
         f = 0.0;
@@ -213,17 +214,18 @@ pub fn init_dist_disc1(
             f   = r*sigma0*sigma_profile(r, p_index, r_ref, r_in); // f = r*SIGMA(r)
             sigm= f/r;
         }
+
         // find z
         // the rejection method
         cs      = cs_disc(r, r_in, q_index,cs0);
         omeg    = (G*m_star/r.powi(3)).sqrt();
         h2      = cs/omeg;
         s2h2    = 2.0_f64.sqrt()*h2;
-
-        zmin    = -3.0_f64.sqrt()*s2h2;
-        zmax    = 3.0_f64.sqrt()*s2h2;
+        
+        zmin    = -3.0_f64*s2h2;
+        zmax    = 3.0_f64*s2h2;
         z_wd    = zmax - zmin;
-
+        
         fz_max  = sigm/(s2h2 * PI.sqrt());
         f = 0.0;
         f_ii = 1.0;
@@ -236,13 +238,15 @@ pub fn init_dist_disc1(
 
         // Calculate cartesian coordinates
         phi = 2.0*PI*rng.gen::<f64>();
-        xp = x_c + r*phi.cos();
-        yp = y_c + r*phi.sin();
-        zp = z_c + z;
+        xp = r*(phi.cos()+(phi+PI2).sin())/2.0;
+        yp = r*(phi.sin()+(phi-PI2).cos())/2.0;
+        zp = z;
         hp  = h_from_density(dm, rho, eta);
         particles.push(Particle{x:xp, y:yp, z:zp, h:hp,
             ..Default::default()});
-    }   
+        particles.push(Particle{x:-xp, y:-yp, z:-zp, h:hp,
+            ..Default::default()});
+        }
 }
 
 pub fn init_dist_disc_velocities(
@@ -252,21 +256,26 @@ pub fn init_dist_disc_velocities(
     let mut kepl: f64;
     let mut r   : f64;
     let mut phi : f64;
+    let mut cosphi: f64;
+    let mut sinphi: f64;
     let mut cs  : f64;
     let mut cs2 : f64;
     let mut f_p : f64;
     let mut vphi: f64;
+    let vr: f64 = 0.0_f64;
     
     for ii in 0..n as usize {
         r = (particles[ii].x * particles[ii].x + particles[ii].y*particles[ii].y).sqrt();
         kepl = G*m_star/r;
         phi = (particles[ii].y).atan2(particles[ii].x);
+        cosphi = (phi.cos()+(phi+PI2).sin())/2.0_f64;
+        sinphi = (phi.sin()+(phi-PI2).cos())/2.0_f64;
         cs = cs_disc(r, r_in, q_index, cs0);
         cs2 = cs*cs;
         f_p = -cs2*(1.5+p_index+q_index);
         vphi = (kepl + f_p).sqrt();
-        particles[ii].vx = -vphi* phi.sin();
-        particles[ii].vy = vphi* phi.cos();
+        particles[ii].vx = -vphi* sinphi + vr*cosphi;
+        particles[ii].vy = vphi* cosphi + vr*sinphi;
         particles[ii].vz = 0.0_f64;
         particles[ii].u  = cs2/((gamm-1.)*gamm);
     }

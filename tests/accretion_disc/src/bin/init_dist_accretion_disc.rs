@@ -43,7 +43,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let vx0: f64    = 0.0;              // x velocity in CoM
     let vy0: f64    = 0.0;              // y velocity in CoM
     let vz0: f64    = 0.0;              // z velocity in CoM
-    let nbins: usize= 1000;             // Number of bins for integration
+    let nbins: usize= 10000;             // Number of bins for integration
 
     let m0_disc: f64= partdistribution::disc_mass(r_in, r_out, r_ref, p_index, 1.0, nbins);
     let sigma0: f64 = m_disc/m0_disc;
@@ -52,7 +52,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut particles :Vec<Particle> = Vec::new();
 
-    partdistribution::init_dist_disc1(&mut particles, n, m_star, r_in, r_out, m_disc, p_index, q_index, r_ref, sigma0, cs0, eta, nbins, x_c, y_c, z_c);
+    partdistribution::init_dist_disc1(&mut particles, n, m_star, r_in, r_out, m_disc, p_index, q_index, r_ref, sigma0, cs0, eta, nbins);
     partdistribution::init_dist_disc_velocities(&mut particles, n, m_star, r_in, p_index, q_index, cs0, gamm);
     partdistribution::com_frame(&mut particles, n, dm, x_c, y_c, z_c, vx0, vy0, vz0);
 

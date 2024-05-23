@@ -34,7 +34,6 @@ fn main() -> Result<(), Box<dyn Error>> {
     let input: Vec<f64> = datafunctions::read_input(input_file);
 
     let eta: f64    = input[0];         // eta: dimensionless constant specifying the smoothing length
-    let gamm: f64   = input[1];         // gamma: Heat capacity ratio
     let eos_t: bool = input[2] != 0.0;  // EoS (0=isoth[No u]; 1=adiab[u])
     let x_c: f64    = input[3];         // x_c: center (x-coordinate)
     let y_c: f64    = input[4];         // y_c: center (y-coordinate)
@@ -112,7 +111,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //------------------------------------ Main Loop ----------------------------------------------
     let start = Instant::now();   // Runing time
     while t < tf {
-        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_t, sphfunctions::eos_isothermal_disc, sphfunctions::sound_speed_isothermal_disc, gamm, cs02,
+        sphfunctions::predictor_kdk_integrator(&mut particles, dt, dm, eos_t, sphfunctions::eos_isothermal_disc, sphfunctions::sound_speed_isothermal_disc, q_index, cs02,
                                        sphfunctions::dwdh, sphfunctions::f_quintic_kernel, sphfunctions::dfdq_quintic_kernel, sigma, rkern, 
                                        eta, &mut tree, s_, alpha_, beta_, n, particles_ptr,
                                        sphfunctions::lodatoprice10_art_vis,
@@ -120,7 +119,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::none_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
         sphfunctions::accretion_boundary(&mut star, &mut particles, dm, &mut n, & tree, s_, wd, lg, hg, x0, y0, z0, xper, yper, zper);
         sphfunctions::star_integrator(&mut star, dt);
-        dt = sphfunctions::time_step_bale(&particles, n, gamm, cs02, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_isothermal_disc);
+        dt = sphfunctions::time_step_bale(&particles, n, q_index, cs02, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_isothermal_disc);
         tree.restart(n);
         datafunctions::time_step(&mut t, &mut dt, dt_sav, &mut sav, &mut it_sav);
         println!("dt: {:.4}\tt: {:.4}\tn:{}", dt, t, n);
