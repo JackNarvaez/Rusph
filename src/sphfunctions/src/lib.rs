@@ -592,9 +592,9 @@ pub fn sound_speed_ideal_gas(
 // Lodato & Pringle (2007)                                                   //
 // ------------------------------------------------------------------------- //
 pub fn eos_isothermal_disc(
-    rho:f64, _u:f64, _gamma:f64, x: f64, y: f64, z: f64, cs02: f64
+    rho:f64, _u:f64, gamma:f64, x: f64, y: f64, z: f64, cs02: f64
 ) -> f64 {
-    cs02 * (x*x + y*y + z*z).powf(-0.25)*rho
+    cs02 * (x*x + y*y + z*z).powf(-gamma)*rho
 }
 
 // ------------------------------------------------------------------------- //
@@ -605,9 +605,9 @@ pub fn eos_isothermal_disc(
 // q is a constant index.                                                    //
 // ------------------------------------------------------------------------- //
 pub fn sound_speed_isothermal_disc(
-    _rho: f64, _u:f64, _gamma: f64, x: f64, y: f64, z: f64, cs02: f64
+    _rho: f64, _u:f64, gamma: f64, x: f64, y: f64, z: f64, cs02: f64
 ) -> f64 {
-    (cs02 * (x*x + y*y + z*z).powf(-0.25)).sqrt()
+    (cs02*(x*x + y*y + z*z).powf(-gamma)).sqrt()
 }
 
 // !!!---------------------- Artificial Viscosity -----------------------!!! //
