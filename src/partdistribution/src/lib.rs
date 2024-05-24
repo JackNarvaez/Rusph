@@ -1,9 +1,7 @@
 use std::f64;
 
-use rand::{Rng, SeedableRng};
-use rand_pcg::Pcg64;
+use rand::Rng;
 
-const SEED: u64 = 1234;
 const G: f64    = 1.0;
 
 use structures::Particle;
@@ -17,7 +15,7 @@ const PI2:f64 = PI/2.0;
 
 pub fn init_dist_random(
     particles: &mut Vec<Particle>, nx: u32, rho: f64, eta: f64,
-    wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64
+    wd:f64, lg:f64, hg: f64, x0: f64, y0: f64, z0: f64, rng: &mut impl Rng,
 ) {
     let nnew: u32 = nx*nx*nx;
     let dm  : f64 = rho*wd*lg*hg/nnew as f64;
@@ -26,8 +24,6 @@ pub fn init_dist_random(
     let mut xp: f64;
     let mut yp: f64;
     let mut zp: f64;
-
-    let mut rng = Pcg64::seed_from_u64(SEED);
 
     for _ii in 0..nnew {
         xp = x0 + wd*rng.gen::<f64>();
@@ -165,7 +161,7 @@ pub fn disc_mass(
 pub fn init_dist_disc1(
     particles: &mut Vec<Particle>, n: u32, m_star: f64, r_in: f64, r_out: f64, m_disc: f64,
     p_index: f64, q_index: f64, r_ref: f64, sigma0: f64, cs0: f64,
-    eta: f64, nbins: usize
+    eta: f64, nbins: usize, rng: &mut impl Rng
 ) {
     let mut r   : f64 = 0.0;
     let mut z   : f64 = 0.0;
@@ -189,11 +185,11 @@ pub fn init_dist_disc1(
     let mut sigm: f64 = 0.0;
     let mut rho : f64 = 0.0;
     let r_wd    : f64 = r_out - r_in;
-    let dr      : f64 = r_wd/nbins as f64;
+    let dr      : f64 = r_wd/(nbins-1) as f64;
     let dm      : f64 = m_disc/n as f64;
 
     // Calculate f_max = r*SIGMA(r)
-    for ii in 0..nbins+1 {
+    for ii in 0..nbins {
         r = r_in + dr*ii as f64;
         f_ii = r * sigma0 * sigma_profile(r, p_index, r_ref, r_in);
         if f_ii > f_max {
@@ -201,11 +197,13 @@ pub fn init_dist_disc1(
         }
     }
 
-    let mut rng = Pcg64::seed_from_u64(SEED);
-
     for _ii in (0..n).step_by(2) {
         // find r
         // the rejection method
+        let _phi_no: f64 = rng.gen::<f64>();
+        phi = 2.0*PI*rng.gen::<f64>();
+
+
         f = 0.0;
         f_ii = 1.0;
         while f_ii > f {
@@ -237,7 +235,6 @@ pub fn init_dist_disc1(
         }
 
         // Calculate cartesian coordinates
-        phi = 2.0*PI*rng.gen::<f64>();
         xp = r*(phi.cos()+(phi+PI2).sin())/2.0;
         yp = r*(phi.sin()+(phi-PI2).cos())/2.0;
         zp = z;
@@ -255,7 +252,7 @@ pub fn init_dist_disc_velocities(
 ) {
     let mut kepl: f64;
     let mut r   : f64;
-    let mut phi : f64;
+    let mut invr: f64;
     let mut cosphi: f64;
     let mut sinphi: f64;
     let mut cs  : f64;
@@ -266,10 +263,10 @@ pub fn init_dist_disc_velocities(
     
     for ii in 0..n as usize {
         r = (particles[ii].x * particles[ii].x + particles[ii].y*particles[ii].y).sqrt();
-        kepl = G*m_star/r;
-        phi = (particles[ii].y).atan2(particles[ii].x);
-        cosphi = (phi.cos()+(phi+PI2).sin())/2.0_f64;
-        sinphi = (phi.sin()+(phi-PI2).cos())/2.0_f64;
+        invr = 1.0/r;
+        kepl = G*m_star*invr;
+        cosphi = particles[ii].x*invr;
+        sinphi = particles[ii].y*invr;
         cs = cs_disc(r, r_in, q_index, cs0);
         cs2 = cs*cs;
         f_p = -cs2*(1.5+p_index+q_index);
