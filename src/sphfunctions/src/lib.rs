@@ -1232,8 +1232,8 @@ pub fn force_dt(
 // Returns the minimum time step between the CFL and the force conditions.   //
 // ------------------------------------------------------------------------- //
 pub fn time_step_bale(
-    particles: & Vec<Particle>, n: usize, gamma: f64, coeff: f64, _rkern: f64, _wd: f64, _lg: f64, _hg: f64,
-    _tree: &mut Node, _s_: i32, cs: fn(f64, f64, f64, f64, f64, f64, f64) -> f64
+    particles: & Vec<Particle>, n: usize, gamma: f64, coeff: f64, _rkern: f64, _wd: f64, _lg: f64, _hg: f64, _x0: f64, _y0: f64, _z0: f64,
+    _tree: &mut Node, _s_: i32, cs: fn(f64, f64, f64, f64, f64, f64, f64) -> f64, _xperiodic: bool, _yperiodic:bool, _zperiodic:bool
 ) -> f64 {
     let dts :Vec<f64> = (0..n).into_par_iter().map(|ii| -> f64 {
         if particles[ii].ptype == 0 {
