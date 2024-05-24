@@ -21,6 +21,7 @@ use datafunctions;
 
 use tree_algorithm::BuildTree;
 use std::f64::consts::PI;
+
 const G: f64 = 1.0;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -119,7 +120,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::none_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
         sphfunctions::accretion_boundary(&mut star, &mut particles, dm, &mut n, & tree, s_, wd, lg, hg, x0, y0, z0, xper, yper, zper);
         sphfunctions::star_integrator(&mut star, dt);
-        dt = sphfunctions::time_step_bale(&particles, n, q_index, cs02, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_isothermal_disc);
+        tree.restart(n);
+        tree.build_tree(s_, alpha_, beta_, &particles, 1.0e-02);
+        dt = sphfunctions::time_step_mon(&particles, n, q_index, cs02, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_isothermal_disc, xper, yper, zper);
         tree.restart(n);
         datafunctions::time_step(&mut t, &mut dt, dt_sav, &mut sav, &mut it_sav);
         println!("dt: {:.4}\tt: {:.4}\tn:{}", dt, t, n);

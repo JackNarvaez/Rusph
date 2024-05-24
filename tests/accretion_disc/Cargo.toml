@@ -8,7 +8,7 @@ authors.workspace = true
 
 [dependencies]
 csv.workspace = true
-spfunc = "0.1.0"
+rand = "0.8"
 tree_algorithm = { path = "../../src/tree_algorithm" }
 sphfunctions = { path = "../../src/sphfunctions" }
 datafunctions = { path = "../../src/datafunctions" }

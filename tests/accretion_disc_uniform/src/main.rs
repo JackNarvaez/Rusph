@@ -117,7 +117,9 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
         sphfunctions::accretion_boundary(&mut star, &mut particles, dm, &mut n, & tree, s_, wd, lg, hg, x0, y0, z0, xper, yper, zper);
         sphfunctions::star_integrator(&mut star, dt);
-        dt = sphfunctions::time_step_bale(&particles, n, gamm, coeff, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_ideal_gas);
+        tree.restart(n);
+        tree.build_tree(s_, alpha_, beta_, &particles, 1.0e-02);
+        dt = sphfunctions::time_step_mon(&particles, n, gamm, coeff, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_ideal_gas, xper, yper, zper);
         tree.restart(n);
         datafunctions::time_step(&mut t, &mut dt, dt_sav, &mut sav, &mut it_sav);
         println!("dt: {:.4}\tt: {:.4}\tn:{}", dt, t, n);

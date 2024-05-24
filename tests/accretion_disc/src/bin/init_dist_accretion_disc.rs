@@ -7,10 +7,14 @@ use std::{
     process,
 };
 
+use rand::SeedableRng;
+use rand::rngs::StdRng;
+
 use structures::Particle;
 use datafunctions;
 use partdistribution;
 
+const SEED: u64 = 1234;
 const G: f64    = 1.0;
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -52,7 +56,9 @@ fn main() -> Result<(), Box<dyn Error>> {
 
     let mut particles :Vec<Particle> = Vec::new();
 
-    partdistribution::init_dist_disc1(&mut particles, n, m_star, r_in, r_out, m_disc, p_index, q_index, r_ref, sigma0, cs0, eta, nbins);
+    let mut rng = StdRng::seed_from_u64(SEED);
+
+    partdistribution::init_dist_disc1(&mut particles, n, m_star, r_in, r_out, m_disc, p_index, q_index, r_ref, sigma0, cs0, eta, nbins, &mut rng);
     partdistribution::init_dist_disc_velocities(&mut particles, n, m_star, r_in, p_index, q_index, cs0, gamm);
     partdistribution::com_frame(&mut particles, n, dm, x_c, y_c, z_c, vx0, vy0, vz0);
 
