@@ -107,7 +107,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                                        sphfunctions::mon97_art_vis,
                                        sphfunctions::body_forces_null, &star, false,
                                        sphfunctions::periodic_boundary, xper, yper, zper, wd, lg, hg,  x0, y0, z0);
-        dt = sphfunctions::time_step_bale(&particles, n, gamma, coeff, rkern, wd, lg, hg, &mut tree, s_, sphfunctions::sound_speed_ideal_gas);
+        dt = sphfunctions::time_step_mon(&particles, n, gamma, coeff, rkern, wd, lg, hg, x0, y0, z0, &mut tree, s_, sphfunctions::sound_speed_ideal_gas, xper, yper, zper);
         tree.restart(n);
         datafunctions::time_step(&mut t, &mut dt, dt_sav, &mut sav, &mut it_sav);
         println!("dt: {:.4}\tt: {:.4}", dt, t);
